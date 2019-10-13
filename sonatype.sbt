@@ -4,6 +4,9 @@ lazy val contributors = Seq(
   "paoloboni" -> "Paolo Boni"
 )
 
+useGpg := true
+pgpSecretRing := pgpPublicRing.value
+
 publishTo := sonatypePublishTo.value
 
 sonatypeProfileName := "io.github.paoloboni"
@@ -24,3 +27,5 @@ scmInfo := Some(
   )
 )
 headerLicense := Some(HeaderLicense.MIT(Year.now().getValue.toString, "Paolo Boni"))
+licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
+homepage := Some(url("https://github.com/paoloboni/binance-scala-client"))

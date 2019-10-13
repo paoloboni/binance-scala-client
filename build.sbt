@@ -6,11 +6,12 @@ lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion := scala213
 ThisBuild / scalafmtOnCompile := false
-ThisBuild / organization := "com.bpsoftwareconsulting"
+ThisBuild / organization := "io.github.paoloboni"
 
 lazy val root = (project in file("."))
   .settings(
     crossScalaVersions := supportedScalaVersions,
+    releaseCrossBuild := true,
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"          % "0.12.2",
       "io.circe"               %% "circe-generic"       % "0.12.2",
@@ -34,3 +35,20 @@ lazy val root = (project in file("."))
     )
   )
   .enablePlugins(AutomateHeaderPlugin)
+
+import ReleaseTransformations._
+
+releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runClean,
+  runTest,
+  setReleaseVersion,
+  commitReleaseVersion,
+  tagRelease,
+  releaseStepCommand("publishSigned"),
+  setNextVersion,
+  commitNextVersion,
+  releaseStepCommand("sonatypeReleaseAll"),
+  pushChanges
+)
