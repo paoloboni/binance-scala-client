@@ -13,6 +13,7 @@ lazy val root = (project in file("."))
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"          % "0.12.2",
+      "io.circe"               %% "circe-generic"       % "0.12.2",
       "co.fs2"                 %% "fs2-core"            % "2.0.1",
       "org.typelevel"          %% "cats-core"           % "2.0.0",
       "org.typelevel"          %% "cats-effect"         % "2.0.0",
@@ -23,8 +24,12 @@ lazy val root = (project in file("."))
       "org.http4s"             %% "http4s-blaze-client" % "0.21.0-M5",
       "org.http4s"             %% "http4s-circe"        % "0.21.0-M5",
       "io.lemonlabs"           %% "scala-uri"           % "2.0.0-M1",
+      "com.beachape"           %% "enumeratum"          % "1.5.13",
+      "com.beachape"           %% "enumeratum-circe"    % "1.5.22",
+      "com.chuusai"            %% "shapeless"           % "2.3.3",
       "org.slf4j"              % "slf4j-simple"         % "1.7.28" % "test",
       "org.scalatest"          %% "scalatest"           % "3.0.8" % "test",
+      "io.circe"               %% "circe-parser"        % "0.12.2" % "test",
       "com.github.tomakehurst" % "wiremock"             % "2.25.0" % "test"
     )
   )
