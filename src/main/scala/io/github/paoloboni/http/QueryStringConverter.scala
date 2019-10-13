@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.http
+package io.github.paoloboni.http
 
 import enumeratum.{Enum, EnumEntry}
 import shapeless.labelled.{FieldType, field}

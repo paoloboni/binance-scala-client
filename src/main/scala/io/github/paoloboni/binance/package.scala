@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni
+package io.github.paoloboni
 
 import java.time.Instant
 
@@ -28,8 +28,7 @@ import io.circe.Decoder
 import shapeless.tag.@@
 
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration._
+import scala.concurrent.duration.{Duration, _}
 
 package object binance {
   case class BinanceConfig(scheme: String, host: String, port: Int, infoUrl: String, apiKey: String, apiSecret: String)

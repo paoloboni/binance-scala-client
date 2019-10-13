@@ -19,14 +19,30 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.encryption
+package io.github.paoloboni.http
 
-import org.scalatest.{FreeSpec, Matchers}
+import cats.effect.IO
+import com.github.tomakehurst.wiremock.client.WireMock._
+import io.circe.Json
+import io.github.paoloboni.Env
+import io.github.paoloboni.integration._
+import io.lemonlabs.uri.Url
+import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
-class HMACTest extends FreeSpec with Matchers {
-  "it should generate a valid SHA-256 HMAC signature for a given plain text" in {
-    val hmac = HMAC.sha256("1234567890", "plain text")
+class HttpClientTest extends FreeSpec with Matchers with EitherValues with Env {
+  "a bad request response should be translated into a HttpError" in withWiremockServer { server =>
+    val responseBody = """{ "error": "bad request" }"""
+    server.stubFor(get("/test").willReturn(aResponse().withStatus(400).withBody(responseBody)))
+    val httpClient = HttpClient[IO].unsafeRunSync()
 
-    hmac shouldBe "0f0b538bb6eee67396e6de8901920b76035a1c22168394a3b51e1458b1c9434e"
+    val url = Url.parse(s"http://localhost:${server.port().toString}/test")
+
+    val result = httpClient.get[Json](url).attempt.unsafeRunSync()
+
+    result.left.value shouldBe a[HttpError]
+
+    val error = result.left.value.asInstanceOf[HttpError]
+    error.status.code shouldBe 400
+    error.body shouldBe responseBody
   }
 }

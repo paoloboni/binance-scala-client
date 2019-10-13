@@ -19,19 +19,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.encryption
+package io.github.paoloboni
 
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 
-object HMAC {
-
-  def sha256(sharedSecret: String, preHashString: String): String = {
-    val secret = new SecretKeySpec(sharedSecret.getBytes, "HmacSHA256")
-    val mac    = Mac.getInstance("HmacSHA256")
-    mac.init(secret)
-    val hashString = mac.doFinal(preHashString.getBytes)
-    new String(hashString.map("%02x".format(_)).mkString)
+package object integration {
+  def withWiremockServer(block: WireMockServer => Any) = {
+    val wireMockServer = new WireMockServer(options().dynamicPort().dynamicHttpsPort())
+    wireMockServer.start()
+    block(wireMockServer)
+    wireMockServer.stop()
   }
-
 }

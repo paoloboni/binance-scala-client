@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.binance
+package io.github.paoloboni.binance
 
 import java.time.Instant
 
@@ -29,11 +29,11 @@ import cats.implicits._
 import fs2.Stream
 import io.circe.Decoder
 import io.circe.generic.auto._
+import io.github.paoloboni.binance
+import io.github.paoloboni.binance.RateLimitInterval._
+import io.github.paoloboni.encryption.HMAC
+import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
 import io.lemonlabs.uri.{QueryString, Url}
-import io.paoloboni.binance
-import io.paoloboni.binance.RateLimitInterval._
-import io.paoloboni.encryption.HMAC
-import io.paoloboni.http._
 import log.effect.LogWriter
 import shapeless.tag
 import upperbound.{Limiter, Rate}

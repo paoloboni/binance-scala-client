@@ -19,23 +19,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.http
+package io.github.paoloboni.encryption
 
 import org.scalatest.{FreeSpec, Matchers}
 
-import scala.util.Success
+class HMACTest extends FreeSpec with Matchers {
+  "it should generate a valid SHA-256 HMAC signature for a given plain text" in {
+    val hmac = HMAC.sha256("1234567890", "plain text")
 
-class QueryStringConverterTest extends FreeSpec with Matchers {
-
-  "it should convert a query string to an object and viceversa" in {
-
-    case class TestClass(quantity: Int, price: BigDecimal, recvWindow: Int, timestamp: Long)
-
-    val obj = TestClass(1, 0.1, 5000, 1499827319559L)
-
-    val queryString = "quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559"
-
-    QueryStringConverter[TestClass].to(obj) shouldBe queryString
-    QueryStringConverter[TestClass].from(queryString) shouldBe Success(obj)
+    hmac shouldBe "0f0b538bb6eee67396e6de8901920b76035a1c22168394a3b51e1458b1c9434e"
   }
 }

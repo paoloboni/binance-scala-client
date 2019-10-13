@@ -19,14 +19,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.http
+package io.github.paoloboni.http
 
 import cats.effect.{ConcurrentEffect, ContextShift}
 import cats.syntax.all._
 import cats.{Monad, MonadError}
 import io.circe.{Decoder, Encoder}
+import io.github.paoloboni.http.ratelimit._
 import io.lemonlabs.uri.Url
-import io.paoloboni.http.ratelimit._
 import log.effect.LogWriter
 import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.circe._

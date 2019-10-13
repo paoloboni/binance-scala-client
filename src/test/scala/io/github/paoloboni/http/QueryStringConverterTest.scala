@@ -19,27 +19,23 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.http
+package io.github.paoloboni.http
 
-import cats.Monad
-import cats.effect.Concurrent
-import cats.implicits._
-import log.effect.LogWriter
-import upperbound.Limiter
+import org.scalatest.{FreeSpec, Matchers}
 
-package object ratelimit {
-  implicit class LimiterOps[F[_]: Concurrent: LogWriter](limiter: Limiter[F]) {
-    private implicit val l: Limiter[F] = limiter
+import scala.util.Success
 
-    def await[A](
-        job: F[A],
-        priority: Int = 0,
-        weight: Int = 1
-    )(implicit F: Monad[F]): F[A] = {
-      List.fill(weight - 1)(LogWriter.debug("Dummy job")).map(Limiter.await(_, priority)).sequence *> Limiter.await(
-        job,
-        priority
-      )
-    }
+class QueryStringConverterTest extends FreeSpec with Matchers {
+
+  "it should convert a query string to an object and viceversa" in {
+
+    case class TestClass(quantity: Int, price: BigDecimal, recvWindow: Int, timestamp: Long)
+
+    val obj = TestClass(1, 0.1, 5000, 1499827319559L)
+
+    val queryString = "quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559"
+
+    QueryStringConverter[TestClass].to(obj) shouldBe queryString
+    QueryStringConverter[TestClass].from(queryString) shouldBe Success(obj)
   }
 }

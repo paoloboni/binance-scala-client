@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.binance
+package io.github.paoloboni.binance
 
 import java.time.Instant
 
@@ -27,10 +27,10 @@ import cats.effect.{Clock, ContextShift, IO, Timer}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
-import io.paoloboni.Env
-import io.paoloboni.binance.Decoders._
-import io.paoloboni.binance.Interval._
-import io.paoloboni.integration._
+import io.github.paoloboni.Env
+import io.github.paoloboni.binance.Decoders._
+import io.github.paoloboni.binance.Interval._
+import io.github.paoloboni.integration._
 import log.effect.LogWriter
 import log.effect.fs2.SyncLogWriter.log4sLog
 import org.scalatest.{EitherValues, FreeSpec, Matchers, OptionValues}

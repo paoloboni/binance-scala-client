@@ -19,30 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni.http
+package io.github.paoloboni.encryption
 
-import cats.effect.IO
-import com.github.tomakehurst.wiremock.client.WireMock._
-import io.circe.Json
-import io.lemonlabs.uri.Url
-import io.paoloboni.Env
-import io.paoloboni.integration._
-import org.scalatest.{EitherValues, FreeSpec, Matchers}
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
-class HttpClientTest extends FreeSpec with Matchers with EitherValues with Env {
-  "a bad request response should be translated into a HttpError" in withWiremockServer { server =>
-    val responseBody = """{ "error": "bad request" }"""
-    server.stubFor(get("/test").willReturn(aResponse().withStatus(400).withBody(responseBody)))
-    val httpClient = HttpClient[IO].unsafeRunSync()
+object HMAC {
 
-    val url = Url.parse(s"http://localhost:${server.port().toString}/test")
-
-    val result = httpClient.get[Json](url).attempt.unsafeRunSync()
-
-    result.left.value shouldBe a[HttpError]
-
-    val error = result.left.value.asInstanceOf[HttpError]
-    error.status.code shouldBe 400
-    error.body shouldBe responseBody
+  def sha256(sharedSecret: String, preHashString: String): String = {
+    val secret = new SecretKeySpec(sharedSecret.getBytes, "HmacSHA256")
+    val mac    = Mac.getInstance("HmacSHA256")
+    mac.init(secret)
+    val hashString = mac.doFinal(preHashString.getBytes)
+    new String(hashString.map("%02x".format(_)).mkString)
   }
+
 }

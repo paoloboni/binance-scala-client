@@ -19,16 +19,27 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.paoloboni
+package io.github.paoloboni.http
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.Monad
+import cats.effect.Concurrent
+import cats.implicits._
 import log.effect.LogWriter
-import log.effect.fs2.SyncLogWriter._
+import upperbound.Limiter
 
-import scala.concurrent.ExecutionContext.global
+package object ratelimit {
+  implicit class LimiterOps[F[_]: Concurrent: LogWriter](limiter: Limiter[F]) {
+    private implicit val l: Limiter[F] = limiter
 
-trait Env {
-  implicit val ioContextShift: ContextShift[IO] = IO.contextShift(global)
-  implicit val timer: Timer[IO]                 = IO.timer(global)
-  implicit val log: LogWriter[IO]               = log4sLog[IO]("testLogger").unsafeRunSync()
+    def await[A](
+        job: F[A],
+        priority: Int = 0,
+        weight: Int = 1
+    )(implicit F: Monad[F]): F[A] = {
+      List.fill(weight - 1)(LogWriter.debug("Dummy job")).map(Limiter.await(_, priority)).sequence *> Limiter.await(
+        job,
+        priority
+      )
+    }
+  }
 }
