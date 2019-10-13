@@ -1,0 +1,15 @@
+language: scala
+
+jdk: openjdk8
+
+scala:
+  - 2.12.10
+  - 2.13.1
+
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION scalafmtCheck test:scalafmtCheck scalafmtSbtCheck headerCheck test:headerCheck test
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
