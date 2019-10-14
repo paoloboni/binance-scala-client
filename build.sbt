@@ -11,7 +11,6 @@ ThisBuild / organization := "io.github.paoloboni"
 lazy val root = (project in file("."))
   .settings(
     crossScalaVersions := supportedScalaVersions,
-    releaseCrossBuild := true,
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"          % "0.12.2",
       "io.circe"               %% "circe-generic"       % "0.12.2",
@@ -37,6 +36,8 @@ lazy val root = (project in file("."))
   .enablePlugins(AutomateHeaderPlugin)
 
 import ReleaseTransformations._
+
+releaseCrossBuild := true
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,

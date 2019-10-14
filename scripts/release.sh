@@ -4,4 +4,4 @@
 : "${SONATYPE_PASSWORD?must be defined}"
 
 export GPG_TTY=$(tty)
-sbt "release with-defaults skip-tests"
+sbt "release cross with-defaults skip-tests"
