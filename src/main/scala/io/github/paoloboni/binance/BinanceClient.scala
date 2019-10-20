@@ -44,6 +44,13 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
     implicit F: Async[F]
 ) extends Decoders {
 
+  /**
+    * Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
+    * in case the result set doesn't fit in a single page.
+    *
+    * @param query an `KLines` object containing the query parameters
+    * @return the stream of Kline objects
+    */
   def getKLines(query: KLines): F[Stream[F, KLine]] = query match {
     case KLines(symbol, binance.Interval(interval), startTime, endTime, limit) =>
       val url = Url(
@@ -65,7 +72,7 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
       result.flatMap {
         case loneElement :: Nil => F.pure(Stream(loneElement))
         case init :+ last if (query.endTime.toEpochMilli - last.openTime) > interval.duration.toMillis =>
-          F.pure(Stream.fromIterator(init.toIterator))
+          F.pure(Stream.fromIterator(init.iterator))
             .map(
               _ ++
                 Stream
@@ -75,7 +82,7 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
                   .flatten
             )
         case list =>
-          F.pure(Stream.fromIterator(list.toIterator))
+          F.pure(Stream.fromIterator(list.iterator))
       }
     case other: KLines =>
       MonadError[F, Throwable].raiseError(
@@ -83,6 +90,11 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
       )
   }
 
+  /**
+    * Returns a snapshot of the prices at the time the query is executed.
+    *
+    * @return A sequence of prices (one for each symbol)
+    */
   def getPrices(): F[Seq[Price]] = {
     val url = Url(
       scheme = config.scheme,
@@ -98,6 +110,11 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
     } yield prices
   }
 
+  /**
+    * Returns the current balance, at the time the query is executed.
+    *
+    * @return The balance (free and locked) for each asset
+    */
   def getBalance(): F[Map[Asset, Balance]] = {
     def url(currentMillis: Long) = {
       val query       = s"recvWindow=5000&timestamp=${currentMillis.toString}"
@@ -131,15 +148,11 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
     QueryStringConverter.enumEntryConverter(OrderCreateResponseType)
 
   /**
-    * Type	            | Additional mandatory parameters
-    * ------------------+----------------------------------------
-    * LIMIT	            | timeInForce, quantity, price
-    * MARKET	          | quantity
-    * STOP_LOSS	        | quantity, stopPrice
-    * STOP_LOSS_LIMIT	  | timeInForce, quantity, price, stopPrice
-    * TAKE_PROFIT	      | quantity, stopPrice
-    * TAKE_PROFIT_LIMIT	| timeInForce, quantity, price, stopPrice
-    * LIMIT_MAKER	      | quantity, price
+    * Creates an order.
+    *
+    * @param orderCreate the parameters required to define the order
+    *
+    * @return The id of the order created
     */
   def createOrder(orderCreate: OrderCreate): F[OrderId] = {
 
