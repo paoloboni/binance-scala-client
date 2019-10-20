@@ -9,7 +9,9 @@ ThisBuild / organization := "io.github.paoloboni"
 
 lazy val root = (project in file("."))
   .settings(
+    scalaVersion := scala213,
     releaseCrossBuild := true,
+    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"          % "0.12.2",
@@ -45,7 +47,7 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  releaseStepCommand("publishSigned"),
+  publishArtifacts,
   setNextVersion,
   commitNextVersion,
   releaseStepCommand("sonatypeReleaseAll"),
