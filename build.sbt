@@ -9,7 +9,6 @@ ThisBuild / organization := "io.github.paoloboni"
 
 lazy val root = (project in file("."))
   .settings(
-    scalaVersion := scala213,
     releaseCrossBuild := true,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
