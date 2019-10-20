@@ -121,10 +121,13 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
     } yield balances.balances.map(b => tag[AssetTag](b.asset) -> Balance(b.free, b.locked)).toMap
   }
 
-  implicit val orderSideQueryStringConverter   = QueryStringConverter.enumEntryConverter(OrderSide)
-  implicit val orderTypeQueryStringConverter   = QueryStringConverter.enumEntryConverter(OrderType)
-  implicit val timeInForceQueryStringConverter = QueryStringConverter.enumEntryConverter(TimeInForce)
-  implicit val orderCreateResponseTypeQueryStringConverter =
+  private implicit val orderSideQueryStringConverter: QueryStringConverter[OrderSide] =
+    QueryStringConverter.enumEntryConverter(OrderSide)
+  private implicit val orderTypeQueryStringConverter: QueryStringConverter[OrderType] =
+    QueryStringConverter.enumEntryConverter(OrderType)
+  private implicit val timeInForceQueryStringConverter: QueryStringConverter[TimeInForce] =
+    QueryStringConverter.enumEntryConverter(TimeInForce)
+  private implicit val orderCreateResponseTypeQueryStringConverter: QueryStringConverter[OrderCreateResponseType] =
     QueryStringConverter.enumEntryConverter(OrderCreateResponseType)
 
   /**

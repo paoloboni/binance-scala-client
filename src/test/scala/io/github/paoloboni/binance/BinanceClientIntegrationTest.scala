@@ -166,7 +166,6 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
         .use(_.getPrices())
         .unsafeRunSync()
 
-      val ignoreTime = Instant.now()
       result should contain theSameElementsInOrderAs List(
         Price("ETHBTC", BigDecimal(0.03444300)),
         Price("LTCBTC", BigDecimal(0.01493000))
