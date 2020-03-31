@@ -27,15 +27,19 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 This is a sample app to monitor the exchange prices (fetch every 5 seconds).
 
 ```scala
+import io.github.paoloboni.binance.{BinanceClient, BinanceConfig}
 import cats.effect.{ExitCode, IO, IOApp}
 import fs2._
-import log.effect.fs2.SyncLogWriter.log4sLog
-import io.github.paoloboni.binance.{BinanceClient, BinanceConfig}
+import log.effect.fs2.SyncLogWriter._
+import org.http4s.client.blaze.BlazeClientBuilder
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 import scala.concurrent.duration._
 
 object PriceMonitor extends IOApp {
-  
+
   val config = BinanceConfig(
     scheme = "https",
     host = "api.binance.com",
@@ -45,26 +49,31 @@ object PriceMonitor extends IOApp {
     apiSecret = "***"
   )
 
-  override def run(args: List[String]): IO[ExitCode] =
-    log4sLog[IO]("logger")
-      .flatMap { implicit log =>
+  override def run(args: List[String]): IO[ExitCode] = {
+    implicit val log = consoleLog[IO]
+    BlazeClientBuilder[IO](global)
+      .withResponseHeaderTimeout(60.seconds)
+      .withMaxTotalConnections(20)
+      .resource
+      .use { implicit httpClient =>
         BinanceClient[IO](config)
           .use { client =>
             Stream
-              .eval(client.getPrices())
+              .awakeEvery[IO](5.seconds)
               .repeat
-              .zipLeft(Stream.fixedDelay(5.second))
-              .map(prices => log.info("Current prices: " + prices))
+              .evalMap(_ => client.getPrices())
+              .evalMap(prices => log.info("Current prices: " + prices))
               .compile
               .drain
           }
-          .redeem(
-            { t =>
-              log.error("Something went wrong", t)
-              ExitCode(1)
-            },
-            _ => ExitCode.Success
-          )
       }
+      .redeem(
+        { t =>
+          log.error("Something went wrong", t)
+          ExitCode(1)
+        },
+        _ => ExitCode.Success
+      )
+  }
 }
 ```

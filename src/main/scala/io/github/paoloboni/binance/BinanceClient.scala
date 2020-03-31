@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Paolo Boni
+ * Copyright (c) 2020 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -35,6 +35,7 @@ import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
+import org.http4s.client.Client
 import shapeless.tag
 import upperbound.{Limiter, Rate}
 
@@ -183,7 +184,7 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
 
 object BinanceClient {
 
-  def apply[F[_]: ContextShift: Timer: ConcurrentEffect: LogWriter](
+  def apply[F[_]: ContextShift: Timer: ConcurrentEffect: Client: LogWriter](
       config: BinanceConfig
   )(implicit F: Async[F]): Resource[F, BinanceClient[F]] = {
 

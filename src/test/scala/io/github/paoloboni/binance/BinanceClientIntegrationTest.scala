@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Paolo Boni
+ * Copyright (c) 2020 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -27,10 +27,10 @@ import cats.effect.{Clock, ContextShift, IO, Timer}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
-import io.github.paoloboni.Env
 import io.github.paoloboni.binance.Decoders._
 import io.github.paoloboni.binance.Interval._
 import io.github.paoloboni.integration._
+import io.github.paoloboni.{Env, TestClient}
 import log.effect.LogWriter
 import log.effect.fs2.SyncLogWriter.log4sLog
 import org.scalatest.{EitherValues, FreeSpec, Matchers, OptionValues}
@@ -39,7 +39,7 @@ import shapeless.tag
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
 
-class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherValues with OptionValues {
+class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherValues with OptionValues with TestClient {
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>
@@ -98,20 +98,23 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config)
-        .use { gw =>
-          for {
-            stream <- gw.getKLines(
-              KLines(
-                symbol = symbol,
-                interval = interval.duration,
-                startTime = Instant.ofEpochMilli(from),
-                endTime = Instant.ofEpochMilli(to),
-                limit = threshold
-              )
-            )
-            list <- stream.compile.toList
-          } yield list
+      val result = clientResource
+        .use { implicit c =>
+          BinanceClient(config)
+            .use { gw =>
+              for {
+                stream <- gw.getKLines(
+                  KLines(
+                    symbol = symbol,
+                    interval = interval.duration,
+                    startTime = Instant.ofEpochMilli(from),
+                    endTime = Instant.ofEpochMilli(to),
+                    limit = threshold
+                  )
+                )
+                list <- stream.compile.toList
+              } yield list
+            }
         }
         .unsafeRunSync()
 
@@ -162,8 +165,11 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config)
-        .use(_.getPrices())
+      val result = clientResource
+        .use { implicit c =>
+          BinanceClient(config)
+            .use(_.getPrices())
+        }
         .unsafeRunSync()
 
       result should contain theSameElementsInOrderAs List(
@@ -223,8 +229,11 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = BinanceClient(config)
-      .use(_.getBalance())
+    val result = clientResource
+      .use { implicit c =>
+        BinanceClient(config)
+          .use(_.getBalance())
+      }
       .unsafeRunSync()
 
     result shouldBe Map(
@@ -255,35 +264,38 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
           aResponse()
             .withStatus(201)
             .withBody("""
-                        |{
-                        |  "symbol": "BTCUSDT",
-                        |  "orderId": 28,
-                        |  "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
-                        |  "transactTime": 1507725176595
-                        |}
+                          |{
+                          |  "symbol": "BTCUSDT",
+                          |  "orderId": 28,
+                          |  "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+                          |  "transactTime": 1507725176595
+                          |}
                       """.stripMargin)
         )
     )
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = BinanceClient(config)
-      .use(
-        _.createOrder(
-          OrderCreate(
-            symbol = "BTCUSDT",
-            side = OrderSide.BUY,
-            `type` = OrderType.MARKET,
-            timeInForce = None,
-            quantity = 10.5,
-            price = None,
-            newClientOrderId = None,
-            stopPrice = None,
-            icebergQty = None,
-            newOrderRespType = None
+    val result = clientResource
+      .use { implicit c =>
+        BinanceClient(config)
+          .use(
+            _.createOrder(
+              OrderCreate(
+                symbol = "BTCUSDT",
+                side = OrderSide.BUY,
+                `type` = OrderType.MARKET,
+                timeInForce = None,
+                quantity = 10.5,
+                price = None,
+                newClientOrderId = None,
+                stopPrice = None,
+                icebergQty = None,
+                newOrderRespType = None
+              )
+            )
           )
-        )
-      )
+      }
       .unsafeRunSync()
 
     result shouldBe tag[OrderIdTag]("28")

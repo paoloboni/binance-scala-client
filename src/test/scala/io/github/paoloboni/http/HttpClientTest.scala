@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Paolo Boni
+ * Copyright (c) 2020 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,20 +24,26 @@ package io.github.paoloboni.http
 import cats.effect.IO
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.Json
-import io.github.paoloboni.Env
+import io.github.paoloboni.{Env, TestClient}
 import io.github.paoloboni.integration._
 import io.lemonlabs.uri.Url
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
-class HttpClientTest extends FreeSpec with Matchers with EitherValues with Env {
+class HttpClientTest extends FreeSpec with Matchers with EitherValues with Env with TestClient {
   "a bad request response should be translated into a HttpError" in withWiremockServer { server =>
     val responseBody = """{ "error": "bad request" }"""
     server.stubFor(get("/test").willReturn(aResponse().withStatus(400).withBody(responseBody)))
-    val httpClient = HttpClient[IO].unsafeRunSync()
 
-    val url = Url.parse(s"http://localhost:${server.port().toString}/test")
-
-    val result = httpClient.get[Json](url).attempt.unsafeRunSync()
+    val result = clientResource
+      .use { implicit c =>
+        for {
+          httpClient <- HttpClient[IO]
+          url = Url.parse(s"http://localhost:${server.port().toString}/test")
+          response <- httpClient.get[Json](url)
+        } yield response
+      }
+      .attempt
+      .unsafeRunSync()
 
     result.left.value shouldBe a[HttpError]
 

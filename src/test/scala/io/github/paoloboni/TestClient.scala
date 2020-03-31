@@ -19,27 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.http
+package io.github.paoloboni
 
-import cats.Monad
-import cats.effect.Concurrent
-import cats.implicits._
-import log.effect.LogWriter
-import upperbound.Limiter
+import cats.effect.{ConcurrentEffect, IO, Resource}
+import org.http4s.client.Client
+import org.http4s.client.blaze.BlazeClientBuilder
 
-package object ratelimit {
-  implicit class LimiterOps[F[_]: Concurrent: LogWriter](limiter: Limiter[F]) {
-    private implicit val l: Limiter[F] = limiter
+import scala.concurrent.ExecutionContext.global
+import scala.concurrent.duration._
 
-    def await[A](
-        job: F[A],
-        priority: Int = 0,
-        weight: Int = 1
-    )(implicit F: Monad[F]): F[A] = {
-      List.fill(weight - 1)(LogWriter.debug("Dummy job")).map(Limiter.await(_, priority)).sequence *> Limiter.await(
-        job,
-        priority
-      )
-    }
-  }
+trait TestClient {
+  def clientResource(implicit F: ConcurrentEffect[IO]): Resource[IO, Client[IO]] =
+    BlazeClientBuilder[IO](global)
+      .withResponseHeaderTimeout(60.seconds)
+      .withMaxTotalConnections(20)
+      .resource
 }
