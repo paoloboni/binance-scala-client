@@ -51,21 +51,15 @@ object PriceMonitor extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     implicit val log = consoleLog[IO]
-    BlazeClientBuilder[IO](global)
-      .withResponseHeaderTimeout(60.seconds)
-      .withMaxTotalConnections(20)
-      .resource
-      .use { implicit httpClient =>
-        BinanceClient[IO](config)
-          .use { client =>
-            Stream
-              .awakeEvery[IO](5.seconds)
-              .repeat
-              .evalMap(_ => client.getPrices())
-              .evalMap(prices => log.info("Current prices: " + prices))
-              .compile
-              .drain
-          }
+    BinanceClient[IO](config)
+      .use { client =>
+        Stream
+          .awakeEvery[IO](5.seconds)
+          .repeat
+          .evalMap(_ => client.getPrices())
+          .evalMap(prices => log.info("Current prices: " + prices))
+          .compile
+          .drain
       }
       .redeem(
         { t =>

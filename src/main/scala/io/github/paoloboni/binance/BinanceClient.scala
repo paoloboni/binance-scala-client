@@ -35,10 +35,11 @@ import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
-import org.http4s.client.Client
+import org.http4s.client.blaze.BlazeClientBuilder
 import shapeless.tag
 import upperbound.{Limiter, Rate}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{MILLISECONDS, _}
 
 sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config: BinanceConfig, client: HttpClient[F])(
@@ -184,49 +185,53 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
 
 object BinanceClient {
 
-  def apply[F[_]: ContextShift: Timer: ConcurrentEffect: Client: LogWriter](
+  def apply[F[_]: ContextShift: Timer: ConcurrentEffect: LogWriter](
       config: BinanceConfig
-  )(implicit F: Async[F]): Resource[F, BinanceClient[F]] = {
+  )(implicit F: Async[F]): Resource[F, BinanceClient[F]] =
+    BlazeClientBuilder[F](global)
+      .withResponseHeaderTimeout(config.responseHeaderTimeout)
+      .withMaxTotalConnections(config.maxTotalConnections)
+      .resource
+      .flatMap { implicit c =>
+        val requestRateLimits = for {
+          client <- HttpClient[F]
+          rateLimits <- client.get[List[RateLimit]](
+            Url(
+              scheme = config.scheme,
+              host = config.host,
+              port = config.port,
+              path = config.infoUrl
+            )
+          )(
+            Decoder.instance(_.downField("rateLimits").as[List[RateLimit]])
+          )
+          requestLimits = rateLimits
+            .filter(_.rateLimitType == RateLimitType.REQUEST_WEIGHT)
+            .map(
+              limit =>
+                Rate(limit.limit, limit.interval match {
+                  case SECOND => limit.intervalNum.seconds
+                  case MINUTE => limit.intervalNum.minutes
+                  case DAY    => limit.intervalNum.days
+                })
+            )
+        } yield requestLimits
 
-    val requestRateLimits = for {
-      client <- HttpClient[F]
-      rateLimits <- client.get[List[RateLimit]](
-        Url(
-          scheme = config.scheme,
-          host = config.host,
-          port = config.port,
-          path = config.infoUrl
-        )
-      )(
-        Decoder.instance(_.downField("rateLimits").as[List[RateLimit]])
-      )
-      requestLimits = rateLimits
-        .filter(_.rateLimitType == RateLimitType.REQUEST_WEIGHT)
-        .map(
-          limit =>
-            Rate(limit.limit, limit.interval match {
-              case SECOND => limit.intervalNum.seconds
-              case MINUTE => limit.intervalNum.minutes
-              case DAY    => limit.intervalNum.days
-            })
-        )
-    } yield requestLimits
+        val requestLimiters = requestRateLimits
+          .map(_.map(Limiter.start(_)))
+          .map(_.foldLeft(Resource.pure[F, List[Limiter[F]]](List.empty)) { (list, resource) =>
+            for {
+              l       <- list
+              limiter <- resource
+            } yield limiter :: l
+          })
 
-    val requestLimiters = requestRateLimits
-      .map(_.map(Limiter.start(_)))
-      .map(_.foldLeft(Resource.pure[F, List[Limiter[F]]](List.empty)) { (list, resource) =>
-        for {
-          l       <- list
-          limiter <- resource
-        } yield limiter :: l
-      })
-
-    Resource
-      .suspend(requestLimiters)
-      .evalMap { rl =>
-        HttpClient
-          .rateLimited[F](rl: _*)
-          .map(new BinanceClient(config, _))
+        Resource
+          .suspend(requestLimiters)
+          .evalMap { rl =>
+            HttpClient
+              .rateLimited[F](rl: _*)
+              .map(new BinanceClient(config, _))
+          }
       }
-  }
 }

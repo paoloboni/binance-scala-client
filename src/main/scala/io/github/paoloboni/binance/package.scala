@@ -31,7 +31,16 @@ import scala.collection.immutable
 import scala.concurrent.duration.{Duration, _}
 
 package object binance {
-  case class BinanceConfig(scheme: String, host: String, port: Int, infoUrl: String, apiKey: String, apiSecret: String)
+  case class BinanceConfig(
+      scheme: String,
+      host: String,
+      port: Int,
+      infoUrl: String,
+      apiKey: String,
+      apiSecret: String,
+      responseHeaderTimeout: Duration = 60.seconds,
+      maxTotalConnections: Int = 20
+  )
 
   final case class KLines(symbol: String, interval: Duration, startTime: Instant, endTime: Instant, limit: Int)
 

@@ -57,11 +57,11 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
             aResponse()
               .withStatus(200)
               .withBody("""
-                |[
-                |  [1548806400000, "104.41000000", "104.43000000", "104.27000000", "104.37000000", "185.23745000", 1548806459999, "19328.98599530", 80, "62.03712000", "6475.81062590", "0"],
-                |  [1548806460000, "104.38000000", "104.40000000", "104.33000000", "104.36000000", "211.54271000", 1548806519999, "22076.70809650", 68, "175.75948000", "18342.53313250", "0"],
-                |  [1548806520000, "104.36000000", "104.39000000", "104.36000000", "104.38000000", "59.74736000", 1548806579999, "6235.56895740", 28, "37.98161000", "3963.95268370", "0"]
-                |]
+                          |[
+                          |  [1548806400000, "104.41000000", "104.43000000", "104.27000000", "104.37000000", "185.23745000", 1548806459999, "19328.98599530", 80, "62.03712000", "6475.81062590", "0"],
+                          |  [1548806460000, "104.38000000", "104.40000000", "104.33000000", "104.36000000", "211.54271000", 1548806519999, "22076.70809650", 68, "175.75948000", "18342.53313250", "0"],
+                          |  [1548806520000, "104.36000000", "104.39000000", "104.36000000", "104.38000000", "59.74736000", 1548806579999, "6235.56895740", 28, "37.98161000", "3963.95268370", "0"]
+                          |]
               """.stripMargin)
           )
       )
@@ -72,11 +72,11 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
             aResponse()
               .withStatus(200)
               .withBody("""
-                |[
-                |  [1548806520000, "104.36000000", "104.39000000", "104.36000000", "104.38000000", "59.74736000", 1548806579999, "6235.56895740", 28, "37.98161000", "3963.95268370", "0"],
-                |  [1548836340000, "105.13000000", "105.16000000", "105.07000000", "105.10000000", "201.06821000", 1548836399999, "21139.17349190", 55, "35.40525000", "3722.13452500", "0"],
-                |  [1548836400000, "105.13000000", "105.14000000", "105.05000000", "105.09000000", "70.72517000", 1548836459999, "7432.93828700", 45, "36.68194000", "3855.32695710", "0"]
-                |]
+                          |[
+                          |  [1548806520000, "104.36000000", "104.39000000", "104.36000000", "104.38000000", "59.74736000", 1548806579999, "6235.56895740", 28, "37.98161000", "3963.95268370", "0"],
+                          |  [1548836340000, "105.13000000", "105.16000000", "105.07000000", "105.10000000", "201.06821000", 1548836399999, "21139.17349190", 55, "35.40525000", "3722.13452500", "0"],
+                          |  [1548836400000, "105.13000000", "105.14000000", "105.05000000", "105.09000000", "70.72517000", 1548836459999, "7432.93828700", 45, "36.68194000", "3855.32695710", "0"]
+                          |]
               """.stripMargin)
           )
       )
@@ -88,33 +88,30 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
             aResponse()
               .withStatus(200)
               .withBody("""
-                |[
-                |  [1548836400000, "105.13000000", "105.14000000", "105.05000000", "105.09000000", "70.72517000", 1548836459999, "7432.93828700", 45, "36.68194000", "3855.32695710", "0"],
-                |  [1548866279000, "108.39000000", "108.39000000", "108.15000000", "108.22000000", "327.08359000", 1548866339999, "35415.40478090", 129, "163.42355000", "17699.38253540", "0"]
-                |]
+                          |[
+                          |  [1548836400000, "105.13000000", "105.14000000", "105.05000000", "105.09000000", "70.72517000", 1548836459999, "7432.93828700", 45, "36.68194000", "3855.32695710", "0"],
+                          |  [1548866279000, "108.39000000", "108.39000000", "108.15000000", "108.22000000", "327.08359000", 1548866339999, "35415.40478090", 129, "163.42355000", "17699.38253540", "0"]
+                          |]
               """.stripMargin)
           )
       )
 
       val config = prepareConfiguration(server)
 
-      val result = clientResource
-        .use { implicit c =>
-          BinanceClient(config)
-            .use { gw =>
-              for {
-                stream <- gw.getKLines(
-                  KLines(
-                    symbol = symbol,
-                    interval = interval.duration,
-                    startTime = Instant.ofEpochMilli(from),
-                    endTime = Instant.ofEpochMilli(to),
-                    limit = threshold
-                  )
-                )
-                list <- stream.compile.toList
-              } yield list
-            }
+      val result = BinanceClient(config)
+        .use { gw =>
+          for {
+            stream <- gw.getKLines(
+              KLines(
+                symbol = symbol,
+                interval = interval.duration,
+                startTime = Instant.ofEpochMilli(from),
+                endTime = Instant.ofEpochMilli(to),
+                limit = threshold
+              )
+            )
+            list <- stream.compile.toList
+          } yield list
         }
         .unsafeRunSync()
 
@@ -149,27 +146,24 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
             aResponse()
               .withStatus(200)
               .withBody("""
-                        |[
-                        |    {
-                        |        "symbol": "ETHBTC",
-                        |        "price": "0.03444300"
-                        |    },
-                        |    {
-                        |        "symbol": "LTCBTC",
-                        |        "price": "0.01493000"
-                        |    }
-                        |]
+                          |[
+                          |    {
+                          |        "symbol": "ETHBTC",
+                          |        "price": "0.03444300"
+                          |    },
+                          |    {
+                          |        "symbol": "LTCBTC",
+                          |        "price": "0.01493000"
+                          |    }
+                          |]
                       """.stripMargin)
           )
       )
 
       val config = prepareConfiguration(server)
 
-      val result = clientResource
-        .use { implicit c =>
-          BinanceClient(config)
-            .use(_.getPrices())
-        }
+      val result = BinanceClient(config)
+        .use(_.getPrices())
         .unsafeRunSync()
 
       result should contain theSameElementsInOrderAs List(
@@ -229,11 +223,8 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = clientResource
-      .use { implicit c =>
-        BinanceClient(config)
-          .use(_.getBalance())
-      }
+    val result = BinanceClient(config)
+      .use(_.getBalance())
       .unsafeRunSync()
 
     result shouldBe Map(
@@ -264,38 +255,35 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
           aResponse()
             .withStatus(201)
             .withBody("""
-                          |{
-                          |  "symbol": "BTCUSDT",
-                          |  "orderId": 28,
-                          |  "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
-                          |  "transactTime": 1507725176595
-                          |}
+                        |{
+                        |  "symbol": "BTCUSDT",
+                        |  "orderId": 28,
+                        |  "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+                        |  "transactTime": 1507725176595
+                        |}
                       """.stripMargin)
         )
     )
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = clientResource
-      .use { implicit c =>
-        BinanceClient(config)
-          .use(
-            _.createOrder(
-              OrderCreate(
-                symbol = "BTCUSDT",
-                side = OrderSide.BUY,
-                `type` = OrderType.MARKET,
-                timeInForce = None,
-                quantity = 10.5,
-                price = None,
-                newClientOrderId = None,
-                stopPrice = None,
-                icebergQty = None,
-                newOrderRespType = None
-              )
-            )
+    val result = BinanceClient(config)
+      .use(
+        _.createOrder(
+          OrderCreate(
+            symbol = "BTCUSDT",
+            side = OrderSide.BUY,
+            `type` = OrderType.MARKET,
+            timeInForce = None,
+            quantity = 10.5,
+            price = None,
+            newClientOrderId = None,
+            stopPrice = None,
+            icebergQty = None,
+            newOrderRespType = None
           )
-      }
+        )
+      )
       .unsafeRunSync()
 
     result shouldBe tag[OrderIdTag]("28")
