@@ -31,10 +31,6 @@ import io.github.paoloboni.binance.{BinanceClient, BinanceConfig}
 import cats.effect.{ExitCode, IO, IOApp}
 import fs2._
 import log.effect.fs2.SyncLogWriter._
-import org.http4s.client.blaze.BlazeClientBuilder
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
 import scala.concurrent.duration._
 
