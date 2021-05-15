@@ -27,13 +27,15 @@ import cats.effect.syntax.spawn._
 import cats.effect.{Spawn, Sync}
 import cats.implicits._
 import fs2.Stream
+import io.github.paoloboni.binance.RateLimitType
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object RateLimiter {
   def make[F[_]: Temporal: Spawn](
       perSecond: Double,
-      bufferSize: Int
+      bufferSize: Int,
+      `type`: RateLimitType
   )(implicit F: ({ type L[A] = GenConcurrent[F, A] })#L[_]): F[RateLimiter[F]] = {
     require(perSecond > 0 && bufferSize > 0)
     val period: FiniteDuration = periodFrom(perSecond)
@@ -43,6 +45,7 @@ object RateLimiter {
     } yield new RateLimiter[F] {
       override def rateLimit[T](effect: => F[T]): F[T] =
         queue.offer(()) *> effect
+      override val limitType: RateLimitType = `type`
     }
   }
   private def periodFrom(perSecond: Double) =
@@ -51,13 +54,15 @@ object RateLimiter {
   def noOp[F[_]](implicit F: Sync[F]): F[RateLimiter[F]] =
     F.pure(new RateLimiter[F] {
       override def rateLimit[T](effect: => F[T]): F[T] = effect
+      override val limitType: RateLimitType            = RateLimitType.NONE
     })
 }
 
 sealed trait RateLimiter[F[_]] {
   def rateLimit[T](effect: => F[T]): F[T]
+  def limitType: RateLimitType
 }
 
-case class Rate(n: Int, t: FiniteDuration) {
+case class Rate(n: Int, t: FiniteDuration, limitType: RateLimitType) {
   def perSecond: Double = n.toDouble / t.toSeconds.toDouble
 }

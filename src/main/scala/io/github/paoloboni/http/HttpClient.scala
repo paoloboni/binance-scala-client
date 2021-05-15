@@ -34,13 +34,14 @@ import org.http4s.client.Client
 import org.http4s.{Status, _}
 import org.typelevel.ci.CIString
 
-sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLimiter[F]*)(implicit
+sealed class HttpClient[F[_]: Async: Client: LogWriter](implicit
     F: Monad[F],
     E: MonadError[F, Throwable]
 ) {
 
   def get[Response](
       url: Url,
+      limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
   )(implicit
@@ -53,12 +54,13 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
         Header.Raw(CIString(name), value)
       }.toList)
     )
-    sendRequest(request, weight)
+    sendRequest(request, limiters, weight)
   }
 
   def post[Request, Response](
       url: Url,
       requestBody: Request,
+      limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
   )(implicit
@@ -72,7 +74,7 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
         Header.Raw(CIString(name), value)
       }.toList)
     ).withEntity(requestBody)
-    sendRequest(request, weight)
+    sendRequest(request, limiters, weight)
   }
 
   def delete[Request, Response](
@@ -97,6 +99,7 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
 
   private def sendRequest[Response](
       request: Request[F],
+      limiters: List[RateLimiter[F]],
       weight: Int
   )(implicit
       decoder: Decoder[Response]
@@ -112,7 +115,7 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
             } yield HttpError(error.status, errorBody)
           }(jsonDecoder.map(decoder.decodeJson))
 
-        requestLimiters.foldLeft(httpRequest) { case (response, limiter) =>
+        limiters.foldLeft(httpRequest) { case (response, limiter) =>
           limiter.await(response, weight = weight)
         }
       }
@@ -128,11 +131,6 @@ case class HttpError(status: Status, body: String) extends Exception
 
 object HttpClient {
 
-  def apply[F[_]: Async: Monad: Client: LogWriter]: F[HttpClient[F]] =
-    RateLimiter.noOp[F].map(new HttpClient[F](_))
-
-  def rateLimited[F[_]: Async: Client: LogWriter](
-      requestLimiters: RateLimiter[F]*
-  )(implicit F: Monad[F]): F[HttpClient[F]] =
-    F.pure(new HttpClient[F](requestLimiters: _*))
+  def make[F[_]: Async: Client: LogWriter](implicit F: Monad[F]): F[HttpClient[F]] =
+    F.pure(new HttpClient[F]())
 }

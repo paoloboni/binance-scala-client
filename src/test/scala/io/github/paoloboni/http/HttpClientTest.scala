@@ -37,9 +37,9 @@ class HttpClientTest extends FreeSpec with Matchers with EitherValues with Env w
     val result = clientResource
       .use { implicit c =>
         for {
-          httpClient <- HttpClient[IO]
+          httpClient <- HttpClient.make[IO]
           url = Url.parse(s"http://localhost:${server.port().toString}/test")
-          response <- httpClient.get[Json](url)
+          response <- httpClient.get[Json](url, limiters = List.empty)
         } yield response
       }
       .attempt
