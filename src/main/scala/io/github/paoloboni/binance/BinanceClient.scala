@@ -21,28 +21,32 @@
 
 package io.github.paoloboni.binance
 
-import java.time.Instant
-
-import cats.MonadError
-import cats.effect.{Async, ConcurrentEffect, ContextShift, Resource, Timer}
+import cats.effect.kernel.Clock
+import cats.effect.{Async, Resource}
 import cats.implicits._
+import cats.{Monad, MonadError}
 import fs2.Stream
 import io.circe.Decoder
 import io.circe.generic.auto._
 import io.github.paoloboni.binance
 import io.github.paoloboni.binance.RateLimitInterval._
 import io.github.paoloboni.encryption.HMAC
+import io.github.paoloboni.http.ratelimit.{Rate, RateLimiter}
 import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
 import org.http4s.client.blaze.BlazeClientBuilder
 import shapeless.tag
-import upperbound.{Limiter, Rate}
 
+import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.{MILLISECONDS, _}
+import scala.concurrent.duration._
 
-sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config: BinanceConfig, client: HttpClient[F])(
+sealed class BinanceClient[F[_]: Monad: LogWriter] private (
+    config: BinanceConfig,
+    clock: Clock[F],
+    client: HttpClient[F]
+)(
     implicit F: Async[F]
 ) extends Decoders {
 
@@ -74,7 +78,7 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
       result.flatMap {
         case loneElement :: Nil => F.pure(Stream(loneElement))
         case init :+ last if (query.endTime.toEpochMilli - last.openTime) > interval.duration.toMillis =>
-          F.pure(Stream.fromIterator(init.iterator))
+          F.pure(Stream.fromIterator(init.iterator, chunkSize = 10))
             .map(
               _ ++
                 Stream
@@ -84,7 +88,7 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
                   .flatten
             )
         case list =>
-          F.pure(Stream.fromIterator(list.iterator))
+          F.pure(Stream.fromIterator(list.iterator, 10))
       }
     case other: KLines =>
       MonadError[F, Throwable].raiseError(
@@ -131,9 +135,9 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
       )
     }
     for {
-      currentMillis <- Timer[F].clock.realTime(MILLISECONDS)
+      currentTime <- clock.realTime
       balances <- client.get[BinanceBalances](
-        url = url(currentMillis),
+        url = url(currentTime.toMillis),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
       )
@@ -170,8 +174,8 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
       (url, requestBody + s"&signature=$signature")
     }
     for {
-      currentMillis <- Timer[F].clock.realTime(MILLISECONDS)
-      (url, requestBody) = urlAndBody(currentMillis)
+      currentTime <- clock.realTime
+      (url, requestBody) = urlAndBody(currentTime.toMillis)
       orderId <- client
         .post[String, CreateOrderResponse](
           url = url,
@@ -185,14 +189,15 @@ sealed class BinanceClient[F[_]: ContextShift: Timer: LogWriter] private (config
 
 object BinanceClient {
 
-  def apply[F[_]: ContextShift: Timer: ConcurrentEffect: LogWriter](
-      config: BinanceConfig
+  def apply[F[_]: LogWriter](
+      config: BinanceConfig,
+      clock: Clock[F]
   )(implicit F: Async[F]): Resource[F, BinanceClient[F]] =
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
       .withMaxTotalConnections(config.maxTotalConnections)
       .resource
-      .flatMap { implicit c =>
+      .evalMap { implicit c =>
         val requestRateLimits = for {
           client <- HttpClient[F]
           rateLimits <- client.get[List[RateLimit]](
@@ -217,21 +222,12 @@ object BinanceClient {
             )
         } yield requestLimits
 
-        val requestLimiters = requestRateLimits
-          .map(_.map(Limiter.start(_)))
-          .map(_.foldLeft(Resource.pure[F, List[Limiter[F]]](List.empty)) { (list, resource) =>
-            for {
-              l       <- list
-              limiter <- resource
-            } yield limiter :: l
-          })
-
-        Resource
-          .suspend(requestLimiters)
-          .evalMap { rl =>
-            HttpClient
-              .rateLimited[F](rl: _*)
-              .map(new BinanceClient(config, _))
-          }
+        for {
+          limits   <- requestRateLimits
+          limiters <- limits.map(limit => RateLimiter.make[F](limit.perSecond, 1000)).sequence
+          client <- HttpClient
+            .rateLimited[F](limiters: _*)
+            .map(new BinanceClient(config, clock, _))
+        } yield client
       }
 }

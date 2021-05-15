@@ -21,14 +21,16 @@
 
 package io.github.paoloboni
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.IO
+import cats.effect.kernel.Temporal
+import cats.effect.unsafe.IORuntime
 import log.effect.LogWriter
 import log.effect.fs2.SyncLogWriter._
 
-import scala.concurrent.ExecutionContext.global
-
 trait Env {
-  implicit val ioContextShift: ContextShift[IO] = IO.contextShift(global)
-  implicit val timer: Timer[IO]                 = IO.timer(global)
-  implicit val log: LogWriter[IO]               = log4sLog[IO]("testLogger").unsafeRunSync()
+  implicit val runtime: IORuntime     = cats.effect.unsafe.IORuntime.global
+  implicit val temporal: Temporal[IO] = IO.asyncForIO
+  implicit val log: LogWriter[IO]     = log4sLog[IO]("testLogger").unsafeRunSync()
 }
+
+object Env extends Env

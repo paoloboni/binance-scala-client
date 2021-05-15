@@ -25,21 +25,13 @@ import cats.Monad
 import cats.effect.Concurrent
 import cats.implicits._
 import log.effect.LogWriter
-import upperbound.Limiter
 
 package object ratelimit {
-  implicit class LimiterOps[F[_]: Concurrent: LogWriter](limiter: Limiter[F]) {
-    private implicit val l: Limiter[F] = limiter
-
+  implicit class LimiterOps[F[_]: Concurrent: LogWriter](limiter: RateLimiter[F]) {
     def await[A](
         job: F[A],
-        priority: Int = 0,
         weight: Int = 1
-    )(implicit F: Monad[F]): F[A] = {
-      List.fill(weight - 1)(LogWriter.debug("Dummy job")).map(Limiter.await(_, priority)).sequence *> Limiter.await(
-        job,
-        priority
-      )
-    }
+    )(implicit F: Monad[F]): F[A] =
+      List.fill(weight - 1)(LogWriter.debug("Waiting")).map(limiter.rateLimit(_)).sequence *> limiter.rateLimit(job)
   }
 }

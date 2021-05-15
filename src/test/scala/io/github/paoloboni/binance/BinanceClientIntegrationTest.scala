@@ -21,9 +21,8 @@
 
 package io.github.paoloboni.binance
 
-import java.time.Instant
-
-import cats.effect.{Clock, ContextShift, IO, Timer}
+import cats.Applicative
+import cats.effect.{Clock, IO}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
@@ -36,7 +35,7 @@ import log.effect.fs2.SyncLogWriter.log4sLog
 import org.scalatest.{EitherValues, FreeSpec, Matchers, OptionValues}
 import shapeless.tag
 
-import scala.concurrent.ExecutionContext.global
+import java.time.Instant
 import scala.concurrent.duration._
 
 class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherValues with OptionValues with TestClient {
@@ -98,7 +97,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config)
+      val result = BinanceClient(config, Clock[IO])
         .use { gw =>
           for {
             stream <- gw.getKLines(
@@ -162,7 +161,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config)
+      val result = BinanceClient(config, Clock[IO])
         .use(_.getPrices())
         .unsafeRunSync()
 
@@ -174,16 +173,15 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
   }
 
   "it should return the balance" in withWiremockServer { server =>
-    implicit val ioContextShift: ContextShift[IO] = IO.contextShift(global)
-    implicit val log: LogWriter[IO]               = log4sLog[IO]("testLogger").unsafeRunSync()
+    import Env.runtime
+    import Env.log
+
     stubInfoEndpoint(server)
 
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
-
-    implicit val fixedTimer: Timer[IO] = stubTimer(fixedTime)
 
     server.stubFor(
       get(urlPathMatching("/api/v3/account"))
@@ -223,7 +221,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = BinanceClient(config)
+    val result = BinanceClient(config, stubTimer(fixedTime))
       .use(_.getBalance())
       .unsafeRunSync()
 
@@ -234,16 +232,14 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
   }
 
   "it should create an order" in withWiremockServer { server =>
-    implicit val ioContextShift: ContextShift[IO] = IO.contextShift(global)
-    implicit val log: LogWriter[IO]               = log4sLog[IO]("testLogger").unsafeRunSync()
+    import Env.runtime
+    import Env.log
     stubInfoEndpoint(server)
 
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
-
-    implicit val fixedTimer: Timer[IO] = stubTimer(fixedTime)
 
     server.stubFor(
       post(urlPathMatching("/api/v3/order"))
@@ -267,7 +263,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = BinanceClient(config)
+    val result = BinanceClient(config, stubTimer(fixedTime))
       .use(
         _.createOrder(
           OrderCreate(
@@ -314,13 +310,9 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
   private def prepareConfiguration(server: WireMockServer, apiKey: String = "", apiSecret: String = "") =
     BinanceConfig("http", "localhost", server.port(), "/api/v1/exchangeInfo", apiKey, apiSecret)
 
-  private def stubTimer(fixedTime: Long) = new Timer[IO] {
-
-    override def clock: Clock[IO] = new Clock[IO] {
-      override def realTime(unit: TimeUnit): IO[Long]  = IO.pure(fixedTime)
-      override def monotonic(unit: TimeUnit): IO[Long] = IO.pure(fixedTime)
-    }
-
-    override def sleep(duration: FiniteDuration): IO[Unit] = IO.unit
+  private def stubTimer(fixedTime: Long) = new Clock[IO] {
+    override def applicative: Applicative[IO]  = ???
+    override def monotonic: IO[FiniteDuration] = IO.pure(fixedTime.millis)
+    override def realTime: IO[FiniteDuration]  = IO.pure(fixedTime.millis)
   }
 }

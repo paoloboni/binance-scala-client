@@ -21,7 +21,8 @@
 
 package io.github.paoloboni
 
-import cats.effect.{ConcurrentEffect, IO, Resource}
+import cats.effect.kernel.Async
+import cats.effect.{IO, Resource}
 import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 
@@ -29,7 +30,7 @@ import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
 
 trait TestClient {
-  def clientResource(implicit F: ConcurrentEffect[IO]): Resource[IO, Client[IO]] =
+  def clientResource(implicit F: Async[IO]): Resource[IO, Client[IO]] =
     BlazeClientBuilder[IO](global)
       .withResponseHeaderTimeout(60.seconds)
       .withMaxTotalConnections(20)

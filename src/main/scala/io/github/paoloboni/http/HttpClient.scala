@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.http
 
-import cats.effect.{ConcurrentEffect, ContextShift}
+import cats.effect.kernel.Async
 import cats.syntax.all._
 import cats.{Monad, MonadError}
 import io.circe.{Decoder, Encoder}
@@ -32,9 +32,9 @@ import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.{Status, _}
-import upperbound.Limiter
+import org.typelevel.ci.CIString
 
-sealed class HttpClient[F[_]: ContextShift: ConcurrentEffect: Client: LogWriter](requestLimiters: Limiter[F]*)(
+sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLimiter[F]*)(
     implicit
     F: Monad[F],
     E: MonadError[F, Throwable]
@@ -51,7 +51,9 @@ sealed class HttpClient[F[_]: ContextShift: ConcurrentEffect: Client: LogWriter]
     val request = Request[F](
       method = Method.GET,
       uri = Uri.unsafeFromString(url.toStringPunycode),
-      headers = Headers(headers.map((Header.apply _).tupled).toList)
+      headers = Headers(headers.map {
+        case (name, value) => Header.Raw(CIString(name), value)
+      }.toList)
     )
     sendRequest(request, weight)
   }
@@ -69,7 +71,9 @@ sealed class HttpClient[F[_]: ContextShift: ConcurrentEffect: Client: LogWriter]
     val request = Request[F](
       method = Method.POST,
       uri = Uri.unsafeFromString(url.toStringPunycode),
-      headers = Headers(headers.map((Header.apply _).tupled).toList)
+      headers = Headers(headers.map {
+        case (name, value) => Header.Raw(CIString(name), value)
+      }.toList)
     ).withEntity(requestBody)
     sendRequest(request, weight)
   }
@@ -108,11 +112,11 @@ case class HttpError(status: Status, body: String) extends Exception
 
 object HttpClient {
 
-  def apply[F[_]: ContextShift: Monad: ConcurrentEffect: Client: LogWriter]: F[HttpClient[F]] =
-    Limiter.noOp[F].map(new HttpClient[F](_))
+  def apply[F[_]: Async: Monad: Client: LogWriter]: F[HttpClient[F]] =
+    RateLimiter.noOp[F].map(new HttpClient[F](_))
 
-  def rateLimited[F[_]: ContextShift: ConcurrentEffect: Client: LogWriter](
-      requestLimiters: Limiter[F]*
+  def rateLimited[F[_]: Async: Client: LogWriter](
+      requestLimiters: RateLimiter[F]*
   )(implicit F: Monad[F]): F[HttpClient[F]] =
     F.pure(new HttpClient[F](requestLimiters: _*))
 }

@@ -1,7 +1,7 @@
 name := "binance-scala-client"
 
-lazy val scala212               = "2.12.10"
-lazy val scala213               = "2.13.1"
+lazy val scala212               = "2.12.13"
+lazy val scala213               = "2.13.5"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalafmtOnCompile := false
@@ -16,15 +16,14 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "io.circe"               %% "circe-core"          % "0.12.2",
       "io.circe"               %% "circe-generic"       % "0.12.2",
-      "co.fs2"                 %% "fs2-core"            % "2.0.1",
-      "org.typelevel"          %% "cats-core"           % "2.0.0",
-      "org.typelevel"          %% "cats-effect"         % "2.0.0",
-      "org.systemfw"           %% "upperbound"          % "0.3.0",
-      "io.laserdisc"           %% "log-effect-core"     % "0.11.1",
-      "io.laserdisc"           %% "log-effect-fs2"      % "0.11.1",
+      "co.fs2"                 %% "fs2-core"            % "3.0.3",
+      "org.typelevel"          %% "cats-core"           % "2.6.0",
+      "org.typelevel"          %% "cats-effect"         % "3.1.1",
+      "io.laserdisc"           %% "log-effect-core"     % "0.16.1",
+      "io.laserdisc"           %% "log-effect-fs2"      % "0.16.1",
       "org.slf4j"              % "slf4j-api"            % "1.7.28",
-      "org.http4s"             %% "http4s-blaze-client" % "0.21.0-M5",
-      "org.http4s"             %% "http4s-circe"        % "0.21.0-M5",
+      "org.http4s"             %% "http4s-blaze-client" % "1.0.0-M21",
+      "org.http4s"             %% "http4s-circe"        % "1.0.0-M21",
       "io.lemonlabs"           %% "scala-uri"           % "2.0.0-M1",
       "com.beachape"           %% "enumeratum"          % "1.5.13",
       "com.beachape"           %% "enumeratum-circe"    % "1.5.22",

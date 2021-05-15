@@ -169,16 +169,16 @@ package object binance {
 
     implicit val klineDecoder: Decoder[KLine] = (
       Decoder[Long].prepare(_.downArray),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(1)),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(2)),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(3)),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(4)),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(5)),
-      Decoder[Long].prepare(_.downArray.rightN(6)),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(7)),
-      Decoder[Int].prepare(_.downArray.rightN(8)),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(9)),
-      Decoder[BigDecimal].prepare(_.downArray.rightN(10))
+      Decoder[BigDecimal].prepare(_.downN(1)),
+      Decoder[BigDecimal].prepare(_.downN(2)),
+      Decoder[BigDecimal].prepare(_.downN(3)),
+      Decoder[BigDecimal].prepare(_.downN(4)),
+      Decoder[BigDecimal].prepare(_.downN(5)),
+      Decoder[Long].prepare(_.downN(6)),
+      Decoder[BigDecimal].prepare(_.downN(7)),
+      Decoder[Int].prepare(_.downN(8)),
+      Decoder[BigDecimal].prepare(_.downN(9)),
+      Decoder[BigDecimal].prepare(_.downN(10))
     ).mapN(KLine.apply)
   }
 
