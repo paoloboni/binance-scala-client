@@ -145,6 +145,57 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
   private implicit val orderCreateResponseTypeQueryStringConverter: QueryStringConverter[OrderCreateResponseType] =
     QueryStringConverter.enumEntryConverter(OrderCreateResponseType)
 
+  def cancle(orderCancle: OrderCancle): F[Unit] = {
+    def urlAndBody(currentMillis: Long) = {
+      val requestBody = QueryStringConverter[OrderCancle].to(orderCancle) + s"&recvWindow=5000&timestamp=$currentMillis"
+      val signature   = HMAC.sha256(config.apiSecret, requestBody)
+      val url = Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/api/v3/order"
+      )
+      (url, requestBody + s"&signature=$signature")
+    }
+
+    for {
+      currentTime <- clock.realTime
+      (url, requestBody) = urlAndBody(currentTime.toMillis)
+      _ <- client
+        .delete[String, Unit](
+          url = url,
+          requestBody = requestBody,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+    } yield ()
+  }
+
+
+  def cancleAll(cancleAll: OrderCancleAll): F[Unit] = {
+    def urlAndBody(currentMillis: Long) = {
+      val requestBody = QueryStringConverter[OrderCancleAll].to(cancleAll) + s"&recvWindow=5000&timestamp=$currentMillis"
+      val signature   = HMAC.sha256(config.apiSecret, requestBody)
+      val url = Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/api/v3/openOrders"
+      )
+      (url, requestBody + s"&signature=$signature")
+    }
+
+    for {
+      currentTime <- clock.realTime
+      (url, requestBody) = urlAndBody(currentTime.toMillis)
+      _ <- client
+        .delete[String, Unit](
+          url = url,
+          requestBody = requestBody,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+    } yield ()
+  }
+
   /** Creates an order.
     *
     * @param orderCreate the parameters required to define the order
