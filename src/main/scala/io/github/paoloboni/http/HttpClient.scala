@@ -34,8 +34,7 @@ import org.http4s.client.Client
 import org.http4s.{Status, _}
 import org.typelevel.ci.CIString
 
-sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLimiter[F]*)(
-    implicit
+sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLimiter[F]*)(implicit
     F: Monad[F],
     E: MonadError[F, Throwable]
 ) {
@@ -44,15 +43,14 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
       url: Url,
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  )(
-      implicit
+  )(implicit
       decoder: Decoder[Response]
   ): F[Response] = {
     val request = Request[F](
       method = Method.GET,
       uri = Uri.unsafeFromString(url.toStringPunycode),
-      headers = Headers(headers.map {
-        case (name, value) => Header.Raw(CIString(name), value)
+      headers = Headers(headers.map { case (name, value) =>
+        Header.Raw(CIString(name), value)
       }.toList)
     )
     sendRequest(request, weight)
@@ -63,16 +61,15 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
       requestBody: Request,
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  )(
-      implicit
+  )(implicit
       encoder: Encoder[Request],
       decoder: Decoder[Response]
   ): F[Response] = {
     val request = Request[F](
       method = Method.POST,
       uri = Uri.unsafeFromString(url.toStringPunycode),
-      headers = Headers(headers.map {
-        case (name, value) => Header.Raw(CIString(name), value)
+      headers = Headers(headers.map { case (name, value) =>
+        Header.Raw(CIString(name), value)
       }.toList)
     ).withEntity(requestBody)
     sendRequest(request, weight)
@@ -81,8 +78,8 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
   private def sendRequest[Response](
       request: Request[F],
       weight: Int
-  )(
-      implicit decoder: Decoder[Response]
+  )(implicit
+      decoder: Decoder[Response]
   ): F[Response] = {
     for {
       _ <- LogWriter.debug(s"${request.method} ${request.uri}")
@@ -95,9 +92,8 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](requestLimiters: RateLim
             } yield HttpError(error.status, errorBody)
           }(jsonDecoder.map(decoder.decodeJson))
 
-        requestLimiters.foldLeft(httpRequest) {
-          case (response, limiter) =>
-            limiter.await(response, weight = weight)
+        requestLimiters.foldLeft(httpRequest) { case (response, limiter) =>
+          limiter.await(response, weight = weight)
         }
       }
       handled <- decoded.fold(
