@@ -49,8 +49,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
 
   private val clock = implicitly[WithClock[F]].clock
 
-  /**
-    * Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
+  /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
     * in case the result set doesn't fit in a single page.
     *
     * @param query an `KLines` object containing the query parameters
@@ -95,8 +94,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
       )
   }
 
-  /**
-    * Returns a snapshot of the prices at the time the query is executed.
+  /** Returns a snapshot of the prices at the time the query is executed.
     *
     * @return A sequence of prices (one for each symbol)
     */
@@ -115,8 +113,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     } yield prices
   }
 
-  /**
-    * Returns the current balance, at the time the query is executed.
+  /** Returns the current balance, at the time the query is executed.
     *
     * @return The balance (free and locked) for each asset
     */
@@ -152,8 +149,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
   private implicit val orderCreateResponseTypeQueryStringConverter: QueryStringConverter[OrderCreateResponseType] =
     QueryStringConverter.enumEntryConverter(OrderCreateResponseType)
 
-  /**
-    * Creates an order.
+  /** Creates an order.
     *
     * @param orderCreate the parameters required to define the order
     *
@@ -210,13 +206,15 @@ object BinanceClient {
           )
           requestLimits = rateLimits
             .filter(_.rateLimitType == RateLimitType.REQUEST_WEIGHT)
-            .map(
-              limit =>
-                Rate(limit.limit, limit.interval match {
+            .map(limit =>
+              Rate(
+                limit.limit,
+                limit.interval match {
                   case SECOND => limit.intervalNum.seconds
                   case MINUTE => limit.intervalNum.minutes
                   case DAY    => limit.intervalNum.days
-                })
+                }
+              )
             )
         } yield requestLimits
 
