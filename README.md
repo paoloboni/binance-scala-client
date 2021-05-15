@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.com/paoloboni/binance-scala-client.svg?branch=master)](https://travis-ci.com/paoloboni/binance-scala-client)
 [![Latest version](https://img.shields.io/maven-central/v/io.github.paoloboni/binance-scala-client_2.13.svg)](https://search.maven.org/artifact/io.github.paoloboni/binance-scala-client_2.13)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A functional Scala client for Binance.
 
@@ -10,7 +11,7 @@ This client is rate limited, based on [Binance API specification](https://github
 ---
 **NOTE**
 
-cats-effect 2.x is supported in v0.0.8 or earlier. Starting from v1.0.0 this project is using version 3.x of cats-effect. 
+cats-effect 2.x is supported in v0.0.8 or older. Starting from v1.0.0 this project is using version 3.x of cats-effect. 
 
 ---
 
