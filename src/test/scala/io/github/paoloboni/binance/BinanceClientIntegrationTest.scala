@@ -97,8 +97,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
       val result = BinanceClient(config)
         .use { gw =>
-          for {
-            stream <- gw.getKLines(
+          gw.getKLines(
               KLines(
                 symbol = symbol,
                 interval = interval.duration,
@@ -107,8 +106,8 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
                 limit = threshold
               )
             )
-            list <- stream.compile.toList
-          } yield list
+            .compile
+            .toList
         }
         .unsafeRunSync()
 
