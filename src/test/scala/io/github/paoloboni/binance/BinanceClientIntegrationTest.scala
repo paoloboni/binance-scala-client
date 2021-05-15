@@ -38,7 +38,12 @@ import scala.concurrent.duration._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class BinanceClientIntegrationTest extends AnyFreeSpec with Matchers with EitherValues with OptionValues with TestClient {
+class BinanceClientIntegrationTest
+    extends AnyFreeSpec
+    with Matchers
+    with EitherValues
+    with OptionValues
+    with TestClient {
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>

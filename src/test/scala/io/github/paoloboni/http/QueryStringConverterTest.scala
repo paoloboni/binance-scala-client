@@ -21,7 +21,6 @@
 
 package io.github.paoloboni.http
 
-
 import scala.util.Success
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
