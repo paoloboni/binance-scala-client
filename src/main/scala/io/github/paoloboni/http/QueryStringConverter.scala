@@ -77,8 +77,7 @@ object QueryStringConverter {
     def to(obj: T): String      = obj.entryName
   }
 
-  implicit def deriveHCons[K <: Symbol, H, T <: HList](
-      implicit
+  implicit def deriveHCons[K <: Symbol, H, T <: HList](implicit
       witness: Witness.Aux[K],
       scv: Lazy[QueryStringConverter[H]],
       sct: QueryStringConverter[T]
@@ -99,8 +98,7 @@ object QueryStringConverter {
     }
   }
 
-  implicit def deriveClass[A, Repr](
-      implicit
+  implicit def deriveClass[A, Repr](implicit
       gen: LabelledGeneric.Aux[A, Repr],
       conv: Lazy[QueryStringConverter[Repr]]
   ): QueryStringConverter[A] = new QueryStringConverter[A] {
