@@ -12,3 +12,8 @@ project/plugins/project/
 .lib/
 .idea
 *.log
+/.bsp/
+/.metals/
+/project/.bloop/
+/project/metals.sbt
+/project/project/
