@@ -105,12 +105,8 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
       port = config.port,
       path = "/api/v3/ticker/price"
     )
-    for {
-      prices <- client.get[List[Price]](
-        url = url,
-        weight = 2
-      )
-    } yield prices
+
+    client.get[Seq[Price]](url = url, weight = 2)
   }
 
   /** Returns the current balance, at the time the query is executed.
