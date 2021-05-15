@@ -151,6 +151,7 @@ package object binance {
     case object REQUEST_WEIGHT extends RateLimitType
     case object ORDERS         extends RateLimitType
     case object RAW_REQUESTS   extends RateLimitType
+    case object NONE           extends RateLimitType
   }
 
   sealed trait RateLimitInterval extends EnumEntry

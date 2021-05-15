@@ -21,9 +21,9 @@
 
 package io.github.paoloboni.binance
 
+import cats.Monad
 import cats.effect.{Async, Resource}
 import cats.implicits._
-import cats.{Monad, MonadError}
 import fs2.Stream
 import io.circe.Decoder
 import io.circe.generic.auto._
@@ -43,7 +43,8 @@ import scala.concurrent.duration._
 
 sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     config: BinanceConfig,
-    client: HttpClient[F]
+    client: HttpClient[F],
+    rateLimiters: List[RateLimiter[F]]
 )(implicit F: Async[F])
     extends Decoders {
 
@@ -72,7 +73,9 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
       )
 
       for {
-        rawKlines <- Stream.eval(client.get[List[KLine]](url))
+        rawKlines <- Stream.eval(
+          client.get[List[KLine]](url, limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS))
+        )
         klines <- rawKlines match {
           //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
           //to a strange behaviour
@@ -108,6 +111,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     for {
       prices <- client.get[List[Price]](
         url = url,
+        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
         weight = 2
       )
     } yield prices
@@ -134,6 +138,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
       currentTime <- clock.realTime
       balances <- client.get[BinanceBalances](
         url = url(currentTime.toMillis),
+        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
       )
@@ -175,6 +180,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
         .post[String, CreateOrderResponse](
           url = url,
           requestBody = requestBody,
+          limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
         .map(response => tag[OrderIdTag][String](response.orderId.toString))
@@ -192,20 +198,19 @@ object BinanceClient {
       .withMaxTotalConnections(config.maxTotalConnections)
       .resource
       .evalMap { implicit c =>
-        val requestRateLimits = for {
-          client <- HttpClient[F]
+        def requestRateLimits(client: HttpClient[F]) = for {
           rateLimits <- client.get[List[RateLimit]](
             Url(
               scheme = config.scheme,
               host = config.host,
               port = config.port,
               path = config.infoUrl
-            )
+            ),
+            limiters = List.empty
           )(
             Decoder.instance(_.downField("rateLimits").as[List[RateLimit]])
           )
           requestLimits = rateLimits
-            .filter(_.rateLimitType == RateLimitType.REQUEST_WEIGHT)
             .map(limit =>
               Rate(
                 limit.limit,
@@ -213,17 +218,18 @@ object BinanceClient {
                   case SECOND => limit.intervalNum.seconds
                   case MINUTE => limit.intervalNum.minutes
                   case DAY    => limit.intervalNum.days
-                }
+                },
+                limit.rateLimitType
               )
             )
         } yield requestLimits
 
         for {
-          limits   <- requestRateLimits
-          limiters <- limits.map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize)).sequence
-          client <- HttpClient
-            .rateLimited[F](limiters: _*)
-            .map(new BinanceClient(config, _))
-        } yield client
+          client <- HttpClient.make[F]
+          limits <- requestRateLimits(client)
+          limiters <- limits
+            .map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
+            .sequence
+        } yield new BinanceClient(config, client, limiters)
       }
 }
