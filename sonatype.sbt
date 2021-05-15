@@ -13,11 +13,14 @@ sonatypeProfileName := "io.github.paoloboni"
 publishMavenStyle := true
 pomExtra := {
   <developers>
-    {for ((username, name) <- contributors) yield <developer>
+    {
+    for ((username, name) <- contributors)
+      yield <developer>
       <id>{username}</id>
       <name>{name}</name>
       <url>http://github.com/{username}</url>
-    </developer>}
+    </developer>
+  }
   </developers>
 }
 scmInfo := Some(
