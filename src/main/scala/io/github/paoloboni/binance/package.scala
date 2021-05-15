@@ -39,7 +39,8 @@ package object binance {
       apiKey: String,
       apiSecret: String,
       responseHeaderTimeout: Duration = 60.seconds,
-      maxTotalConnections: Int = 20
+      maxTotalConnections: Int = 20,
+      rateLimiterBufferSize: Int = 1000
   )
 
   final case class KLines(symbol: String, interval: Duration, startTime: Instant, endTime: Instant, limit: Int)

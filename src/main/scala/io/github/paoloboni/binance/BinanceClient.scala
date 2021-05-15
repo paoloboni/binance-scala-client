@@ -222,7 +222,7 @@ object BinanceClient {
 
         for {
           limits   <- requestRateLimits
-          limiters <- limits.map(limit => RateLimiter.make[F](limit.perSecond, 1000)).sequence
+          limiters <- limits.map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize)).sequence
           client <- HttpClient
             .rateLimited[F](limiters: _*)
             .map(new BinanceClient(config, _))
