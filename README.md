@@ -6,7 +6,7 @@
 
 A functional Scala client for Binance.
 
-This client is rate limited, based on [Binance API specification](https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#limits).
+This client is rate limited, based on [Binance API specification](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md).
 
 ---
 **NOTE**
