@@ -56,7 +56,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     * @param query an `KLines` object containing the query parameters
     * @return the stream of Kline objects
     */
-  def getKLines(query: KLines): F[Stream[F, KLine]] = query match {
+  def getKLines(query: KLines): Stream[F, KLine] = query match {
     case KLines(symbol, binance.Interval(interval), startTime, endTime, limit) =>
       val url = Url(
         scheme = config.scheme,
@@ -71,26 +71,21 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
           "limit"     -> limit.toString
         )
       )
-      val result = for {
-        klines <- client.get[List[KLine]](url)
+
+      for {
+        rawKlines <- Stream.eval(client.get[List[KLine]](url))
+        klines <- rawKlines match {
+          case loneElement :: Nil => Stream.emit(loneElement)
+          case init :+ last if (query.endTime.toEpochMilli - last.openTime) > interval.duration.toMillis =>
+            val newQuery = query.copy(startTime = Instant.ofEpochMilli(last.openTime))
+            Stream.emits(init) ++ getKLines(newQuery)
+
+          case list => Stream.emits(list)
+        }
       } yield klines
-      result.flatMap {
-        case loneElement :: Nil => F.pure(Stream(loneElement))
-        case init :+ last if (query.endTime.toEpochMilli - last.openTime) > interval.duration.toMillis =>
-          F.pure(Stream.fromIterator(init.iterator, chunkSize = 10))
-            .map(
-              _ ++
-                Stream
-                  .eval(
-                    getKLines(query.copy(startTime = Instant.ofEpochMilli(last.openTime)))
-                  )
-                  .flatten
-            )
-        case list =>
-          F.pure(Stream.fromIterator(list.iterator, 10))
-      }
+
     case other: KLines =>
-      MonadError[F, Throwable].raiseError(
+      Stream.raiseError[F](
         new RuntimeException(s"${other.interval} is not a valid interval for Binance")
       )
   }
