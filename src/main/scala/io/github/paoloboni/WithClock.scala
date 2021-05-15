@@ -21,17 +21,14 @@
 
 package io.github.paoloboni
 
-import cats.effect.{Clock, IO}
-import cats.effect.kernel.Temporal
-import cats.effect.unsafe.IORuntime
-import log.effect.LogWriter
-import log.effect.fs2.SyncLogWriter._
+import cats.effect.Clock
 
-trait Env {
-  implicit val runtime: IORuntime       = cats.effect.unsafe.IORuntime.global
-  implicit val temporal: Temporal[IO]   = IO.asyncForIO
-  implicit val log: LogWriter[IO]       = log4sLog[IO]("testLogger").unsafeRunSync()
-  implicit val withClock: WithClock[IO] = WithClock.create(Clock[IO])
+trait WithClock[F[_]] {
+  def clock: Clock[F]
 }
 
-object Env extends Env
+object WithClock {
+  def create[F[_]](instance: Clock[F]): WithClock[F] = new WithClock[F] {
+    override def clock: Clock[F] = instance
+  }
+}

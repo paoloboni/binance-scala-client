@@ -21,18 +21,17 @@
 
 package io.github.paoloboni.binance
 
-import cats.effect.kernel.Clock
 import cats.effect.{Async, Resource}
 import cats.implicits._
 import cats.{Monad, MonadError}
 import fs2.Stream
 import io.circe.Decoder
 import io.circe.generic.auto._
-import io.github.paoloboni.binance
 import io.github.paoloboni.binance.RateLimitInterval._
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.{Rate, RateLimiter}
 import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
+import io.github.paoloboni.{WithClock, binance}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
 import org.http4s.client.blaze.BlazeClientBuilder
@@ -42,13 +41,13 @@ import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-sealed class BinanceClient[F[_]: Monad: LogWriter] private (
+sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     config: BinanceConfig,
-    clock: Clock[F],
     client: HttpClient[F]
-)(
-    implicit F: Async[F]
-) extends Decoders {
+)(implicit F: Async[F])
+    extends Decoders {
+
+  private val clock = implicitly[WithClock[F]].clock
 
   /**
     * Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
@@ -189,9 +188,8 @@ sealed class BinanceClient[F[_]: Monad: LogWriter] private (
 
 object BinanceClient {
 
-  def apply[F[_]: LogWriter](
-      config: BinanceConfig,
-      clock: Clock[F]
+  def apply[F[_]: WithClock: LogWriter](
+      config: BinanceConfig
   )(implicit F: Async[F]): Resource[F, BinanceClient[F]] =
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
@@ -227,7 +225,7 @@ object BinanceClient {
           limiters <- limits.map(limit => RateLimiter.make[F](limit.perSecond, 1000)).sequence
           client <- HttpClient
             .rateLimited[F](limiters: _*)
-            .map(new BinanceClient(config, clock, _))
+            .map(new BinanceClient(config, _))
         } yield client
       }
 }

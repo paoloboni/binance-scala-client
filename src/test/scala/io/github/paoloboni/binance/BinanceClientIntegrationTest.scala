@@ -29,9 +29,7 @@ import io.circe.parser._
 import io.github.paoloboni.binance.Decoders._
 import io.github.paoloboni.binance.Interval._
 import io.github.paoloboni.integration._
-import io.github.paoloboni.{Env, TestClient}
-import log.effect.LogWriter
-import log.effect.fs2.SyncLogWriter.log4sLog
+import io.github.paoloboni.{Env, TestClient, WithClock}
 import org.scalatest.{EitherValues, FreeSpec, Matchers, OptionValues}
 import shapeless.tag
 
@@ -97,7 +95,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config, Clock[IO])
+      val result = BinanceClient(config)
         .use { gw =>
           for {
             stream <- gw.getKLines(
@@ -161,7 +159,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config, Clock[IO])
+      val result = BinanceClient(config)
         .use(_.getPrices())
         .unsafeRunSync()
 
@@ -173,8 +171,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
   }
 
   "it should return the balance" in withWiremockServer { server =>
-    import Env.runtime
-    import Env.log
+    import Env.{log, runtime}
 
     stubInfoEndpoint(server)
 
@@ -221,7 +218,9 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = BinanceClient(config, stubTimer(fixedTime))
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val result = BinanceClient(config)
       .use(_.getBalance())
       .unsafeRunSync()
 
@@ -232,8 +231,7 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
   }
 
   "it should create an order" in withWiremockServer { server =>
-    import Env.runtime
-    import Env.log
+    import Env.{log, runtime}
     stubInfoEndpoint(server)
 
     val fixedTime = 1499827319559L
@@ -263,7 +261,9 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    val result = BinanceClient(config, stubTimer(fixedTime))
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val result = BinanceClient(config)
       .use(
         _.createOrder(
           OrderCreate(
