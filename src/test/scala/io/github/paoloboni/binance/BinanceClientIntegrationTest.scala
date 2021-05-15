@@ -132,6 +132,119 @@ class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherVal
     }
   }
 
+  "it should be able to stream klines even with a theshold of 1" in new Env {
+    withWiremockServer { server =>
+      val from      = 1548806400000L
+      val to        = 1548806640000L
+      val symbol    = "ETHUSDT"
+      val interval  = 1.minute.asBinanceInterval.value
+      val threshold = 1
+
+      stubInfoEndpoint(server)
+
+      server.stubFor(
+        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=$from&endTime=$to&limit=$threshold")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |[
+                          |  [1548806400000, "104.41000000", "104.43000000", "104.27000000", "104.37000000", "185.23745000", 1548806459999, "19328.98599530", 80, "62.03712000", "6475.81062590", "0"]
+                          |]
+              """.stripMargin)
+          )
+      )
+
+      server.stubFor(
+        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806459999&endTime=$to&limit=$threshold")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |[
+                          |  [1548806460000, "104.38000000", "104.40000000", "104.33000000", "104.36000000", "211.54271000", 1548806519999, "22076.70809650", 68, "175.75948000", "18342.53313250", "0"]
+                          |]
+              """.stripMargin)
+          )
+      )
+
+      server.stubFor(
+        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806519999&endTime=$to&limit=$threshold")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |[
+                          |  [1548806520000, "104.36000000", "104.39000000", "104.36000000", "104.38000000", "59.74736000", 1548806579999, "6235.56895740", 28, "37.98161000", "3963.95268370", "0"]
+                          |]
+              """.stripMargin)
+          )
+      )
+
+      // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
+      server.stubFor(
+        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806579999&endTime=$to&limit=$threshold")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |[
+                          |  [1548806580000,"104.37000000","104.37000000","104.11000000","104.30000000","503.86391000",1548806639999,"52516.17118740",150,"275.42894000","28709.15114540","0"]
+                          |]
+              """.stripMargin)
+          )
+      )
+
+      server.stubFor(
+        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806639999&endTime=$to&limit=$threshold")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |[
+                          |  [1548806640000,"104.30000000","104.35000000","104.19000000","104.27000000","251.83113000",1548806699999,"26262.34369560",93,"102.24293000","10663.18343790","0"]
+                          |]
+              """.stripMargin)
+          )
+      )
+
+      val config = prepareConfiguration(server)
+
+      val result = BinanceClient(config)
+        .use { gw =>
+          gw.getKLines(
+              KLines(
+                symbol = symbol,
+                interval = interval.duration,
+                startTime = Instant.ofEpochMilli(from),
+                endTime = Instant.ofEpochMilli(to),
+                limit = threshold
+              )
+            )
+            .compile
+            .toList
+        }
+        .unsafeRunSync()
+
+      val responseFullJson = parse(
+        """
+          |[
+          | [1548806400000,"104.41000000","104.43000000","104.27000000","104.37000000","185.23745000",1548806459999,"19328.98599530",80,"62.03712000","6475.81062590","0"],
+          | [1548806460000,"104.38000000","104.40000000","104.33000000","104.36000000","211.54271000",1548806519999,"22076.70809650",68,"175.75948000","18342.53313250","0"],
+          | [1548806520000,"104.36000000","104.39000000","104.36000000","104.38000000","59.74736000",1548806579999,"6235.56895740",28,"37.98161000","3963.95268370","0"],
+          | [1548806580000,"104.37000000","104.37000000","104.11000000","104.30000000","503.86391000",1548806639999,"52516.17118740",150,"275.42894000","28709.15114540","0"]
+          |]
+        """.stripMargin
+      ).right.value
+      val expected = responseFullJson.as[List[KLine]].right.value
+
+      result should have size 4
+      result should contain theSameElementsInOrderAs expected
+
+      server.verify(4, getRequestedFor(urlMatching("/api/v1/klines.*")))
+    }
+  }
+
   "it should return a list of prices" in new Env {
     withWiremockServer { server =>
       stubInfoEndpoint(server)
