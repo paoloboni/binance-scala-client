@@ -14,8 +14,8 @@ lazy val root = (project in file("."))
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
-      "io.circe"              %% "circe-core"          % "0.12.2",
-      "io.circe"              %% "circe-generic"       % "0.12.2",
+      "io.circe"              %% "circe-core"          % "0.13.0",
+      "io.circe"              %% "circe-generic"       % "0.13.0",
       "co.fs2"                %% "fs2-core"            % "3.0.3",
       "org.typelevel"         %% "cats-core"           % "2.6.1",
       "org.typelevel"         %% "cats-effect"         % "3.1.1",
@@ -24,13 +24,13 @@ lazy val root = (project in file("."))
       "org.slf4j"              % "slf4j-api"           % "1.7.30",
       "org.http4s"            %% "http4s-blaze-client" % "1.0.0-M21",
       "org.http4s"            %% "http4s-circe"        % "1.0.0-M21",
-      "io.lemonlabs"          %% "scala-uri"           % "2.0.0-M1",
+      "io.lemonlabs"          %% "scala-uri"           % "2.0.0",
       "com.beachape"          %% "enumeratum"          % "1.6.1",
-      "com.beachape"          %% "enumeratum-circe"    % "1.5.22",
+      "com.beachape"          %% "enumeratum-circe"    % "1.5.23",
       "com.chuusai"           %% "shapeless"           % "2.3.6",
       "org.slf4j"              % "slf4j-simple"        % "1.7.30" % "test",
       "org.scalatest"         %% "scalatest"           % "3.0.9"  % "test",
-      "io.circe"              %% "circe-parser"        % "0.12.2" % "test",
+      "io.circe"              %% "circe-parser"        % "0.13.0" % "test",
       "com.github.tomakehurst" % "wiremock"            % "2.25.0" % "test"
     )
   )
