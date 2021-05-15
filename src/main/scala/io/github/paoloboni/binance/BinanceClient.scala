@@ -75,6 +75,8 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
       for {
         rawKlines <- Stream.eval(client.get[List[KLine]](url))
         klines <- rawKlines match {
+          //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
+          //to a strange behaviour
           case loneElement :: Nil if (query.endTime.toEpochMilli - loneElement.openTime) > interval.duration.toMillis =>
             val newQuery = query.copy(startTime = Instant.ofEpochMilli(loneElement.closeTime))
             Stream.emit(loneElement) ++ getKLines(newQuery)
