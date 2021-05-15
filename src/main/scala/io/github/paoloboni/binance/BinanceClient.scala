@@ -109,13 +109,11 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
       path = "/api/v3/ticker/price"
     )
 
-    for {
-      prices <- client.get[List[Price]](
-        url = url,
-        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
-        weight = 2
-      )
-    } yield prices
+    client.get[Seq[Price]](
+      url = url,
+      limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
+      weight = 2
+    )
   }
 
   /** Returns the current balance, at the time the query is executed.
@@ -155,6 +153,11 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
   private implicit val orderCreateResponseTypeQueryStringConverter: QueryStringConverter[OrderCreateResponseType] =
     QueryStringConverter.enumEntryConverter(OrderCreateResponseType)
 
+  /** cancles an order
+    *
+    * @param orderCancle the parameters needed to cancle the order
+    * @return currently nothing
+    */
   def cancle(orderCancle: OrderCancle): F[Unit] = {
     def urlAndBody(currentMillis: Long) = {
       val requestBody = QueryStringConverter[OrderCancle].to(orderCancle) + s"&recvWindow=5000&timestamp=$currentMillis"
@@ -180,11 +183,16 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     } yield ()
   }
 
-
+  /** Cancles all open orders for a symbol
+    *
+    * @param cancleAll the parameters required to cancle all orders
+    * @return currently nothing
+    */
   def cancleAll(cancleAll: OrderCancleAll): F[Unit] = {
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[OrderCancleAll].to(cancleAll) + s"&recvWindow=5000&timestamp=$currentMillis"
-      val signature   = HMAC.sha256(config.apiSecret, requestBody)
+      val requestBody =
+        QueryStringConverter[OrderCancleAll].to(cancleAll) + s"&recvWindow=5000&timestamp=$currentMillis"
+      val signature = HMAC.sha256(config.apiSecret, requestBody)
       val url = Url(
         scheme = config.scheme,
         host = config.host,
