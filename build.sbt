@@ -27,7 +27,7 @@ lazy val root = (project in file("."))
       "io.lemonlabs"           %% "scala-uri"           % "2.0.0-M1",
       "com.beachape"           %% "enumeratum"          % "1.6.1",
       "com.beachape"           %% "enumeratum-circe"    % "1.5.22",
-      "com.chuusai"            %% "shapeless"           % "2.3.3",
+      "com.chuusai"            %% "shapeless"           % "2.3.6",
       "org.slf4j"              % "slf4j-simple"         % "1.7.30" % "test",
       "org.scalatest"          %% "scalatest"           % "3.0.9" % "test",
       "io.circe"               %% "circe-parser"        % "0.12.2" % "test",
