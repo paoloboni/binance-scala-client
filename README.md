@@ -7,6 +7,13 @@ A functional Scala client for Binance.
 
 This client is rate limited, based on [Binance API specification](https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#limits).
 
+---
+**NOTE**
+
+cats-effect 2.x is supported in v0.0.8 or earlier. Starting from v1.0.0 this project is using version 3.x of cats-effect. 
+
+---
+
 ## Getting started
 
 If you use sbt add the following dependency to your build file:
@@ -46,7 +53,9 @@ object PriceMonitor extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
-    implicit val log = consoleLog[IO]
+    implicit val log                      = consoleLog[IO]
+    implicit val withClock: WithClock[IO] = WithClock.create(Clock[IO])
+    
     BinanceClient[IO](config)
       .use { client =>
         Stream

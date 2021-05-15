@@ -21,18 +21,14 @@
 
 package io.github.paoloboni
 
-import cats.effect.kernel.Async
-import cats.effect.{IO, Resource}
-import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
+import cats.effect.Clock
 
-import scala.concurrent.ExecutionContext.global
-import scala.concurrent.duration._
+trait WithClock[F[_]] {
+  def clock: Clock[F]
+}
 
-trait TestClient {
-  def clientResource(implicit F: Async[IO]): Resource[IO, Client[IO]] =
-    BlazeClientBuilder[IO](global)
-      .withResponseHeaderTimeout(60.seconds)
-      .withMaxTotalConnections(20)
-      .resource
+object WithClock {
+  def create[F[_]](instance: Clock[F]): WithClock[F] = new WithClock[F] {
+    override def clock: Clock[F] = instance
+  }
 }
