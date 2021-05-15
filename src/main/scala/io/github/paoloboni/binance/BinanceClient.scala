@@ -178,6 +178,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
         .delete[String, Unit](
           url = url,
           requestBody = requestBody,
+          limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
     } yield ()
@@ -209,6 +210,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
         .delete[String, Unit](
           url = url,
           requestBody = requestBody,
+          limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
     } yield ()

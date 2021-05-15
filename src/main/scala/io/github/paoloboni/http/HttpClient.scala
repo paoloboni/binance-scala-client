@@ -80,6 +80,7 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](implicit
   def delete[Request, Response](
       url: Url,
       requestBody: Request,
+      limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
   )(implicit
@@ -94,7 +95,7 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](implicit
       }.toList)
     ).withEntity(requestBody)
 
-    sendRequest(request, weight)
+    sendRequest(request, limiters, weight)
   }
 
   private def sendRequest[Response](
