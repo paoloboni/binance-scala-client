@@ -21,13 +21,13 @@
 
 package io.github.paoloboni.http
 
-import cats.Monad
+import cats.Applicative
 import cats.effect.Concurrent
 import cats.implicits._
 import log.effect.LogWriter
 
 package object ratelimit {
-  implicit class LimiterOps[F[_]: Concurrent: LogWriter](limiter: RateLimiter[F]) {
+  implicit class LimiterOps[F[_]: Applicative: LogWriter](limiter: RateLimiter[F]) {
     def await[A](
         job: F[A],
         weight: Int = 1
