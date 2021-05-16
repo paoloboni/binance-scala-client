@@ -193,7 +193,6 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     } yield orderId
   }
 
-
   /** Cancles an order.
     *
     * @param orderCancel the parameters required to cancle the order
@@ -228,7 +227,6 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     } yield ()
   }
 
-
   /** Cancles all open orders for a symbol.
     *
     * @param orderCancelAll the parameters required to cancle the orders
@@ -238,8 +236,9 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
   def candleAllOrders(orderCancleAll: OrderCancleAll): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[OrderCancleAll].to(orderCancleAll) + s"&recvWindow=5000&timestamp=$currentMillis"
-      val signature   = HMAC.sha256(config.apiSecret, requestBody)
+      val requestBody =
+        QueryStringConverter[OrderCancleAll].to(orderCancleAll) + s"&recvWindow=5000&timestamp=$currentMillis"
+      val signature = HMAC.sha256(config.apiSecret, requestBody)
       val url = Url(
         scheme = config.scheme,
         host = config.host,
