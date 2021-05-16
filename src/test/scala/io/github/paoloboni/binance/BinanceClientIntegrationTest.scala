@@ -56,7 +56,7 @@ class BinanceClientIntegrationTest
       stubInfoEndpoint(server)
 
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=$from&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=$from&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -71,7 +71,7 @@ class BinanceClientIntegrationTest
       )
 
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806520000&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806520000&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -87,7 +87,7 @@ class BinanceClientIntegrationTest
 
       // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548836400000&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548836400000&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -134,7 +134,7 @@ class BinanceClientIntegrationTest
       result should have size 6
       result should contain theSameElementsInOrderAs expected
 
-      server.verify(3, getRequestedFor(urlMatching("/api/v1/klines.*")))
+      server.verify(3, getRequestedFor(urlMatching("/api/v3/klines.*")))
     }
   }
 
@@ -149,7 +149,7 @@ class BinanceClientIntegrationTest
       stubInfoEndpoint(server)
 
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=$from&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=$from&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -162,7 +162,7 @@ class BinanceClientIntegrationTest
       )
 
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806459999&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806459999&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -175,7 +175,7 @@ class BinanceClientIntegrationTest
       )
 
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806519999&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806519999&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -189,7 +189,7 @@ class BinanceClientIntegrationTest
 
       // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806579999&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806579999&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -202,7 +202,7 @@ class BinanceClientIntegrationTest
       )
 
       server.stubFor(
-        get(s"/api/v1/klines?symbol=$symbol&interval=$interval&startTime=1548806639999&endTime=$to&limit=$threshold")
+        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806639999&endTime=$to&limit=$threshold")
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -246,7 +246,7 @@ class BinanceClientIntegrationTest
       result should have size 4
       result should contain theSameElementsInOrderAs expected
 
-      server.verify(4, getRequestedFor(urlMatching("/api/v1/klines.*")))
+      server.verify(4, getRequestedFor(urlMatching("/api/v3/klines.*")))
     }
   }
 
@@ -404,7 +404,7 @@ class BinanceClientIntegrationTest
 
   private def stubInfoEndpoint(server: WireMockServer) = {
     server.stubFor(
-      get("/api/v1/exchangeInfo")
+      get("/api/v3/exchangeInfo")
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -425,7 +425,7 @@ class BinanceClientIntegrationTest
   }
 
   private def prepareConfiguration(server: WireMockServer, apiKey: String = "", apiSecret: String = "") =
-    BinanceConfig("http", "localhost", server.port(), "/api/v1/exchangeInfo", apiKey, apiSecret)
+    BinanceConfig("http", "localhost", server.port(), "/api/v3/exchangeInfo", apiKey, apiSecret)
 
   private def stubTimer(fixedTime: Long) = new Clock[IO] {
     override def applicative: Applicative[IO]  = ???

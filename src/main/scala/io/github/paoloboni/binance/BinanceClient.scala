@@ -62,7 +62,7 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
         scheme = config.scheme,
         host = config.host,
         port = config.port,
-        path = "/api/v1/klines",
+        path = "/api/v3/klines",
         query = QueryString.fromPairs(
           "symbol"    -> symbol,
           "interval"  -> interval.toString,

@@ -35,8 +35,9 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 This is a sample app to monitor the exchange prices (fetch every 5 seconds).
 
 ```scala
-import io.github.paoloboni.binance.{BinanceClient, BinanceConfig}
+import cats.effect.kernel.Clock
 import cats.effect.{ExitCode, IO, IOApp}
+import io.github.paoloboni.binance.{BinanceClient, BinanceConfig}
 import fs2._
 import log.effect.fs2.SyncLogWriter._
 
@@ -48,7 +49,7 @@ object PriceMonitor extends IOApp {
     scheme = "https",
     host = "api.binance.com",
     port = 443,
-    infoUrl = "/api/v1/exchangeInfo",
+    infoUrl = "/api/v3/exchangeInfo",
     apiKey = "***",
     apiSecret = "***"
   )
