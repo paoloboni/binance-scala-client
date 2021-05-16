@@ -192,6 +192,76 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
         .map(response => tag[OrderIdTag][String](response.orderId.toString))
     } yield orderId
   }
+
+
+  /** Cancles an order.
+    *
+    * @param orderCancel the parameters required to cancle the order
+    *
+    * @return currently nothing
+    */
+  def candleOrder(orderCancel: OrderCancle): F[Unit] = {
+
+    def urlAndBody(currentMillis: Long) = {
+      val requestBody = QueryStringConverter[OrderCancle].to(orderCancel) + s"&recvWindow=5000&timestamp=$currentMillis"
+      val signature   = HMAC.sha256(config.apiSecret, requestBody)
+      val url = Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/api/v3/order"
+      )
+      (url, requestBody + s"&signature=$signature")
+    }
+
+    for {
+      currentTime <- clock.realTime
+      (url, requestBody) = urlAndBody(currentTime.toMillis)
+      _ <- client
+        .delete[String, Unit](
+          url = url,
+          requestBody = requestBody,
+          limiters = rateLimiters,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey),
+          weight = 1
+        )
+    } yield ()
+  }
+
+
+  /** Cancles all open orders for a symbol.
+    *
+    * @param orderCancelAll the parameters required to cancle the orders
+    *
+    * @return currently nothing
+    */
+  def candleAllOrders(orderCancleAll: OrderCancleAll): F[Unit] = {
+
+    def urlAndBody(currentMillis: Long) = {
+      val requestBody = QueryStringConverter[OrderCancleAll].to(orderCancleAll) + s"&recvWindow=5000&timestamp=$currentMillis"
+      val signature   = HMAC.sha256(config.apiSecret, requestBody)
+      val url = Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/api/v3/openOrders"
+      )
+      (url, requestBody + s"&signature=$signature")
+    }
+
+    for {
+      currentTime <- clock.realTime
+      (url, requestBody) = urlAndBody(currentTime.toMillis)
+      _ <- client
+        .delete[String, Unit](
+          url = url,
+          requestBody = requestBody,
+          limiters = rateLimiters,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey),
+          weight = 1
+        )
+    } yield ()
+  }
 }
 
 object BinanceClient {
