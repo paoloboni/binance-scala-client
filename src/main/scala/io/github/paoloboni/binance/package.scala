@@ -143,6 +143,14 @@ package object binance {
       newOrderRespType: Option[OrderCreateResponseType]
   )
 
+  case class OrderCancle(
+      symbol: String,
+      orderId: Option[Long],
+      origClientOrderId: Option[String]
+  )
+
+  case class OrderCancleAll(symbol: String)
+
   sealed trait RateLimitType extends EnumEntry
   object RateLimitType extends Enum[RateLimitType] with CirceEnum[RateLimitType] {
 
