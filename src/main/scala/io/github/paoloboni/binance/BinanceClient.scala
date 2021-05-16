@@ -41,11 +41,11 @@ import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
+sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     config: BinanceConfig,
     client: HttpClient[F],
     rateLimiters: List[RateLimiter[F]]
-)(implicit F: Async[F])
+)
     extends Decoders {
 
   private val clock = implicitly[WithClock[F]].clock
@@ -190,9 +190,9 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
 
 object BinanceClient {
 
-  def apply[F[_]: WithClock: LogWriter](
+  def apply[F[_]: WithClock: LogWriter: Async](
       config: BinanceConfig
-  )(implicit F: Async[F]): Resource[F, BinanceClient[F]] =
+  ): Resource[F, BinanceClient[F]] =
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
       .withMaxTotalConnections(config.maxTotalConnections)

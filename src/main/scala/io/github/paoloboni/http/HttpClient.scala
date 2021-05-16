@@ -34,10 +34,7 @@ import org.http4s.client.Client
 import org.http4s.{Status, _}
 import org.typelevel.ci.CIString
 
-sealed class HttpClient[F[_]: Async: Client: LogWriter](implicit
-    F: Monad[F],
-    E: MonadError[F, Throwable]
-) {
+sealed class HttpClient[F[_]: Async: Client: LogWriter] {
 
   def get[Response](
       url: Url,
@@ -100,8 +97,8 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](implicit
         }
       }
       handled <- decoded.fold(
-        decodingFailure => E.raiseError(decodingFailure),
-        response => F.pure(response)
+        decodingFailure => implicitly[Async[F]].raiseError(decodingFailure),
+        response => response.pure[F]
       )
     } yield handled
   }
@@ -110,7 +107,6 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter](implicit
 case class HttpError(status: Status, body: String) extends Exception
 
 object HttpClient {
-
-  def make[F[_]: Async: Client: LogWriter](implicit F: Monad[F]): F[HttpClient[F]] =
-    F.pure(new HttpClient[F]())
+  def make[F[_]: Async: Client: LogWriter]: F[HttpClient[F]] =
+    new HttpClient[F]().pure[F]
 }
