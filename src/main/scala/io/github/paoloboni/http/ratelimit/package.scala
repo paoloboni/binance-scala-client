@@ -31,7 +31,7 @@ package object ratelimit {
     def await[A](
         job: F[A],
         weight: Int = 1
-    )(implicit F: Monad[F]): F[A] =
+    ): F[A] =
       List.fill(weight - 1)(LogWriter.debug("Waiting")).map(limiter.rateLimit(_)).sequence *> limiter.rateLimit(job)
   }
 }
