@@ -21,11 +21,11 @@
 
 package io.github.paoloboni.http
 
-import org.scalatest.{FreeSpec, Matchers}
-
 import scala.util.Success
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class QueryStringConverterTest extends FreeSpec with Matchers {
+class QueryStringConverterTest extends AnyFreeSpec with Matchers {
 
   "it should convert a query string to an object and viceversa" in {
 

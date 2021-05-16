@@ -29,7 +29,7 @@ lazy val root = (project in file("."))
       "com.beachape"          %% "enumeratum-circe"    % "1.6.1",
       "com.chuusai"           %% "shapeless"           % "2.3.6",
       "org.slf4j"              % "slf4j-simple"        % "1.7.30" % "test",
-      "org.scalatest"         %% "scalatest"           % "3.0.9"  % "test",
+      "org.scalatest"         %% "scalatest"           % "3.2.9"  % "test",
       "io.circe"              %% "circe-parser"        % "0.13.0" % "test",
       "com.github.tomakehurst" % "wiremock"            % "2.27.2" % "test"
     )

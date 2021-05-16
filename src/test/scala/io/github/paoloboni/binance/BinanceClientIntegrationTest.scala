@@ -30,13 +30,20 @@ import io.github.paoloboni.binance.Decoders._
 import io.github.paoloboni.binance.Interval._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
-import org.scalatest.{EitherValues, FreeSpec, Matchers, OptionValues}
+import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
 
 import java.time.Instant
 import scala.concurrent.duration._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class BinanceClientIntegrationTest extends FreeSpec with Matchers with EitherValues with OptionValues with TestClient {
+class BinanceClientIntegrationTest
+    extends AnyFreeSpec
+    with Matchers
+    with EitherValues
+    with OptionValues
+    with TestClient {
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>

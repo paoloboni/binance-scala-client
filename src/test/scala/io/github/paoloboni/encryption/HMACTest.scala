@@ -21,9 +21,10 @@
 
 package io.github.paoloboni.encryption
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class HMACTest extends FreeSpec with Matchers {
+class HMACTest extends AnyFreeSpec with Matchers {
   "it should generate a valid SHA-256 HMAC signature for a given plain text" in {
     val hmac = HMAC.sha256("1234567890", "plain text")
 

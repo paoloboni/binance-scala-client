@@ -27,9 +27,11 @@ import io.circe.Json
 import io.github.paoloboni.{Env, TestClient}
 import io.github.paoloboni.integration._
 import io.lemonlabs.uri.Url
-import org.scalatest.{EitherValues, FreeSpec, Matchers}
+import org.scalatest.EitherValues
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class HttpClientTest extends FreeSpec with Matchers with EitherValues with Env with TestClient {
+class HttpClientTest extends AnyFreeSpec with Matchers with EitherValues with Env with TestClient {
   "a bad request response should be translated into a HttpError" in withWiremockServer { server =>
     val responseBody = """{ "error": "bad request" }"""
     server.stubFor(get("/test").willReturn(aResponse().withStatus(400).withBody(responseBody)))
