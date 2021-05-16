@@ -45,8 +45,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     config: BinanceConfig,
     client: HttpClient[F],
     rateLimiters: List[RateLimiter[F]]
-)
-    extends Decoders {
+) extends Decoders {
 
   private val clock = implicitly[WithClock[F]].clock
 
