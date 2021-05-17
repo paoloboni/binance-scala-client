@@ -3,8 +3,16 @@ name: CI
 on:
   pull_request:
     branches: [master]
+    paths:
+      - 'src/**'
+      - 'project/**'
+      - '**.sbt'
   push:
     branches: [master]
+    paths:
+      - 'src/**'
+      - 'project/**'
+      - '**.sbt'
 jobs:
   test:
     strategy:
