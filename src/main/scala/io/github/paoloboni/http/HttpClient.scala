@@ -97,7 +97,7 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter] {
         }
       }
       handled <- decoded.fold(
-        decodingFailure => implicitly[Async[F]].raiseError(decodingFailure),
+        decodingFailure => Async[F].raiseError(decodingFailure),
         response => response.pure[F]
       )
     } yield handled
