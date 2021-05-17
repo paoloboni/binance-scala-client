@@ -187,16 +187,16 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     } yield orderId
   }
 
-  /** Cancles an order.
+  /** Cancels an order.
     *
-    * @param orderCancel the parameters required to cancle the order
+    * @param orderCancel the parameters required to cancel the order
     *
     * @return currently nothing
     */
-  def cancleOrder(orderCancel: OrderCancle): F[Unit] = {
+  def cancelOrder(orderCancel: OrderCancel): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[OrderCancle].to(orderCancel) + s"&recvWindow=5000&timestamp=$currentMillis"
+      val requestBody = QueryStringConverter[OrderCancel].to(orderCancel) + s"&recvWindow=5000&timestamp=$currentMillis"
       val signature   = HMAC.sha256(config.apiSecret, requestBody)
       val url = Url(
         scheme = config.scheme,
@@ -221,17 +221,17 @@ sealed class BinanceClient[F[_]: WithClock: Monad: LogWriter] private (
     } yield ()
   }
 
-  /** Cancles all open orders for a symbol.
+  /** Cancels all open orders for a symbol.
     *
-    * @param orderCancelAll the parameters required to cancle the orders
+    * @param orderCancelAll the parameters required to cancel the orders
     *
     * @return currently nothing
     */
-  def cancleAllOrders(orderCancleAll: OrderCancleAll): F[Unit] = {
+  def cancelAllOrders(orderCancelAll: OrderCancelAll): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
       val requestBody =
-        QueryStringConverter[OrderCancleAll].to(orderCancleAll) + s"&recvWindow=5000&timestamp=$currentMillis"
+        QueryStringConverter[OrderCancelAll].to(orderCancelAll) + s"&recvWindow=5000&timestamp=$currentMillis"
       val signature = HMAC.sha256(config.apiSecret, requestBody)
       val url = Url(
         scheme = config.scheme,
