@@ -23,6 +23,7 @@ package io.github.paoloboni.http.ratelimit
 
 import cats.effect.kernel.{GenConcurrent, Temporal}
 import cats.effect.std.Queue
+import cats.Applicative
 import cats.effect.syntax.spawn._
 import cats.effect.{Spawn, Sync}
 import cats.implicits._
@@ -32,11 +33,11 @@ import io.github.paoloboni.binance.RateLimitType
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object RateLimiter {
-  def make[F[_]: Temporal: Spawn](
+  def make[F[_]: Temporal](
       perSecond: Double,
       bufferSize: Int,
       `type`: RateLimitType
-  )(implicit F: ({ type L[A] = GenConcurrent[F, A] })#L[_]): F[RateLimiter[F]] = {
+  ): F[RateLimiter[F]] = {
     require(perSecond > 0 && bufferSize > 0)
     val period: FiniteDuration = periodFrom(perSecond)
     for {
@@ -51,11 +52,11 @@ object RateLimiter {
   private def periodFrom(perSecond: Double) =
     (1.second.toNanos.toDouble / perSecond).toInt.nanos
 
-  def noOp[F[_]](implicit F: Sync[F]): F[RateLimiter[F]] =
-    F.pure(new RateLimiter[F] {
+  def noOp[F[+_]: Applicative]: F[RateLimiter[F]] =
+    new RateLimiter[F] {
       override def rateLimit[T](effect: => F[T]): F[T] = effect
       override val limitType: RateLimitType            = RateLimitType.NONE
-    })
+    }.pure[F]
 }
 
 sealed trait RateLimiter[F[_]] {

@@ -30,7 +30,7 @@ import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
 
 trait TestClient {
-  def clientResource(implicit F: Async[IO]): Resource[IO, Client[IO]] =
+  def clientResource: Resource[IO, Client[IO]] =
     BlazeClientBuilder[IO](global)
       .withResponseHeaderTimeout(60.seconds)
       .withMaxTotalConnections(20)
