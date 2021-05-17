@@ -199,7 +199,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     *
     * @return currently nothing
     */
-  def candleOrder(orderCancel: OrderCancle): F[Unit] = {
+  def cancleOrder(orderCancel: OrderCancle): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
       val requestBody = QueryStringConverter[OrderCancle].to(orderCancel) + s"&recvWindow=5000&timestamp=$currentMillis"
@@ -233,7 +233,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     *
     * @return currently nothing
     */
-  def candleAllOrders(orderCancleAll: OrderCancleAll): F[Unit] = {
+  def cancleAllOrders(orderCancleAll: OrderCancleAll): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
       val requestBody =
