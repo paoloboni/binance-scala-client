@@ -36,43 +36,40 @@ import org.typelevel.ci.CIString
 
 sealed class HttpClient[F[_]: Async: Client: LogWriter] {
 
-  def get[Response](
+  def get[Response: Decoder](
       url: Url,
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  )(implicit
-      decoder: Decoder[Response]
-  ): F[Response] = {
-    val request = Request[F](
+  ): F[Response] = for {
+    uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
+    request = Request[F](
       method = Method.GET,
-      uri = Uri.unsafeFromString(url.toStringPunycode),
+      uri = uri,
       headers = Headers(headers.map { case (name, value) =>
         Header.Raw(CIString(name), value)
       }.toList)
     )
-    sendRequest(request, limiters, weight)
-  }
+    response <- sendRequest[Response](request, limiters, weight)
+  } yield response
 
-  def post[Request, Response](
+  def post[Request: Encoder, Response: Decoder](
       url: Url,
       requestBody: Request,
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  )(implicit
-      encoder: Encoder[Request],
-      decoder: Decoder[Response]
-  ): F[Response] = {
-    val request = Request[F](
+  ): F[Response] = for {
+    uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
+    request = Request[F](
       method = Method.POST,
-      uri = Uri.unsafeFromString(url.toStringPunycode),
+      uri = uri,
       headers = Headers(headers.map { case (name, value) =>
         Header.Raw(CIString(name), value)
       }.toList)
     ).withEntity(requestBody)
-    sendRequest(request, limiters, weight)
-  }
+    response <- sendRequest[Response](request, limiters, weight)
+  } yield response
 
   private def sendRequest[Response](
       request: Request[F],
