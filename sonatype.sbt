@@ -4,7 +4,6 @@ lazy val contributors = Seq(
   "paoloboni" -> "Paolo Boni"
 )
 
-useGpg := true
 pgpSecretRing := pgpPublicRing.value
 
 publishTo := sonatypePublishTo.value
