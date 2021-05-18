@@ -42,3 +42,27 @@ jobs:
       - name: Build and test
         run: sbt ++${{ matrix.scala }} scalafmtCheck test:scalafmtCheck scalafmtSbtCheck headerCheck test:headerCheck test
         shell: bash
+  e2e:
+    if: github.repository == 'paoloboni/binance-scala-client'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Setup
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache SBT
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+      - name: Build and test
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        run: sbt e2e:test
+        shell: bash
