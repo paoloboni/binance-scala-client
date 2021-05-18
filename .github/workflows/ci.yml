@@ -44,6 +44,7 @@ jobs:
         shell: bash
   e2e:
     if: github.repository == 'paoloboni/binance-scala-client'
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
