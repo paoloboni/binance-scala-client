@@ -402,6 +402,101 @@ class BinanceClientIntegrationTest
     result shouldBe tag[OrderIdTag]("28")
   }
 
+  "it should cancel an order" in withWiremockServer { server =>
+    import Env.{log, runtime}
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      post(urlPathMatching("/api/v3/order"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withRequestBody(containing("recvWindow=5000"))
+        .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
+        .withRequestBody(containing("signature=a3888812591965a7ebc7df6c11dfcbc9ef26e32b125a792a1b10f470231adbde"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withBody("""
+                        |{
+                        |  "symbol": "BTCUSDT",
+                        |  "orderId": 28,
+                        |  "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+                        |  "transactTime": 1507725176595
+                        |}
+                      """.stripMargin)
+        )
+    )
+
+    server.stubFor(
+      delete(urlPathMatching("/api/v3/order"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withRequestBody(containing("recvWindow=5000"))
+        .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
+        .withRequestBody(containing("signature=000d5f604ff38ee85b56735e0005cf7f920ddea756fba48cee4c5e902a6c5761"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withBody("""
+                        |{
+                        |  "symbol": "LTCBTC",
+                        |  "origClientOrderId": "myOrder1",
+                        |  "orderId": 4,
+                        |  "orderListId": -1,
+                        |  "clientOrderId": "cancelMyOrder1",
+                        |  "price": "2.00000000",
+                        |  "origQty": "1.00000000",
+                        |  "executedQty": "0.00000000",
+                        |  "cummulativeQuoteQty": "0.00000000",
+                        |  "status": "CANCELED",
+                        |  "timeInForce": "GTC",
+                        |  "type": "LIMIT",
+                        |  "side": "BUY"
+                        |}
+                      """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val result = BinanceClient(config)
+      .use(client =>
+        for {
+          id <- client.createOrder(
+            OrderCreate(
+              symbol = "BTCUSDT",
+              side = OrderSide.BUY,
+              `type` = OrderType.MARKET,
+              timeInForce = None,
+              quantity = 10.5,
+              price = None,
+              newClientOrderId = None,
+              stopPrice = None,
+              icebergQty = None,
+              newOrderRespType = None
+            )
+          )
+
+          _ <- client.cancelOrder(
+            OrderCancel(symbol = "BTCUSDT", orderId = id.toLongOption, origClientOrderId = None)
+          )
+        } yield ()
+      )
+      .redeem(
+        _ => false,
+        _ => true
+      )
+      .unsafeRunSync()
+
+    result shouldBe true
+
+  }
+
   private def stubInfoEndpoint(server: WireMockServer) = {
     server.stubFor(
       get("/api/v3/exchangeInfo")
