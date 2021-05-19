@@ -223,7 +223,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
       currentTime <- clock.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       _ <- client
-        .delete[String, CreateOrderResponse](
+        .delete[String, io.circe.Json](
           url = url,
           requestBody = requestBody.toString(),
           limiters = rateLimiters,
@@ -261,7 +261,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
       currentTime <- clock.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       _ <- client
-        .delete[String, CreateOrderResponse](
+        .delete[String, io.circe.Json](
           url = url,
           requestBody = requestBody.toString(),
           limiters = rateLimiters,
