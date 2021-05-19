@@ -38,7 +38,7 @@ package object binance {
       infoUrl: String,
       apiKey: String,
       apiSecret: String,
-      responseHeaderTimeout: Duration = 60.seconds,
+      responseHeaderTimeout: Duration = 40.seconds,
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000
   )
@@ -51,7 +51,7 @@ package object binance {
   type Asset = String @@ AssetTag
 
   trait OrderIdTag
-  type OrderId = String @@ OrderIdTag
+  type OrderId = Long @@ OrderIdTag
 
   case class Balance(free: BigDecimal, locked: BigDecimal)
 

@@ -32,6 +32,8 @@ package object ratelimit {
         job: F[A],
         weight: Int = 1
     ): F[A] =
-      List.fill(weight - 1)(LogWriter.debug("Waiting")).map(limiter.rateLimit(_)).sequence *> limiter.rateLimit(job)
+      List
+        .fill(weight - 1)(LogWriter.debug("Waiting"))
+        .traverse(limiter.rateLimit(_)) *> limiter.rateLimit(job)
   }
 }

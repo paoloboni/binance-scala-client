@@ -190,7 +190,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
-        .map(response => tag[OrderIdTag][String](response.orderId.toString))
+        .map(response => tag[OrderIdTag][Long](response.orderId))
     } yield orderId
   }
 
