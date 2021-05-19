@@ -56,17 +56,16 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
   }
 
   "cancelOrder" in {
-    val side = Random.shuffle(OrderSide.values).head
     BinanceClient[IO](config)
       .use(client =>
         for {
           id <- client.createOrder(
             OrderCreate(
               symbol = "XRPUSDT",
-              side = side,
+              side = OrderSide.SELL,
               `type` = OrderType.LIMIT,
               timeInForce = TimeInForce.GTC.some,
-              quantity = 100,
+              quantity = 10,
               price = BigDecimal(1).some,
               newClientOrderId = None,
               stopPrice = None,
@@ -92,17 +91,16 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
   }
 
   "deleteAllOrders" in {
-    val side = Random.shuffle(OrderSide.values).head
     BinanceClient[IO](config)
       .use(client =>
         for {
           _ <- client.createOrder(
             OrderCreate(
               symbol = "XRPUSDT",
-              side = side,
+              side = OrderSide.SELL,
               `type` = OrderType.LIMIT,
               timeInForce = TimeInForce.GTC.some,
-              quantity = 100,
+              quantity = 10,
               price = BigDecimal(1).some,
               newClientOrderId = None,
               stopPrice = None,
