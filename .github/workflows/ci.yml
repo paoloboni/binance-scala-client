@@ -43,7 +43,7 @@ jobs:
         run: sbt ++${{ matrix.scala }} scalafmtCheck test:scalafmtCheck scalafmtSbtCheck headerCheck test:headerCheck test
         shell: bash
   e2e:
-    if: github.event.pull_request.head.repo.full_name == 'paoloboni/binance-scala-client'
+    if: github.actor == 'paoloboni'
     needs: test
     runs-on: ubuntu-latest
     steps:
