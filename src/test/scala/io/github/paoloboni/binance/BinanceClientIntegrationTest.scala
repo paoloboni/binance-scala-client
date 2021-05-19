@@ -129,8 +129,8 @@ class BinanceClientIntegrationTest
           |  [1548866279000, "108.39000000", "108.39000000", "108.15000000", "108.22000000", "327.08359000", 1548866339999, "35415.40478090", 129, "163.42355000", "17699.38253540", "0"]
           |]
         """.stripMargin
-      ).right.value
-      val expected = responseFullJson.as[List[KLine]].right.value
+      ).value
+      val expected = responseFullJson.as[List[KLine]].value
 
       result should have size 6
       result should contain theSameElementsInOrderAs expected
@@ -241,8 +241,8 @@ class BinanceClientIntegrationTest
           | [1548806580000,"104.37000000","104.37000000","104.11000000","104.30000000","503.86391000",1548806639999,"52516.17118740",150,"275.42894000","28709.15114540","0"]
           |]
         """.stripMargin
-      ).right.value
-      val expected = responseFullJson.as[List[KLine]].right.value
+      ).value
+      val expected = responseFullJson.as[List[KLine]].value
 
       result should have size 4
       result should contain theSameElementsInOrderAs expected
