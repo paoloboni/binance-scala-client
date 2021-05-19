@@ -71,6 +71,28 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter] {
       response <- sendRequest[Response](request, limiters, weight)
     } yield response
 
+  def delete[Request, Response](
+      url: Url,
+      requestBody: Request,
+      limiters: List[RateLimiter[F]],
+      headers: Map[String, String] = Map.empty,
+      weight: Int = 1
+  )(implicit
+      requestEncoder: EntityEncoder[F, Request],
+      responseDecoder: EntityDecoder[F, Response]
+  ): F[Response] =
+    for {
+      uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
+      request = Request[F](
+        method = Method.DELETE,
+        uri = uri,
+        headers = Headers(headers.map { case (name, value) =>
+          Header.Raw(CIString(name), value)
+        }.toList)
+      ).withEntity(requestBody)
+      response <- sendRequest[Response](request, limiters, weight)
+    } yield response
+
   private def sendRequest[Response](
       request: Request[F],
       limiters: List[RateLimiter[F]],

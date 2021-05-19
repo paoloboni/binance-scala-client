@@ -26,6 +26,7 @@ import cats.effect.{Clock, IO}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
+import cats.implicits._
 import io.github.paoloboni.binance.Decoders._
 import io.github.paoloboni.binance.Interval._
 import io.github.paoloboni.integration._
@@ -400,6 +401,199 @@ class BinanceClientIntegrationTest
       .unsafeRunSync()
 
     result shouldBe tag[OrderIdTag]("28")
+  }
+
+  "it should cancel an order" in withWiremockServer { server =>
+    import Env.{log, runtime}
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      delete(urlPathMatching("/api/v3/order"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withRequestBody(containing("recvWindow=5000"))
+        .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
+        .withRequestBody(containing("signature=8364d5663f2b170c11c40f631be826ccbc587ad1553982cf200b8857bbf8eb6d"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withBody("""
+                        |{
+                        |  "symbol": "LTCBTC",
+                        |  "origClientOrderId": "myOrder1",
+                        |  "orderId": 4,
+                        |  "orderListId": -1,
+                        |  "clientOrderId": "cancelMyOrder1",
+                        |  "price": "2.00000000",
+                        |  "origQty": "1.00000000",
+                        |  "executedQty": "0.00000000",
+                        |  "cummulativeQuoteQty": "0.00000000",
+                        |  "status": "CANCELED",
+                        |  "timeInForce": "GTC",
+                        |  "type": "LIMIT",
+                        |  "side": "BUY"
+                        |}
+                      """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val result = BinanceClient(config)
+      .use(client =>
+        for {
+          _ <- client.cancelOrder(
+            OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
+          )
+        } yield ()
+      )
+      .redeem(
+        _ => false,
+        _ => true
+      )
+      .unsafeRunSync()
+
+    result shouldBe true
+
+  }
+
+  "it should cancel all orders" in withWiremockServer { server =>
+    import Env.{log, runtime}
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      delete(urlPathMatching("/api/v3/openOrders"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withRequestBody(containing("recvWindow=5000"))
+        .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
+        .withRequestBody(containing("signature=4dd01c83b23c3f059afcb6af54fbc730669d56153a400551ed1ed7f7913837ec"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withBody("""
+                        |[
+                        |  {
+                        |    "symbol": "BTCUSDT",
+                        |    "origClientOrderId": "E6APeyTJvkMvLMYMqu1KQ4",
+                        |    "orderId": 11,
+                        |    "orderListId": -1,
+                        |    "clientOrderId": "pXLV6Hz6mprAcVYpVMTGgx",
+                        |    "price": "0.089853",
+                        |    "origQty": "0.178622",
+                        |    "executedQty": "0.000000",
+                        |    "cummulativeQuoteQty": "0.000000",
+                        |    "status": "CANCELED",
+                        |    "timeInForce": "GTC",
+                        |    "type": "LIMIT",
+                        |    "side": "BUY"
+                        |  },
+                        |  {
+                        |    "symbol": "BTCUSDT",
+                        |    "origClientOrderId": "A3EF2HCwxgZPFMrfwbgrhv",
+                        |    "orderId": 13,
+                        |    "orderListId": -1,
+                        |    "clientOrderId": "pXLV6Hz6mprAcVYpVMTGgx",
+                        |    "price": "0.090430",
+                        |    "origQty": "0.178622",
+                        |    "executedQty": "0.000000",
+                        |    "cummulativeQuoteQty": "0.000000",
+                        |    "status": "CANCELED",
+                        |    "timeInForce": "GTC",
+                        |    "type": "LIMIT",
+                        |    "side": "BUY"
+                        |  },
+                        |  {
+                        |    "orderListId": 1929,
+                        |    "contingencyType": "OCO",
+                        |    "listStatusType": "ALL_DONE",
+                        |    "listOrderStatus": "ALL_DONE",
+                        |    "listClientOrderId": "2inzWQdDvZLHbbAmAozX2N",
+                        |    "transactionTime": 1585230948299,
+                        |    "symbol": "BTCUSDT",
+                        |    "orders": [
+                        |      {
+                        |        "symbol": "BTCUSDT",
+                        |        "orderId": 20,
+                        |        "clientOrderId": "CwOOIPHSmYywx6jZX77TdL"
+                        |      },
+                        |      {
+                        |        "symbol": "BTCUSDT",
+                        |        "orderId": 21,
+                        |        "clientOrderId": "461cPg51vQjV3zIMOXNz39"
+                        |      }
+                        |    ],
+                        |    "orderReports": [
+                        |      {
+                        |        "symbol": "BTCUSDT",
+                        |        "origClientOrderId": "CwOOIPHSmYywx6jZX77TdL",
+                        |        "orderId": 20,
+                        |        "orderListId": 1929,
+                        |        "clientOrderId": "pXLV6Hz6mprAcVYpVMTGgx",
+                        |        "price": "0.668611",
+                        |        "origQty": "0.690354",
+                        |        "executedQty": "0.000000",
+                        |        "cummulativeQuoteQty": "0.000000",
+                        |        "status": "CANCELED",
+                        |        "timeInForce": "GTC",
+                        |        "type": "STOP_LOSS_LIMIT",
+                        |        "side": "BUY",
+                        |        "stopPrice": "0.378131",
+                        |        "icebergQty": "0.017083"
+                        |      },
+                        |      {
+                        |        "symbol": "BTCUSDT",
+                        |        "origClientOrderId": "461cPg51vQjV3zIMOXNz39",
+                        |        "orderId": 21,
+                        |        "orderListId": 1929,
+                        |        "clientOrderId": "pXLV6Hz6mprAcVYpVMTGgx",
+                        |        "price": "0.008791",
+                        |        "origQty": "0.690354",
+                        |        "executedQty": "0.000000",
+                        |        "cummulativeQuoteQty": "0.000000",
+                        |        "status": "CANCELED",
+                        |        "timeInForce": "GTC",
+                        |        "type": "LIMIT_MAKER",
+                        |        "side": "BUY",
+                        |        "icebergQty": "0.639962"
+                        |      }
+                        |    ]
+                        |  }
+                        |]
+                        """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val result = BinanceClient(config)
+      .use(client =>
+        for {
+          _ <- client.cancelAllOrders(
+            OrderCancelAll(symbol = "BTCUSDT")
+          )
+        } yield ()
+      )
+      .redeem(
+        _ => false,
+        _ => true
+      )
+      .unsafeRunSync()
+
+    result shouldBe true
+
   }
 
   private def stubInfoEndpoint(server: WireMockServer) = {
