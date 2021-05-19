@@ -153,6 +153,8 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
   private implicit val orderCreateResponseTypeQueryStringConverter: QueryStringConverter[OrderCreateResponseType] =
     QueryStringConverter.enumEntryConverter(OrderCreateResponseType)
 
+  private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
+
   /** Creates an order.
     *
     * @param orderCreate the parameters required to define the order
@@ -160,8 +162,6 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     * @return The id of the order created
     */
   def createOrder(orderCreate: OrderCreate): F[OrderId] = {
-
-    implicit val encodeString: EntityEncoder[F, String] = EntityEncoder.showEncoder
 
     def urlAndBody(currentMillis: Long) = {
       val requestBody = QueryString
@@ -179,6 +179,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
       )
       (url, requestBody.addParam("signature" -> signature))
     }
+
     for {
       currentTime <- clock.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
@@ -191,6 +192,82 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
         )
         .map(response => tag[OrderIdTag][String](response.orderId.toString))
     } yield orderId
+  }
+
+  /** Cancels an order.
+    *
+    * @param orderCancel the parameters required to cancel the order
+    *
+    * @return currently nothing
+    */
+  def cancelOrder(orderCancel: OrderCancel): F[Unit] = {
+
+    def urlAndBody(currentMillis: Long) = {
+      val requestBody = QueryString
+        .parse(QueryStringConverter[OrderCancel].to(orderCancel))
+        .addParams(
+          "recvWindow" -> "5000",
+          "timestamp"  -> currentMillis.toString
+        )
+      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
+      val url = Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/api/v3/order"
+      )
+      (url, requestBody.addParam("signature" -> signature))
+    }
+
+    for {
+      currentTime <- clock.realTime
+      (url, requestBody) = urlAndBody(currentTime.toMillis)
+      _ <- client
+        .delete[String, CreateOrderResponse](
+          url = url,
+          requestBody = requestBody.toString(),
+          limiters = rateLimiters,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+    } yield ()
+  }
+
+  /** Cancels all orders of a symbol.
+    *
+    * @param orderCancel the parameters required to cancel all the orders
+    *
+    * @return currently nothing
+    */
+  def cancelAllOrders(orderCancel: OrderCancelAll): F[Unit] = {
+
+    def urlAndBody(currentMillis: Long) = {
+      val requestBody = QueryString
+        .parse(QueryStringConverter[OrderCancelAll].to(orderCancel))
+        .addParams(
+          "recvWindow" -> "5000",
+          "timestamp"  -> currentMillis.toString
+        )
+      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
+      val url = Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/api/v3/openOrders"
+      )
+      (url, requestBody.addParam("signature" -> signature))
+    }
+
+    for {
+      currentTime <- clock.realTime
+      (url, requestBody) = urlAndBody(currentTime.toMillis)
+      _ <- client
+        .delete[String, CreateOrderResponse](
+          url = url,
+          requestBody = requestBody.toString(),
+          limiters = rateLimiters,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+    } yield ()
   }
 }
 
