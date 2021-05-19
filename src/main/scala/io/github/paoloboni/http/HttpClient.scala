@@ -92,6 +92,27 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter] {
     sendRequest(request, limiters, weight)
   }
 
+  def delete[Request, Response](
+      url: Url,
+      requestBody: Request,
+      limiters: List[RateLimiter[F]],
+      headers: Map[String, String] = Map.empty,
+      weight: Int = 1
+  )(implicit
+      encoder: Encoder[Request],
+      decoder: Decoder[Response]
+  ): F[Response] = {
+    val request = Request[F](
+      method = Method.DELETE,
+      uri = Uri.unsafeFromString(url.toStringPunycode),
+      headers = Headers(headers.map { case (name, value) =>
+        Header.Raw(CIString(name), value)
+      }.toList)
+    ).withEntity(requestBody)
+
+    sendRequest(request, limiters, weight)
+  }
+
   private def sendRequest[Response](
       request: Request[F],
       limiters: List[RateLimiter[F]],
