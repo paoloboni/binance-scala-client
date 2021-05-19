@@ -38,7 +38,7 @@ package object binance {
       infoUrl: String,
       apiKey: String,
       apiSecret: String,
-      responseHeaderTimeout: Duration = 60.seconds,
+      responseHeaderTimeout: Duration = 40.seconds,
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000
   )
