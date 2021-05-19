@@ -69,7 +69,7 @@ object QueryStringConverter {
 
   implicit val bigDecimalConverter: QueryStringConverter[BigDecimal] = new QueryStringConverter[BigDecimal] {
     def from(s: String): Try[BigDecimal] = Try(BigDecimal(s))
-    def to(obj: BigDecimal): String      = obj.toString
+    def to(obj: BigDecimal): String      = obj.bigDecimal.toPlainString
   }
 
   def enumEntryConverter[T <: EnumEntry](enum: Enum[T]): QueryStringConverter[T] = new QueryStringConverter[T] {
