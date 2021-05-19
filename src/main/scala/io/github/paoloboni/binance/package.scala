@@ -51,7 +51,7 @@ package object binance {
   type Asset = String @@ AssetTag
 
   trait OrderIdTag
-  type OrderId = String @@ OrderIdTag
+  type OrderId = Long @@ OrderIdTag
 
   case class Balance(free: BigDecimal, locked: BigDecimal)
 

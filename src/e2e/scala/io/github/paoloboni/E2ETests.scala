@@ -77,7 +77,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
           _ <- client.cancelOrder(
             OrderCancel(
               symbol = "XRPUSDT",
-              orderId = id.toLong.some,
+              orderId = id.some,
               origClientOrderId = None
             )
           )

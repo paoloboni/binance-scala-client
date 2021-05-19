@@ -400,7 +400,7 @@ class BinanceClientIntegrationTest
       )
       .unsafeRunSync()
 
-    result shouldBe tag[OrderIdTag]("28")
+    result shouldBe tag[OrderIdTag](28L)
   }
 
   "it should cancel an order" in withWiremockServer { server =>
