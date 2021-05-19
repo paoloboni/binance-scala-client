@@ -21,6 +21,8 @@
 
 package io.github.paoloboni.http
 
+import io.lemonlabs.uri.QueryString
+
 import scala.util.Success
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -33,9 +35,9 @@ class QueryStringConverterTest extends AnyFreeSpec with Matchers {
 
     val obj = TestClass(1, 0.1, 5000, 1499827319559L)
 
-    val queryString = "quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559"
+    val queryString = QueryString.parse("quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559")
 
-    QueryStringConverter[TestClass].to(obj) shouldBe queryString
+    QueryStringConverter[TestClass].to(obj).paramMap shouldBe queryString.paramMap
     QueryStringConverter[TestClass].from(queryString) shouldBe Success(obj)
   }
 }

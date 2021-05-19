@@ -90,7 +90,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
       .asserting(_ shouldBe true)
   }
 
-  "deleteAllOrders" in {
+  "cancelAllOrders" in {
     BinanceClient[IO](config)
       .use(client =>
         for {
