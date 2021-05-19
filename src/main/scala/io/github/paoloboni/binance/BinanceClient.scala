@@ -164,15 +164,20 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     implicit val encodeString: EntityEncoder[F, String] = EntityEncoder.showEncoder
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[OrderCreate].to(orderCreate) + s"&recvWindow=5000&timestamp=$currentMillis"
-      val signature   = HMAC.sha256(config.apiSecret, requestBody)
+      val requestBody = QueryString
+        .parse(QueryStringConverter[OrderCreate].to(orderCreate))
+        .addParams(
+          "recvWindow" -> "5000",
+          "timestamp"  -> currentMillis.toString
+        )
+      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
       val url = Url(
         scheme = config.scheme,
         host = config.host,
         port = config.port,
         path = "/api/v3/order"
       )
-      (url, requestBody + s"&signature=$signature")
+      (url, requestBody.addParam("signature" -> signature))
     }
     for {
       currentTime <- clock.realTime
@@ -180,7 +185,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
       orderId <- client
         .post[String, CreateOrderResponse](
           url = url,
-          requestBody = requestBody,
+          requestBody = requestBody.toString(),
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )

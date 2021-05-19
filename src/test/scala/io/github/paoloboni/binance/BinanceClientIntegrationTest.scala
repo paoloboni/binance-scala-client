@@ -361,7 +361,7 @@ class BinanceClientIntegrationTest
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withRequestBody(containing("recvWindow=5000"))
         .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=b3e7befe7367d8d8dcf3ef21ccbe37ff297995cf136b2bca21441f2f4b603883"))
+        .withRequestBody(containing("signature=a3888812591965a7ebc7df6c11dfcbc9ef26e32b125a792a1b10f470231adbde"))
         .willReturn(
           aResponse()
             .withStatus(201)

@@ -99,7 +99,13 @@ object QueryStringConverter {
       }
       hList match {
         case h :: HNil => keyValuePair(h)
-        case h :: t    => keyValuePair(h) + "&" + sct.to(t)
+        case h :: t =>
+          (keyValuePair(h), sct.to(t)) match {
+            case ("", "")     => ""
+            case (kv, "")     => kv
+            case ("", others) => others
+            case (kv, others) => kv + "&" + others
+          }
       }
     }
   }
