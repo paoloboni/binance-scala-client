@@ -362,7 +362,7 @@ class BinanceClientIntegrationTest
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withRequestBody(containing("recvWindow=5000"))
         .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=a3888812591965a7ebc7df6c11dfcbc9ef26e32b125a792a1b10f470231adbde"))
+        .withRequestBody(containing("signature=7f87be2e5e10817945f1ada9b33cec59e03a9920e30c03e9cc7e6d6ee61fef08"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -417,7 +417,7 @@ class BinanceClientIntegrationTest
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withRequestBody(containing("recvWindow=5000"))
         .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=8364d5663f2b170c11c40f631be826ccbc587ad1553982cf200b8857bbf8eb6d"))
+        .withRequestBody(containing("signature=f0e47195952cd7ca9877bbf8fbd845b4581c270d7e37e32dc2ad95541ccd98a7"))
         .willReturn(
           aResponse()
             .withStatus(201)

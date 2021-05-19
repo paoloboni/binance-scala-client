@@ -28,7 +28,7 @@ import io.circe.generic.auto._
 import io.github.paoloboni.binance.RateLimitInterval._
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.{Rate, RateLimiter}
-import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
+import io.github.paoloboni.http.{HttpClient, QueryStringConverter, StringConverter}
 import io.github.paoloboni.{WithClock, binance}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
@@ -144,14 +144,14 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     } yield balances.balances.map(b => tag[AssetTag](b.asset) -> Balance(b.free, b.locked)).toMap
   }
 
-  private implicit val orderSideQueryStringConverter: QueryStringConverter[OrderSide] =
-    QueryStringConverter.enumEntryConverter(OrderSide)
-  private implicit val orderTypeQueryStringConverter: QueryStringConverter[OrderType] =
-    QueryStringConverter.enumEntryConverter(OrderType)
-  private implicit val timeInForceQueryStringConverter: QueryStringConverter[TimeInForce] =
-    QueryStringConverter.enumEntryConverter(TimeInForce)
-  private implicit val orderCreateResponseTypeQueryStringConverter: QueryStringConverter[OrderCreateResponseType] =
-    QueryStringConverter.enumEntryConverter(OrderCreateResponseType)
+  private implicit val orderSideStringConverter: StringConverter[OrderSide] =
+    StringConverter.enumEntryConverter(OrderSide)
+  private implicit val orderTypeStringConverter: StringConverter[OrderType] =
+    StringConverter.enumEntryConverter(OrderType)
+  private implicit val timeInForceStringConverter: StringConverter[TimeInForce] =
+    StringConverter.enumEntryConverter(TimeInForce)
+  private implicit val orderCreateResponseTypeStringConverter: StringConverter[OrderCreateResponseType] =
+    StringConverter.enumEntryConverter(OrderCreateResponseType)
 
   private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
 
@@ -164,8 +164,8 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
   def createOrder(orderCreate: OrderCreate): F[OrderId] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryString
-        .parse(QueryStringConverter[OrderCreate].to(orderCreate))
+      val requestBody = QueryStringConverter[OrderCreate]
+        .to(orderCreate)
         .addParams(
           "recvWindow" -> "5000",
           "timestamp"  -> currentMillis.toString
@@ -203,8 +203,8 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
   def cancelOrder(orderCancel: OrderCancel): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryString
-        .parse(QueryStringConverter[OrderCancel].to(orderCancel))
+      val requestBody = QueryStringConverter[OrderCancel]
+        .to(orderCancel)
         .addParams(
           "recvWindow" -> "5000",
           "timestamp"  -> currentMillis.toString
@@ -241,8 +241,8 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
   def cancelAllOrders(orderCancel: OrderCancelAll): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryString
-        .parse(QueryStringConverter[OrderCancelAll].to(orderCancel))
+      val requestBody = QueryStringConverter[OrderCancelAll]
+        .to(orderCancel)
         .addParams(
           "recvWindow" -> "5000",
           "timestamp"  -> currentMillis.toString
