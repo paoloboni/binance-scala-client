@@ -92,9 +92,15 @@ object QueryStringConverter {
         } yield field[K](front) :: back
     }
 
-    override def to(hList: FieldType[K, H] :: T): String = hList match {
-      case h :: HNil => witness.value.name + "=" + scv.value.to(h)
-      case h :: t    => witness.value.name + "=" + scv.value.to(h) + "&" + sct.to(t)
+    override def to(hList: FieldType[K, H] :: T): String = {
+      def keyValuePair(h: H) = scv.value.to(h) match {
+        case "" => ""
+        case s  => witness.value.name + "=" + s
+      }
+      hList match {
+        case h :: HNil => keyValuePair(h)
+        case h :: t    => keyValuePair(h) + "&" + sct.to(t)
+      }
     }
   }
 

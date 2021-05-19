@@ -24,9 +24,10 @@ package io.github.paoloboni.http
 import cats.effect.IO
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.Json
-import io.github.paoloboni.{Env, TestClient}
 import io.github.paoloboni.integration._
+import io.github.paoloboni.{Env, TestClient}
 import io.lemonlabs.uri.Url
+import org.http4s.circe.CirceEntityDecoder._
 import org.scalatest.EitherValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

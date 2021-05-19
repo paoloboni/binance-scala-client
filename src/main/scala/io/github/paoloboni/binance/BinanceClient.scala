@@ -21,11 +21,9 @@
 
 package io.github.paoloboni.binance
 
-import cats.Monad
 import cats.effect.{Async, Resource}
 import cats.implicits._
 import fs2.Stream
-import io.circe.Decoder
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.RateLimitInterval._
 import io.github.paoloboni.encryption.HMAC
@@ -34,6 +32,8 @@ import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
 import io.github.paoloboni.{WithClock, binance}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
+import org.http4s.EntityEncoder
+import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.blaze.BlazeClientBuilder
 import shapeless.tag
 
@@ -161,6 +161,8 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     */
   def createOrder(orderCreate: OrderCreate): F[OrderId] = {
 
+    implicit val encodeString: EntityEncoder[F, String] = EntityEncoder.showEncoder
+
     def urlAndBody(currentMillis: Long) = {
       val requestBody = QueryStringConverter[OrderCreate].to(orderCreate) + s"&recvWindow=5000&timestamp=$currentMillis"
       val signature   = HMAC.sha256(config.apiSecret, requestBody)
@@ -191,14 +193,15 @@ object BinanceClient {
 
   def apply[F[_]: WithClock: LogWriter: Async](
       config: BinanceConfig
-  ): Resource[F, BinanceClient[F]] =
+  ): Resource[F, BinanceClient[F]] = {
+
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
       .withMaxTotalConnections(config.maxTotalConnections)
       .resource
       .evalMap { implicit c =>
         def requestRateLimits(client: HttpClient[F]) = for {
-          rateLimits <- client.get[List[RateLimit]](
+          rateLimits <- client.get[RateLimits](
             Url(
               scheme = config.scheme,
               host = config.host,
@@ -206,10 +209,8 @@ object BinanceClient {
               path = config.infoUrl
             ),
             limiters = List.empty
-          )(
-            Decoder.instance(_.downField("rateLimits").as[List[RateLimit]])
           )
-          requestLimits = rateLimits
+          requestLimits = rateLimits.rateLimits
             .map(limit =>
               Rate(
                 limit.limit,
@@ -231,4 +232,5 @@ object BinanceClient {
             .sequence
         } yield new BinanceClient(config, client, limiters)
       }
+  }
 }

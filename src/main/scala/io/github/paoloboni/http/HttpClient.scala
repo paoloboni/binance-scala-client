@@ -23,25 +23,21 @@ package io.github.paoloboni.http
 
 import cats.effect.kernel.Async
 import cats.syntax.all._
-import cats.{Monad, MonadError}
-import io.circe.{Decoder, Encoder}
 import io.github.paoloboni.http.ratelimit._
 import io.lemonlabs.uri.Url
 import log.effect.LogWriter
-import org.http4s.circe.CirceEntityEncoder._
-import org.http4s.circe._
 import org.http4s.client.Client
 import org.http4s.{Status, _}
 import org.typelevel.ci.CIString
 
 sealed class HttpClient[F[_]: Async: Client: LogWriter] {
 
-  def get[Response: Decoder](
+  def get[Response](
       url: Url,
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  ): F[Response] = for {
+  )(implicit responseDecoder: EntityDecoder[F, Response]): F[Response] = for {
     uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
     request = Request[F](
       method = Method.GET,
@@ -53,30 +49,34 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter] {
     response <- sendRequest[Response](request, limiters, weight)
   } yield response
 
-  def post[Request: Encoder, Response: Decoder](
+  def post[Request, Response](
       url: Url,
       requestBody: Request,
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  ): F[Response] = for {
-    uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
-    request = Request[F](
-      method = Method.POST,
-      uri = uri,
-      headers = Headers(headers.map { case (name, value) =>
-        Header.Raw(CIString(name), value)
-      }.toList)
-    ).withEntity(requestBody)
-    response <- sendRequest[Response](request, limiters, weight)
-  } yield response
+  )(implicit
+      requestEncoder: EntityEncoder[F, Request],
+      responseDecoder: EntityDecoder[F, Response]
+  ): F[Response] =
+    for {
+      uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
+      request = Request[F](
+        method = Method.POST,
+        uri = uri,
+        headers = Headers(headers.map { case (name, value) =>
+          Header.Raw(CIString(name), value)
+        }.toList)
+      ).withEntity(requestBody)
+      response <- sendRequest[Response](request, limiters, weight)
+    } yield response
 
   private def sendRequest[Response](
       request: Request[F],
       limiters: List[RateLimiter[F]],
       weight: Int
   )(implicit
-      decoder: Decoder[Response]
+      decoder: EntityDecoder[F, Response]
   ): F[Response] = {
     for {
       _ <- LogWriter.debug(s"${request.method} ${request.uri}")
@@ -87,17 +87,13 @@ sealed class HttpClient[F[_]: Async: Client: LogWriter] {
               errorBody <- error.as[String]
               _         <- LogWriter.error(s"Failed response. Status=${error.status} Body='$errorBody'")
             } yield HttpError(error.status, errorBody)
-          }(jsonDecoder.map(decoder.decodeJson))
+          }
 
         limiters.foldLeft(httpRequest) { case (response, limiter) =>
           limiter.await(response, weight = weight)
         }
       }
-      handled <- decoded.fold(
-        decodingFailure => Async[F].raiseError(decodingFailure),
-        response => response.pure[F]
-      )
-    } yield handled
+    } yield decoded
   }
 }
 

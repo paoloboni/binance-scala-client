@@ -165,6 +165,7 @@ package object binance {
   }
 
   case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int)
+  case class RateLimits(rateLimits: List[RateLimit])
 
   trait Decoders {
     import cats.syntax.all._

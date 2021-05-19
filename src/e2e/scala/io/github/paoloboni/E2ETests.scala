@@ -9,6 +9,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
+import scala.util.Random
 
 class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
 
@@ -31,16 +32,17 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
       .asserting(_ shouldNot be(empty))
   }
 
-  "createOrder" ignore {
+  "createOrder" in {
+    val side = Random.shuffle(OrderSide.values).head
     BinanceClient[IO](config)
       .use(
         _.createOrder(
           OrderCreate(
             symbol = "XRPUSDT",
-            side = OrderSide.BUY,
+            side = side,
             `type` = OrderType.MARKET,
-            timeInForce = Some(TimeInForce.GTC),
-            quantity = 0.01,
+            timeInForce = None,
+            quantity = 100,
             price = None,
             newClientOrderId = None,
             stopPrice = None,
