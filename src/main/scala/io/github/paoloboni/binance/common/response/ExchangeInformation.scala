@@ -77,6 +77,8 @@ case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, 
   )
 }
 
+case class RateLimits(rateLimits: List[RateLimit])
+
 case class Symbol(
     symbol: String,
     status: String,
