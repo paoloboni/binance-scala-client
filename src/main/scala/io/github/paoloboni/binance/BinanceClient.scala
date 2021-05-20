@@ -93,7 +93,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
         }
       } yield klines
 
-    case other: common.parameters.KLines=>
+    case other: common.parameters.KLines =>
       Stream.raiseError[F](
         new RuntimeException(s"${other.interval} is not a valid interval for Binance")
       )
