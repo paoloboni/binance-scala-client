@@ -49,29 +49,15 @@ object BinanceClient {
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig
-  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] = {
-
+  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] =
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
       .withMaxTotalConnections(config.maxTotalConnections)
       .resource
       .evalMap { implicit c =>
-        def requestRateLimits(client: HttpClient[F]) = for {
-          rateLimits <- client.get[RateLimits](
-            url = config.generateFullInfoUrl,
-            limiters = List.empty
-          )
-        } yield rateLimits.rateLimits
-          .map(_.toRate)
-
         for {
-          client <- HttpClient.make[F]
-          limits <- requestRateLimits(client)
-          limiters <- limits
-            .map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
-            .sequence
-          spotApi = BinanceApi.Factory[F, API].apply(config, client, limiters)
+          client  <- HttpClient.make[F]
+          spotApi <- BinanceApi.Factory[F, API].apply(config, client)
         } yield spotApi
       }
-  }
 }

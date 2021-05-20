@@ -28,6 +28,7 @@ import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common.parameters.{OrderCreateResponseType, OrderSide, OrderType, TimeInForce}
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.response.RateLimits
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -274,5 +275,18 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
 }
 
 object Api {
-  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] = Api.apply _
+  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] =
+    (config: BinanceConfig, client: HttpClient[F]) =>
+      for {
+        limits <- client
+          .get[RateLimits](
+            url = config.generateFullInfoUrl,
+            limiters = List.empty
+          )
+
+        rateLimiters <- limits.rateLimits
+          .map(_.toRate)
+          .traverse(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
+
+      } yield Api.apply(config, client, rateLimiters)
 }
