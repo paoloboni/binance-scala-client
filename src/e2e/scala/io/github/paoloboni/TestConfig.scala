@@ -1,6 +1,6 @@
 package io.github.paoloboni
 
-import io.github.paoloboni.binance.BinanceConfig
+import io.github.paoloboni.binance.common.BinanceConfig
 
 object TestConfig {
   val config: BinanceConfig = BinanceConfig(
