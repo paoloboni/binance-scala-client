@@ -29,19 +29,28 @@ import io.github.paoloboni.binance.common.parameters.OrderType
 import io.github.paoloboni.http.ratelimit.Rate
 import scala.concurrent.duration._
 import io.github.paoloboni.http.ratelimit.RateLimiter
+import io.circe.Decoder
 
 sealed trait Filter
 
-case class PRICE_FILTER(minPrice: BigDecimal, maxPrice: BigDecimal, tickSize: BigDecimal)              extends Filter
-case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, multiplierDecimal: Int) extends Filter
-case class LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)                      extends Filter
-case class MARKET_LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)               extends Filter
-case class MAX_NUM_ORDERS(limit: Int)                                                                  extends Filter
-case class MAX_NUM_ALGO_ORDERS(limit: Int)                                                             extends Filter
-case class MIN_NOTIONAL(notional: Int)                                                                 extends Filter
+case class PRICE_FILTER(minPrice: BigDecimal, maxPrice: BigDecimal, tickSize: BigDecimal)         extends Filter
+case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, avgPriceMins: Int) extends Filter
+case class LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)                 extends Filter
+case class MARKET_LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)          extends Filter
+case class MAX_NUM_ORDERS(limit: Int)                                                             extends Filter
+case class MAX_NUM_ALGO_ORDERS(limit: Int)                                                        extends Filter
+case class MAX_NUM_ICEBERG_ORDERS(limit: Int)                                                     extends Filter
+case class MIN_NOTIONAL(minNotional: BigDecimal, applyToMarket: Boolean, avgPriceMins: Int)       extends Filter
+case class ICEBERG_PARTS(limit: Int)                                                              extends Filter
+case class MAX_POSITION(maxPosition: BigDecimal)                                                  extends Filter
+case class EXCHANGE_MAX_NUM_ORDERS(maxNumOrders: Int)                                             extends Filter
+case class EXCHANGE_MAX_ALGO_ORDERS(maxNumAlgoOrders: Int)                                        extends Filter
 
-object FilterJsonConfiguration {
+object Filter {
   implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("filterType")
+  import io.circe.generic.extras.semiauto._
+
+  implicit val decoder: Decoder[Filter] = deriveConfiguredDecoder[Filter]
 }
 
 sealed trait RateLimitType extends EnumEntry

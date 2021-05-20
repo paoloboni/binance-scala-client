@@ -24,7 +24,7 @@ package io.github.paoloboni.binance.common.response
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
-import io.circe.generic.extras.auto._
+import io.circe.generic.auto._
 import io.circe.parser
 import io.circe.syntax._
 
@@ -32,14 +32,12 @@ class FilterJsonTests extends AnyFlatSpec with Matchers {
 
   "PERCENT_PRICE" should "be able to being decoded from json" in {
 
-    import FilterJsonConfiguration._
-
     val actual = decode[Filter]("""
                    |{
                    |  "filterType": "PERCENT_PRICE",
                    |  "multiplierUp": "1.1500",
                    |  "multiplierDown": "0.8500",
-                   |  "multiplierDecimal": 4
+                   |  "avgPriceMins": 4
                    |}
                    """.stripMargin)
 
@@ -47,27 +45,7 @@ class FilterJsonTests extends AnyFlatSpec with Matchers {
       PERCENT_PRICE(
         multiplierUp = 1.1500,
         multiplierDown = 0.8500,
-        multiplierDecimal = 4
-      )
-    )
-
-    actual shouldBe expected
-  }
-
-  "MIN_NOTIONAL" should "be able to being decoded from json" in {
-
-    import FilterJsonConfiguration._
-
-    val actual = decode[Filter]("""
-                   |{
-                   |  "filterType": "MIN_NOTIONAL",
-                   |  "notional": "1"
-                   |}
-                   """.stripMargin)
-
-    val expected = Right(
-      MIN_NOTIONAL(
-        notional = 1
+        avgPriceMins = 4
       )
     )
 
@@ -75,8 +53,6 @@ class FilterJsonTests extends AnyFlatSpec with Matchers {
   }
 
   "MAX_NUM_ALGO_ORDERS" should "be able to being decoded from json" in {
-
-    import FilterJsonConfiguration._
 
     val actual = decode[Filter]("""
                    |{
@@ -91,8 +67,6 @@ class FilterJsonTests extends AnyFlatSpec with Matchers {
   }
 
   "MAX_NUM_ORDERS" should "be able to being decoded from json" in {
-
-    import FilterJsonConfiguration._
 
     val actual = decode[Filter]("""
                    |{

@@ -32,7 +32,7 @@ object OrderSide extends Enum[OrderSide] {
 }
 
 sealed trait OrderType extends EnumEntry
-object OrderType extends Enum[OrderType] {
+object OrderType extends Enum[OrderType] with CirceEnum[OrderType]{
   val values = findValues
 
   case object LIMIT             extends OrderType
