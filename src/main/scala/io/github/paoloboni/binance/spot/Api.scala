@@ -72,7 +72,10 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
 
       for {
         rawKlines <- Stream.eval(
-          client.get[List[KLine]](url, limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS))
+          client.get[List[KLine]](
+            url,
+            limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+          )
         )
         klines <- rawKlines match {
           //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
@@ -109,7 +112,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     for {
       prices <- client.get[List[Price]](
         url = url,
-        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
+        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         weight = 2
       )
     } yield prices
@@ -136,7 +139,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
       currentTime <- clock.realTime
       balances <- client.get[BinanceBalances](
         url = url(currentTime.toMillis),
-        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
+        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
       )

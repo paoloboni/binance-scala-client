@@ -25,7 +25,8 @@ import cats.effect.{Async, Resource}
 import cats.implicits._
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
-import io.github.paoloboni.binance.common.RateLimitInterval._
+import io.github.paoloboni.binance.common.response.RateLimitInterval._
+import io.github.paoloboni.binance.common.response.{RateLimitType, RateLimits}
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.Api
 import io.github.paoloboni.http.HttpClient

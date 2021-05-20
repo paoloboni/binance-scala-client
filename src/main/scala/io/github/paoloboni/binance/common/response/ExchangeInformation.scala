@@ -22,6 +22,8 @@
 package io.github.paoloboni.binance.common.response
 
 import io.circe.generic.extras.Configuration
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+import io.github.paoloboni.binance.common.parameters.OrderType
 
 sealed trait Filter
 
@@ -36,3 +38,55 @@ case class MIN_NOTIONAL(notional: Int)                                          
 object FilterJsonConfiguration {
   implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("filterType")
 }
+
+sealed trait RateLimitType extends EnumEntry
+object RateLimitType extends Enum[RateLimitType] with CirceEnum[RateLimitType] {
+
+  override def values = findValues
+
+  case object REQUEST_WEIGHT extends RateLimitType
+  case object ORDERS         extends RateLimitType
+  case object RAW_REQUESTS   extends RateLimitType
+  case object NONE           extends RateLimitType
+}
+
+sealed trait RateLimitInterval extends EnumEntry
+object RateLimitInterval extends Enum[RateLimitInterval] with CirceEnum[RateLimitInterval] {
+
+  override def values = findValues
+
+  case object SECOND extends RateLimitInterval
+  case object MINUTE extends RateLimitInterval
+  case object DAY    extends RateLimitInterval
+}
+
+case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int)
+case class RateLimits(rateLimits: List[RateLimit])
+
+case class Symbol(
+    symbol: String,
+    status: String,
+    baseAsset: String,
+    baseAssetPrecision: Int,
+    quoteAsset: String,
+    quotePrecision: Int,
+    quoteAssetPrecision: Int,
+    baseCommissionPrecision: Int,
+    quoteCommissionPrecision: Int,
+    orderTypes: List[OrderType],
+    icebergAllowed: Boolean,
+    ocoAllowed: Boolean,
+    quoteOrderQtyMarketAllowed: Boolean,
+    isSpotTradingAllowed: Boolean,
+    isMarginTradingAllowed: Boolean,
+    filters: List[Filter],
+    permissions: List[String]
+)
+
+case class ExchangeInformation(
+    timezone: String,
+    serverTime: Long,
+    rateLimits: RateLimits,
+    exchangeFilters: List[Filter],
+    symbols: List[Symbol]
+)
