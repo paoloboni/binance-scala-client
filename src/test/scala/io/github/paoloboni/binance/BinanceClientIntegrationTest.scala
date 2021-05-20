@@ -108,7 +108,7 @@ class BinanceClientIntegrationTest
       val result = BinanceClient(config)
         .use { gw =>
           gw.getKLines(
-            KLineParameters(
+            common.parameters.KLines(
               symbol = symbol,
               interval = interval.duration,
               startTime = Instant.ofEpochMilli(from),
@@ -222,7 +222,7 @@ class BinanceClientIntegrationTest
       val result = BinanceClient(config)
         .use { gw =>
           gw.getKLines(
-            KLineParameters(
+            common.parameters.KLines(
               symbol = symbol,
               interval = interval.duration,
               startTime = Instant.ofEpochMilli(from),
@@ -386,7 +386,7 @@ class BinanceClientIntegrationTest
     val result = BinanceClient(config)
       .use(
         _.createOrder(
-          OrderCreationParameters(
+          spot.parameters.OrderCreation(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
             `type` = OrderType.MARKET,
@@ -451,7 +451,7 @@ class BinanceClientIntegrationTest
       .use(client =>
         for {
           _ <- client.cancelOrder(
-            OrderCancelParameters(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
+            spot.parameters.OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
           )
         } yield ()
       )
@@ -584,7 +584,7 @@ class BinanceClientIntegrationTest
       .use(client =>
         for {
           _ <- client.cancelAllOrders(
-            OrderCancelAllParameters(symbol = "BTCUSDT")
+            spot.parameters.OrderCancelAll(symbol = "BTCUSDT")
           )
         } yield ()
       )

@@ -61,4 +61,4 @@ object Interval extends Enum[Interval] {
   def unapply(arg: Duration): Option[Interval] = arg.asBinanceInterval
 }
 
-final case class KLineParameters(symbol: String, interval: Duration, startTime: Instant, endTime: Instant, limit: Int)
+final case class KLines(symbol: String, interval: Duration, startTime: Instant, endTime: Instant, limit: Int)

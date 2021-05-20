@@ -19,14 +19,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot
+package io.github.paoloboni.binance.spot.response
 
-import io.github.paoloboni.binance.common.parameters._
+import io.github.paoloboni.binance.common._
 
-case class OrderCancelParameters(
-    symbol: String,
-    orderId: Option[Long],
-    origClientOrderId: Option[String]
-)
-
-case class OrderCancelAllParameters(symbol: String)
+case class CreateOrder(orderId: Long)

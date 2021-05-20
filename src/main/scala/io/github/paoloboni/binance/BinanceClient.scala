@@ -58,8 +58,8 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     * @param query an `KLines` object containing the query parameters
     * @return the stream of Kline objects
     */
-  def getKLines(query: KLineParameters): Stream[F, KLine] = query match {
-    case KLineParameters(symbol, common.Interval(interval), startTime, endTime, limit) =>
+  def getKLines(query: common.parameters.KLines): Stream[F, KLine] = query match {
+    case common.parameters.KLines(symbol, common.Interval(interval), startTime, endTime, limit) =>
       val url = Url(
         scheme = config.scheme,
         host = config.host,
@@ -93,7 +93,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
         }
       } yield klines
 
-    case other: KLineParameters =>
+    case other: common.parameters.KLines=>
       Stream.raiseError[F](
         new RuntimeException(s"${other.interval} is not a valid interval for Binance")
       )
@@ -164,10 +164,10 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     *
     * @return The id of the order created
     */
-  def createOrder(orderCreate: OrderCreationParameters): F[OrderId] = {
+  def createOrder(orderCreate: spot.parameters.OrderCreation): F[OrderId] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[OrderCreationParameters]
+      val requestBody = QueryStringConverter[spot.parameters.OrderCreation]
         .to(orderCreate)
         .addParams(
           "recvWindow" -> "5000",
@@ -187,7 +187,7 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
       currentTime <- clock.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       orderId <- client
-        .post[String, CreateOrderResponse](
+        .post[String, spot.response.CreateOrder](
           url = url,
           requestBody = requestBody.toString(),
           limiters = rateLimiters,
@@ -203,10 +203,10 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     *
     * @return currently nothing
     */
-  def cancelOrder(orderCancel: OrderCancelParameters): F[Unit] = {
+  def cancelOrder(orderCancel: spot.parameters.OrderCancel): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[OrderCancelParameters]
+      val requestBody = QueryStringConverter[spot.parameters.OrderCancel]
         .to(orderCancel)
         .addParams(
           "recvWindow" -> "5000",
@@ -241,10 +241,10 @@ sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
     *
     * @return currently nothing
     */
-  def cancelAllOrders(orderCancel: OrderCancelAllParameters): F[Unit] = {
+  def cancelAllOrders(orderCancel: spot.parameters.OrderCancelAll): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[OrderCancelAllParameters]
+      val requestBody = QueryStringConverter[spot.parameters.OrderCancelAll]
         .to(orderCancel)
         .addParams(
           "recvWindow" -> "5000",

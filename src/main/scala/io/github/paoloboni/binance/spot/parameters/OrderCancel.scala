@@ -19,19 +19,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot
+package io.github.paoloboni.binance.spot.parameters
 
 import io.github.paoloboni.binance.common.parameters._
 
-case class OrderCreationParameters(
+case class OrderCancel(
     symbol: String,
-    side: OrderSide,
-    `type`: OrderType,
-    timeInForce: Option[TimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[OrderCreateResponseType]
+    orderId: Option[Long],
+    origClientOrderId: Option[String]
 )
+
+case class OrderCancelAll(symbol: String)

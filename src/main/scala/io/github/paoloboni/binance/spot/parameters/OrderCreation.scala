@@ -19,8 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot
+package io.github.paoloboni.binance.spot.parameters
 
-import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.parameters._
 
-case class CreateOrderResponse(orderId: Long)
+case class OrderCreation(
+    symbol: String,
+    side: OrderSide,
+    `type`: OrderType,
+    timeInForce: Option[TimeInForce],
+    quantity: BigDecimal,
+    price: Option[BigDecimal],
+    newClientOrderId: Option[String],
+    stopPrice: Option[BigDecimal],
+    icebergQty: Option[BigDecimal],
+    newOrderRespType: Option[OrderCreateResponseType]
+)

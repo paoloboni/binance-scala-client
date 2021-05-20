@@ -5,9 +5,10 @@ import cats.implicits._
 import cats.effect.testing.scalatest.AsyncIOSpec
 import io.github.paoloboni.TestConfig.config
 import io.github.paoloboni.binance.spot._
-import io.github.paoloboni.binance.common.parameters._
+import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.BinanceClient
-import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.parameters._
+import io.github.paoloboni.binance.common.OrderId
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -32,7 +33,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
   "getKLines" in {
     val now = Instant.now()
     BinanceClient[IO](config)
-      .use(_.getKLines(KLineParameters("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList)
+      .use(_.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList)
       .asserting(_ shouldNot be(empty))
   }
 
@@ -41,7 +42,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
     BinanceClient[IO](config)
       .use(
         _.createOrder(
-          OrderCreationParameters(
+          spot.parameters.OrderCreation(
             symbol = "XRPUSDT",
             side = side,
             `type` = OrderType.MARKET,
@@ -63,7 +64,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
       .use(client =>
         for {
           id <- client.createOrder(
-            OrderCreationParameters(
+            spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
               `type` = OrderType.LIMIT,
@@ -78,7 +79,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
           )
 
           _ <- client.cancelOrder(
-            OrderCancelParameters(
+            spot.parameters.OrderCancel(
               symbol = "XRPUSDT",
               orderId = id.some,
               origClientOrderId = None
@@ -98,7 +99,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
       .use(client =>
         for {
           _ <- client.createOrder(
-            OrderCreationParameters(
+            spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
               `type` = OrderType.LIMIT,
@@ -113,7 +114,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
           )
 
           _ <- client.cancelAllOrders(
-            OrderCancelAllParameters(symbol = "XRPUSDT")
+            spot.parameters.OrderCancelAll(symbol = "XRPUSDT")
           )
         } yield ()
       )
