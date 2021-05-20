@@ -101,7 +101,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val result = BinanceClient[IO, fapi.Api[IO]](config)
         .use { gw =>
-          gw.api
+          gw
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
@@ -217,7 +217,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val result = BinanceClient[IO, fapi.Api[IO]](config)
         .use { gw =>
-          gw.api
+          gw
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
@@ -278,7 +278,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       val config = prepareConfiguration(server)
 
       val result = BinanceClient[IO, fapi.Api[IO]](config)
-        .use(_.api.getPrices())
+        .use(_.getPrices())
         .unsafeRunSync()
 
       result should contain theSameElementsInOrderAs List(

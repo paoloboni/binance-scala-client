@@ -26,13 +26,13 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
 
   "getPrices" in {
     BinanceClient[IO, spot.Api[IO]](config)
-      .use(_.api.getPrices())
+      .use(_.getPrices())
       .asserting(_ shouldNot be(empty))
   }
 
   "getBalance" in {
     BinanceClient[IO, spot.Api[IO]](config)
-      .use(_.api.getBalance())
+      .use(_.getBalance())
       .asserting(_ shouldNot be(empty))
   }
 
@@ -40,10 +40,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     val now = Instant.now()
     BinanceClient[IO, spot.Api[IO]](config)
       .use(
-        _.api
-          .getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100))
-          .compile
-          .toList
+        _.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList
       )
       .asserting(_ shouldNot be(empty))
   }
@@ -52,7 +49,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     val side = Random.shuffle(OrderSide.values).head
     BinanceClient[IO, spot.Api[IO]](config)
       .use(
-        _.api.createOrder(
+        _.createOrder(
           spot.parameters.OrderCreation(
             symbol = "XRPUSDT",
             side = side,
@@ -74,7 +71,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          id <- client.api.createOrder(
+          id <- client.createOrder(
             spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
@@ -89,7 +86,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
             )
           )
 
-          _ <- client.api.cancelOrder(
+          _ <- client.cancelOrder(
             spot.parameters.OrderCancel(
               symbol = "XRPUSDT",
               orderId = id.some,
@@ -109,7 +106,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          _ <- client.api.createOrder(
+          _ <- client.createOrder(
             spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
@@ -124,7 +121,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
             )
           )
 
-          _ <- client.api.cancelAllOrders(
+          _ <- client.cancelAllOrders(
             spot.parameters.OrderCancelAll(symbol = "XRPUSDT")
           )
         } yield ()

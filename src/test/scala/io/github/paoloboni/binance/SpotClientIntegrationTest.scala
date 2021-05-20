@@ -101,7 +101,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val result = BinanceClient[IO, spot.Api[IO]](config)
         .use { gw =>
-          gw.api
+          gw
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
@@ -217,7 +217,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val result = BinanceClient[IO, spot.Api[IO]](config)
         .use { gw =>
-          gw.api
+          gw
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
@@ -278,7 +278,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       val config = prepareConfiguration(server)
 
       val result = BinanceClient[IO, spot.Api[IO]](config)
-        .use(_.api.getPrices())
+        .use(_.getPrices())
         .unsafeRunSync()
 
       result should contain theSameElementsInOrderAs List(
@@ -339,7 +339,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
     val result = BinanceClient[IO, spot.Api[IO]](config)
-      .use(_.api.getBalance())
+      .use(_.getBalance())
       .unsafeRunSync()
 
     result shouldBe Map(
@@ -383,7 +383,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     val result = BinanceClient[IO, spot.Api[IO]](config)
       .use(
-        _.api.createOrder(
+        _.createOrder(
           spot.parameters.OrderCreation(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
@@ -448,7 +448,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     val result = BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          _ <- client.api.cancelOrder(
+          _ <- client.cancelOrder(
             spot.parameters.OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
           )
         } yield ()
@@ -581,7 +581,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     val result = BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          _ <- client.api.cancelAllOrders(
+          _ <- client.cancelAllOrders(
             spot.parameters.OrderCancelAll(symbol = "BTCUSDT")
           )
         } yield ()

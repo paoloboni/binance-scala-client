@@ -37,15 +37,11 @@ import org.http4s.client.blaze.BlazeClientBuilder
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-sealed class BinanceClient[F[_]: WithClock: Async: LogWriter, API <: BinanceApi[F]] private (binanceApi: API) {
-  lazy val api: API = binanceApi
-}
-
 object BinanceClient {
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig
-  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, BinanceClient[F, API]] = {
+  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] = {
 
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
@@ -83,7 +79,7 @@ object BinanceClient {
             .map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
             .sequence
           spotApi = BinanceApi.Factory[F, API].apply(config, client, limiters)
-        } yield new BinanceClient[F, API](spotApi)
+        } yield spotApi
       }
   }
 }
