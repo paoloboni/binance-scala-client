@@ -28,7 +28,7 @@ import cats.effect.syntax.spawn._
 import cats.effect.{Spawn, Sync}
 import cats.implicits._
 import fs2.Stream
-import io.github.paoloboni.binance.RateLimitType
+import io.github.paoloboni.binance.common.RateLimitType
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
