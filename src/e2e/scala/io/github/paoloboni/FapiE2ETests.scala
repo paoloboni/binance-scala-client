@@ -25,14 +25,16 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   )
 
   "getPrices" in {
-    BinanceClient[IO, fapi.Api[IO]](config)
+    BinanceClient
+      .createFutureClient[IO](config)
       .use(_.getPrices())
       .asserting(_ shouldNot be(empty))
   }
 
   "getKLines" in {
     val now = Instant.now()
-    BinanceClient[IO, fapi.Api[IO]](config)
+    BinanceClient
+      .createFutureClient[IO](config)
       .use(
         _.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList
       )

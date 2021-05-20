@@ -25,20 +25,23 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   )
 
   "getPrices" in {
-    BinanceClient[IO, spot.Api[IO]](config)
+    BinanceClient
+      .createSpotClient[IO](config)
       .use(_.getPrices())
       .asserting(_ shouldNot be(empty))
   }
 
   "getBalance" in {
-    BinanceClient[IO, spot.Api[IO]](config)
+    BinanceClient
+      .createSpotClient[IO](config)
       .use(_.getBalance())
       .asserting(_ shouldNot be(empty))
   }
 
   "getKLines" in {
     val now = Instant.now()
-    BinanceClient[IO, spot.Api[IO]](config)
+    BinanceClient
+      .createSpotClient[IO](config)
       .use(
         _.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList
       )
@@ -47,7 +50,8 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
 
   "createOrder" in {
     val side = Random.shuffle(OrderSide.values).head
-    BinanceClient[IO, spot.Api[IO]](config)
+    BinanceClient
+      .createSpotClient[IO](config)
       .use(
         _.createOrder(
           spot.parameters.OrderCreation(
@@ -68,7 +72,8 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   }
 
   "cancelOrder" in {
-    BinanceClient[IO, spot.Api[IO]](config)
+    BinanceClient
+      .createSpotClient[IO](config)
       .use(client =>
         for {
           id <- client.createOrder(
@@ -103,7 +108,8 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   }
 
   "cancelAllOrders" in {
-    BinanceClient[IO, spot.Api[IO]](config)
+    BinanceClient
+      .createSpotClient[IO](config)
       .use(client =>
         for {
           _ <- client.createOrder(

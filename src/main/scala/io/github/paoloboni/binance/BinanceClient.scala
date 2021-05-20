@@ -27,6 +27,7 @@ import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common.RateLimitInterval._
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.spot.Api
 import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.ratelimit.{Rate, RateLimiter}
 import io.lemonlabs.uri.Url
@@ -38,6 +39,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object BinanceClient {
+
+  def createSpotClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig): Resource[F, Api[F]] =
+    apply[F, spot.Api[F]](config)
+
+  def createFutureClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig): Resource[F, fapi.Api[F]] =
+    apply[F, fapi.Api[F]](config)
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig

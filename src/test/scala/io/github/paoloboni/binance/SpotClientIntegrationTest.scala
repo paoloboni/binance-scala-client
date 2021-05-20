@@ -99,7 +99,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient[IO, spot.Api[IO]](config)
+      val result = BinanceClient
+        .createSpotClient[IO](config)
         .use { gw =>
           gw
             .getKLines(
@@ -215,7 +216,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient[IO, spot.Api[IO]](config)
+      val result = BinanceClient
+        .createSpotClient[IO](config)
         .use { gw =>
           gw
             .getKLines(
@@ -277,7 +279,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient[IO, spot.Api[IO]](config)
+      val result = BinanceClient
+        .createSpotClient[IO](config)
         .use(_.getPrices())
         .unsafeRunSync()
 
@@ -338,7 +341,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient[IO, spot.Api[IO]](config)
+    val result = BinanceClient
+      .createSpotClient[IO](config)
       .use(_.getBalance())
       .unsafeRunSync()
 
@@ -381,7 +385,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient[IO, spot.Api[IO]](config)
+    val result = BinanceClient
+      .createSpotClient[IO](config)
       .use(
         _.createOrder(
           spot.parameters.OrderCreation(
@@ -445,7 +450,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient[IO, spot.Api[IO]](config)
+    val result = BinanceClient
+      .createSpotClient[IO](config)
       .use(client =>
         for {
           _ <- client.cancelOrder(
@@ -578,7 +584,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient[IO, spot.Api[IO]](config)
+    val result = BinanceClient
+      .createSpotClient[IO](config)
       .use(client =>
         for {
           _ <- client.cancelAllOrders(
