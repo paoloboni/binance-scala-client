@@ -107,15 +107,17 @@ class BinanceClientIntegrationTest
 
       val result = BinanceClient(config)
         .use { gw =>
-          gw.getKLines(
-            common.parameters.KLines(
-              symbol = symbol,
-              interval = interval.duration,
-              startTime = Instant.ofEpochMilli(from),
-              endTime = Instant.ofEpochMilli(to),
-              limit = threshold
+          gw.spot
+            .getKLines(
+              common.parameters.KLines(
+                symbol = symbol,
+                interval = interval.duration,
+                startTime = Instant.ofEpochMilli(from),
+                endTime = Instant.ofEpochMilli(to),
+                limit = threshold
+              )
             )
-          ).compile
+            .compile
             .toList
         }
         .unsafeRunSync()
@@ -221,15 +223,17 @@ class BinanceClientIntegrationTest
 
       val result = BinanceClient(config)
         .use { gw =>
-          gw.getKLines(
-            common.parameters.KLines(
-              symbol = symbol,
-              interval = interval.duration,
-              startTime = Instant.ofEpochMilli(from),
-              endTime = Instant.ofEpochMilli(to),
-              limit = threshold
+          gw.spot
+            .getKLines(
+              common.parameters.KLines(
+                symbol = symbol,
+                interval = interval.duration,
+                startTime = Instant.ofEpochMilli(from),
+                endTime = Instant.ofEpochMilli(to),
+                limit = threshold
+              )
             )
-          ).compile
+            .compile
             .toList
         }
         .unsafeRunSync()
@@ -280,7 +284,7 @@ class BinanceClientIntegrationTest
       val config = prepareConfiguration(server)
 
       val result = BinanceClient(config)
-        .use(_.getPrices())
+        .use(_.spot.getPrices())
         .unsafeRunSync()
 
       result should contain theSameElementsInOrderAs List(
@@ -341,7 +345,7 @@ class BinanceClientIntegrationTest
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
     val result = BinanceClient(config)
-      .use(_.getBalance())
+      .use(_.spot.getBalance())
       .unsafeRunSync()
 
     result shouldBe Map(
@@ -385,7 +389,7 @@ class BinanceClientIntegrationTest
 
     val result = BinanceClient(config)
       .use(
-        _.createOrder(
+        _.spot.createOrder(
           spot.parameters.OrderCreation(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
@@ -450,7 +454,7 @@ class BinanceClientIntegrationTest
     val result = BinanceClient(config)
       .use(client =>
         for {
-          _ <- client.cancelOrder(
+          _ <- client.spot.cancelOrder(
             spot.parameters.OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
           )
         } yield ()
@@ -583,7 +587,7 @@ class BinanceClientIntegrationTest
     val result = BinanceClient(config)
       .use(client =>
         for {
-          _ <- client.cancelAllOrders(
+          _ <- client.spot.cancelAllOrders(
             spot.parameters.OrderCancelAll(symbol = "BTCUSDT")
           )
         } yield ()

@@ -21,8 +21,6 @@
 
 package io.github.paoloboni.binance.spot.parameters
 
-import io.github.paoloboni.binance.common.parameters._
-
 case class OrderCancel(
     symbol: String,
     orderId: Option[Long],

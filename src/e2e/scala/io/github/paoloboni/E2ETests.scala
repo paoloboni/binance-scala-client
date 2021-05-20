@@ -20,20 +20,25 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
 
   "getPrices" in {
     BinanceClient[IO](config)
-      .use(_.getPrices())
+      .use(_.spot.getPrices())
       .asserting(_ shouldNot be(empty))
   }
 
   "getBalance" in {
     BinanceClient[IO](config)
-      .use(_.getBalance())
+      .use(_.spot.getBalance())
       .asserting(_ shouldNot be(empty))
   }
 
   "getKLines" in {
     val now = Instant.now()
     BinanceClient[IO](config)
-      .use(_.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList)
+      .use(
+        _.spot
+          .getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100))
+          .compile
+          .toList
+      )
       .asserting(_ shouldNot be(empty))
   }
 
@@ -41,7 +46,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
     val side = Random.shuffle(OrderSide.values).head
     BinanceClient[IO](config)
       .use(
-        _.createOrder(
+        _.spot.createOrder(
           spot.parameters.OrderCreation(
             symbol = "XRPUSDT",
             side = side,
@@ -63,7 +68,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
     BinanceClient[IO](config)
       .use(client =>
         for {
-          id <- client.createOrder(
+          id <- client.spot.createOrder(
             spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
@@ -78,7 +83,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
             )
           )
 
-          _ <- client.cancelOrder(
+          _ <- client.spot.cancelOrder(
             spot.parameters.OrderCancel(
               symbol = "XRPUSDT",
               orderId = id.some,
@@ -98,7 +103,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
     BinanceClient[IO](config)
       .use(client =>
         for {
-          _ <- client.createOrder(
+          _ <- client.spot.createOrder(
             spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
@@ -113,7 +118,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
             )
           )
 
-          _ <- client.cancelAllOrders(
+          _ <- client.spot.cancelAllOrders(
             spot.parameters.OrderCancelAll(symbol = "XRPUSDT")
           )
         } yield ()

@@ -23,255 +23,25 @@ package io.github.paoloboni.binance
 
 import cats.effect.{Async, Resource}
 import cats.implicits._
-import fs2.Stream
 import io.circe.generic.auto._
+import io.github.paoloboni.{WithClock, binance}
 import io.github.paoloboni.binance.common.RateLimitInterval._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.parameters._
-import io.github.paoloboni.binance.spot._
-import io.github.paoloboni.encryption.HMAC
+import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.ratelimit.{Rate, RateLimiter}
-import io.github.paoloboni.http.{HttpClient, QueryStringConverter, StringConverter}
-import io.github.paoloboni.{WithClock, binance}
-import io.lemonlabs.uri.{QueryString, Url}
+import io.lemonlabs.uri.Url
 import log.effect.LogWriter
-import org.http4s.EntityEncoder
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.blaze.BlazeClientBuilder
-import shapeless.tag
 
-import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
-    config: BinanceConfig,
-    client: HttpClient[F],
-    rateLimiters: List[RateLimiter[F]]
+    spotApi: binance.spot.Api[F]
 ) {
 
-  private val clock = implicitly[WithClock[F]].clock
-
-  /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
-    * in case the result set doesn't fit in a single page.
-    *
-    * @param query an `KLines` object containing the query parameters
-    * @return the stream of Kline objects
-    */
-  def getKLines(query: common.parameters.KLines): Stream[F, KLine] = query match {
-    case common.parameters.KLines(symbol, common.Interval(interval), startTime, endTime, limit) =>
-      val url = Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/klines",
-        query = QueryString.fromPairs(
-          "symbol"    -> symbol,
-          "interval"  -> interval.toString,
-          "startTime" -> startTime.toEpochMilli.toString,
-          "endTime"   -> endTime.toEpochMilli.toString,
-          "limit"     -> limit.toString
-        )
-      )
-
-      for {
-        rawKlines <- Stream.eval(
-          client.get[List[KLine]](url, limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS))
-        )
-        klines <- rawKlines match {
-          //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
-          //to a strange behaviour
-          case loneElement :: Nil if (query.endTime.toEpochMilli - loneElement.openTime) > interval.duration.toMillis =>
-            val newQuery = query.copy(startTime = Instant.ofEpochMilli(loneElement.closeTime))
-            Stream.emit(loneElement) ++ getKLines(newQuery)
-
-          case init :+ last if (query.endTime.toEpochMilli - last.openTime) > interval.duration.toMillis =>
-            val newQuery = query.copy(startTime = Instant.ofEpochMilli(last.openTime))
-            Stream.emits(init) ++ getKLines(newQuery)
-
-          case list => Stream.emits(list)
-        }
-      } yield klines
-
-    case other: common.parameters.KLines =>
-      Stream.raiseError[F](
-        new RuntimeException(s"${other.interval} is not a valid interval for Binance")
-      )
-  }
-
-  /** Returns a snapshot of the prices at the time the query is executed.
-    *
-    * @return A sequence of prices (one for each symbol)
-    */
-  def getPrices(): F[Seq[Price]] = {
-    val url = Url(
-      scheme = config.scheme,
-      host = config.host,
-      port = config.port,
-      path = "/api/v3/ticker/price"
-    )
-    for {
-      prices <- client.get[List[Price]](
-        url = url,
-        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
-        weight = 2
-      )
-    } yield prices
-  }
-
-  /** Returns the current balance, at the time the query is executed.
-    *
-    * @return The balance (free and locked) for each asset
-    */
-  def getBalance(): F[Map[Asset, Balance]] = {
-    def url(currentMillis: Long) = {
-      val query       = s"recvWindow=5000&timestamp=${currentMillis.toString}"
-      val signature   = HMAC.sha256(config.apiSecret, query)
-      val queryString = QueryString.parse(query).addParam("signature", signature)
-      Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/account",
-        query = queryString
-      )
-    }
-    for {
-      currentTime <- clock.realTime
-      balances <- client.get[BinanceBalances](
-        url = url(currentTime.toMillis),
-        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
-        headers = Map("X-MBX-APIKEY" -> config.apiKey),
-        weight = 5
-      )
-    } yield balances.balances.map(b => tag[AssetTag](b.asset) -> Balance(b.free, b.locked)).toMap
-  }
-
-  private implicit val orderSideStringConverter: StringConverter[OrderSide] =
-    StringConverter.enumEntryConverter(OrderSide)
-  private implicit val orderTypeStringConverter: StringConverter[OrderType] =
-    StringConverter.enumEntryConverter(OrderType)
-  private implicit val timeInForceStringConverter: StringConverter[TimeInForce] =
-    StringConverter.enumEntryConverter(TimeInForce)
-  private implicit val orderCreateResponseTypeStringConverter: StringConverter[OrderCreateResponseType] =
-    StringConverter.enumEntryConverter(OrderCreateResponseType)
-
-  private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
-
-  /** Creates an order.
-    *
-    * @param orderCreate the parameters required to define the order
-    *
-    * @return The id of the order created
-    */
-  def createOrder(orderCreate: spot.parameters.OrderCreation): F[OrderId] = {
-
-    def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[spot.parameters.OrderCreation]
-        .to(orderCreate)
-        .addParams(
-          "recvWindow" -> "5000",
-          "timestamp"  -> currentMillis.toString
-        )
-      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
-      val url = Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/order"
-      )
-      (url, requestBody.addParam("signature" -> signature))
-    }
-
-    for {
-      currentTime <- clock.realTime
-      (url, requestBody) = urlAndBody(currentTime.toMillis)
-      orderId <- client
-        .post[String, spot.response.CreateOrder](
-          url = url,
-          requestBody = requestBody.toString(),
-          limiters = rateLimiters,
-          headers = Map("X-MBX-APIKEY" -> config.apiKey)
-        )
-        .map(response => tag[OrderIdTag][Long](response.orderId))
-    } yield orderId
-  }
-
-  /** Cancels an order.
-    *
-    * @param orderCancel the parameters required to cancel the order
-    *
-    * @return currently nothing
-    */
-  def cancelOrder(orderCancel: spot.parameters.OrderCancel): F[Unit] = {
-
-    def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[spot.parameters.OrderCancel]
-        .to(orderCancel)
-        .addParams(
-          "recvWindow" -> "5000",
-          "timestamp"  -> currentMillis.toString
-        )
-      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
-      val url = Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/order"
-      )
-      (url, requestBody.addParam("signature" -> signature))
-    }
-
-    for {
-      currentTime <- clock.realTime
-      (url, requestBody) = urlAndBody(currentTime.toMillis)
-      _ <- client
-        .delete[String, io.circe.Json](
-          url = url,
-          requestBody = requestBody.toString(),
-          limiters = rateLimiters,
-          headers = Map("X-MBX-APIKEY" -> config.apiKey)
-        )
-    } yield ()
-  }
-
-  /** Cancels all orders of a symbol.
-    *
-    * @param orderCancel the parameters required to cancel all the orders
-    *
-    * @return currently nothing
-    */
-  def cancelAllOrders(orderCancel: spot.parameters.OrderCancelAll): F[Unit] = {
-
-    def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[spot.parameters.OrderCancelAll]
-        .to(orderCancel)
-        .addParams(
-          "recvWindow" -> "5000",
-          "timestamp"  -> currentMillis.toString
-        )
-      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
-      val url = Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/openOrders"
-      )
-      (url, requestBody.addParam("signature" -> signature))
-    }
-
-    for {
-      currentTime <- clock.realTime
-      (url, requestBody) = urlAndBody(currentTime.toMillis)
-      _ <- client
-        .delete[String, io.circe.Json](
-          url = url,
-          requestBody = requestBody.toString(),
-          limiters = rateLimiters,
-          headers = Map("X-MBX-APIKEY" -> config.apiKey)
-        )
-    } yield ()
-  }
+  lazy val spot: binance.spot.Api[F] = spotApi
 }
 
 object BinanceClient {
@@ -315,7 +85,8 @@ object BinanceClient {
           limiters <- limits
             .map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
             .sequence
-        } yield new BinanceClient(config, client, limiters)
+          spotApi = new binance.spot.Api[F](config, client, limiters)
+        } yield new BinanceClient(spotApi)
       }
   }
 }
