@@ -19,12 +19,18 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot.parameters
+package io.github.paoloboni.binance
 
-case class OrderCancel(
-    symbol: String,
-    orderId: Option[Long],
-    origClientOrderId: Option[String]
-)
+import io.github.paoloboni.binance.common.BinanceConfig
+import io.github.paoloboni.http.HttpClient
+import io.github.paoloboni.http.ratelimit.RateLimiter
 
-case class OrderCancelAll(symbol: String)
+trait BinanceApi[F[_]]
+
+object BinanceApi {
+  type Factory[F[_], API <: BinanceApi[F]] = (BinanceConfig, HttpClient[F], List[RateLimiter[F]]) => API
+
+  object Factory {
+    def apply[F[_], API <: BinanceApi[F]](implicit instance: Factory[F, API]): Factory[F, API] = instance
+  }
+}

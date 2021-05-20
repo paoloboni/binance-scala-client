@@ -21,14 +21,7 @@
 
 package io.github.paoloboni.binance.common.parameters
 
-import java.time.Instant
-
-import enumeratum.{CirceEnum, Enum, EnumEntry}
-import io.circe.Decoder
-import shapeless.tag.@@
-
-import scala.collection.immutable
-import scala.concurrent.duration.{Duration, _}
+import enumeratum.{Enum, EnumEntry}
 
 sealed trait OrderSide extends EnumEntry
 object OrderSide extends Enum[OrderSide] {
