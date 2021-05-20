@@ -58,27 +58,11 @@ object BinanceClient {
       .evalMap { implicit c =>
         def requestRateLimits(client: HttpClient[F]) = for {
           rateLimits <- client.get[RateLimits](
-            Url(
-              scheme = config.scheme,
-              host = config.host,
-              port = config.port,
-              path = config.infoUrl
-            ),
+            url = config.generateFullInfoUrl,
             limiters = List.empty
           )
-          requestLimits = rateLimits.rateLimits
-            .map(limit =>
-              Rate(
-                limit.limit,
-                limit.interval match {
-                  case SECOND => limit.intervalNum.seconds
-                  case MINUTE => limit.intervalNum.minutes
-                  case DAY    => limit.intervalNum.days
-                },
-                limit.rateLimitType
-              )
-            )
-        } yield requestLimits
+        } yield rateLimits.rateLimits
+          .map(_.toRate)
 
         for {
           client <- HttpClient.make[F]

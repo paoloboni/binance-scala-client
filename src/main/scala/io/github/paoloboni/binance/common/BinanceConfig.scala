@@ -22,6 +22,7 @@
 package io.github.paoloboni.binance.common
 
 import scala.concurrent.duration._
+import io.lemonlabs.uri.Url
 
 case class BinanceConfig(
     scheme: String,
@@ -33,4 +34,11 @@ case class BinanceConfig(
     responseHeaderTimeout: Duration = 40.seconds,
     maxTotalConnections: Int = 20,
     rateLimiterBufferSize: Int = 1000
-)
+) {
+  def generateFullInfoUrl = Url(
+    scheme = scheme,
+    host = host,
+    port = port,
+    path = infoUrl
+  )
+}
