@@ -27,8 +27,10 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import cats.implicits._
-import io.github.paoloboni.binance.Decoders._
-import io.github.paoloboni.binance.Interval._
+import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.parameters._
+import io.github.paoloboni.binance.spot._
+import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
 import org.scalatest.{EitherValues, OptionValues}
@@ -106,7 +108,7 @@ class BinanceClientIntegrationTest
       val result = BinanceClient(config)
         .use { gw =>
           gw.getKLines(
-            KLines(
+            common.parameters.KLines(
               symbol = symbol,
               interval = interval.duration,
               startTime = Instant.ofEpochMilli(from),
@@ -220,7 +222,7 @@ class BinanceClientIntegrationTest
       val result = BinanceClient(config)
         .use { gw =>
           gw.getKLines(
-            KLines(
+            common.parameters.KLines(
               symbol = symbol,
               interval = interval.duration,
               startTime = Instant.ofEpochMilli(from),
@@ -384,7 +386,7 @@ class BinanceClientIntegrationTest
     val result = BinanceClient(config)
       .use(
         _.createOrder(
-          OrderCreate(
+          spot.parameters.OrderCreation(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
             `type` = OrderType.MARKET,
@@ -449,7 +451,7 @@ class BinanceClientIntegrationTest
       .use(client =>
         for {
           _ <- client.cancelOrder(
-            OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
+            spot.parameters.OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
           )
         } yield ()
       )
@@ -582,7 +584,7 @@ class BinanceClientIntegrationTest
       .use(client =>
         for {
           _ <- client.cancelAllOrders(
-            OrderCancelAll(symbol = "BTCUSDT")
+            spot.parameters.OrderCancelAll(symbol = "BTCUSDT")
           )
         } yield ()
       )
@@ -623,7 +625,7 @@ class BinanceClientIntegrationTest
 
   private def stubTimer(fixedTime: Long) = new Clock[IO] {
     override def applicative: Applicative[IO]  = ???
-    override def monotonic: IO[FiniteDuration] = IO.pure(fixedTime.millis)
-    override def realTime: IO[FiniteDuration]  = IO.pure(fixedTime.millis)
+    override def monotonic: IO[FiniteDuration] = fixedTime.millis.pure[IO]
+    override def realTime: IO[FiniteDuration]  = fixedTime.millis.pure[IO]
   }
 }
