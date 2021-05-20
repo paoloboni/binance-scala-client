@@ -40,7 +40,6 @@ package object common {
   trait OrderIdTag
   type OrderId = Long @@ OrderIdTag
 
-
   case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)
   case class BinanceBalances(balances: Seq[BinanceBalance])
 
