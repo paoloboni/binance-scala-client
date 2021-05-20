@@ -24,7 +24,7 @@ package io.github.paoloboni.binance
 import cats.effect.{Async, Resource}
 import cats.implicits._
 import io.circe.generic.auto._
-import io.github.paoloboni.{WithClock, binance}
+import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common.RateLimitInterval._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.http.HttpClient
@@ -37,18 +37,15 @@ import org.http4s.client.blaze.BlazeClientBuilder
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-sealed class BinanceClient[F[_]: WithClock: Async: LogWriter] private (
-    spotApi: binance.spot.Api[F]
-) {
-
-  lazy val spot: binance.spot.Api[F] = spotApi
+sealed class BinanceClient[F[_]: WithClock: Async: LogWriter, API <: BinanceApi[F]] private (binanceApi: API) {
+  lazy val api: API = binanceApi
 }
 
 object BinanceClient {
 
-  def apply[F[_]: WithClock: LogWriter: Async](
+  def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig
-  ): Resource[F, BinanceClient[F]] = {
+  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, BinanceClient[F, API]] = {
 
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
@@ -85,8 +82,8 @@ object BinanceClient {
           limiters <- limits
             .map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
             .sequence
-          spotApi = new binance.spot.Api[F](config, client, limiters)
-        } yield new BinanceClient(spotApi)
+          spotApi = BinanceApi.Factory[F, API].apply(config, client, limiters)
+        } yield new BinanceClient[F, API](spotApi)
       }
   }
 }

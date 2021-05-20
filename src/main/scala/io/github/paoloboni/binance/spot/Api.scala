@@ -28,7 +28,7 @@ import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common.parameters.{OrderCreateResponseType, OrderSide, OrderType, TimeInForce}
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.{common, spot}
+import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.github.paoloboni.http.{HttpClient, QueryStringConverter, StringConverter}
@@ -40,11 +40,11 @@ import shapeless.tag
 
 import java.time.Instant
 
-final class Api[F[_]: Async: WithClock: LogWriter](
+final case class Api[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
     rateLimiters: List[RateLimiter[F]]
-) {
+) extends BinanceApi[F] {
 
   private val clock = implicitly[WithClock[F]].clock
 
@@ -268,4 +268,8 @@ final class Api[F[_]: Async: WithClock: LogWriter](
         )
     } yield ()
   }
+}
+
+object Api {
+  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] = Api.apply _
 }

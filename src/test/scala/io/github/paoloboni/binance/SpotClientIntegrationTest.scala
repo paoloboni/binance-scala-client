@@ -23,30 +23,24 @@ package io.github.paoloboni.binance
 
 import cats.Applicative
 import cats.effect.{Clock, IO}
+import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
-import cats.implicits._
+import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters._
-import io.github.paoloboni.binance.spot._
-import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
 
 import java.time.Instant
 import scala.concurrent.duration._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-class BinanceClientIntegrationTest
-    extends AnyFreeSpec
-    with Matchers
-    with EitherValues
-    with OptionValues
-    with TestClient {
+class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherValues with OptionValues with TestClient {
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>
@@ -105,9 +99,9 @@ class BinanceClientIntegrationTest
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config)
+      val result = BinanceClient[IO, spot.Api[IO]](config)
         .use { gw =>
-          gw.spot
+          gw.api
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
@@ -221,9 +215,9 @@ class BinanceClientIntegrationTest
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config)
+      val result = BinanceClient[IO, spot.Api[IO]](config)
         .use { gw =>
-          gw.spot
+          gw.api
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
@@ -283,8 +277,8 @@ class BinanceClientIntegrationTest
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient(config)
-        .use(_.spot.getPrices())
+      val result = BinanceClient[IO, spot.Api[IO]](config)
+        .use(_.api.getPrices())
         .unsafeRunSync()
 
       result should contain theSameElementsInOrderAs List(
@@ -344,8 +338,8 @@ class BinanceClientIntegrationTest
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient(config)
-      .use(_.spot.getBalance())
+    val result = BinanceClient[IO, spot.Api[IO]](config)
+      .use(_.api.getBalance())
       .unsafeRunSync()
 
     result shouldBe Map(
@@ -387,9 +381,9 @@ class BinanceClientIntegrationTest
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient(config)
+    val result = BinanceClient[IO, spot.Api[IO]](config)
       .use(
-        _.spot.createOrder(
+        _.api.createOrder(
           spot.parameters.OrderCreation(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
@@ -451,10 +445,10 @@ class BinanceClientIntegrationTest
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient(config)
+    val result = BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          _ <- client.spot.cancelOrder(
+          _ <- client.api.cancelOrder(
             spot.parameters.OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
           )
         } yield ()
@@ -584,10 +578,10 @@ class BinanceClientIntegrationTest
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient(config)
+    val result = BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          _ <- client.spot.cancelAllOrders(
+          _ <- client.api.cancelAllOrders(
             spot.parameters.OrderCancelAll(symbol = "BTCUSDT")
           )
         } yield ()

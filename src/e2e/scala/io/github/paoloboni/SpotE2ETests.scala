@@ -1,14 +1,11 @@
 package io.github.paoloboni
 
 import cats.effect.IO
-import cats.implicits._
 import cats.effect.testing.scalatest.AsyncIOSpec
-import io.github.paoloboni.TestConfig.config
-import io.github.paoloboni.binance.spot._
-import io.github.paoloboni.binance._
-import io.github.paoloboni.binance.BinanceClient
+import cats.implicits._
+import io.github.paoloboni.binance.common.{BinanceConfig, OrderId}
 import io.github.paoloboni.binance.common.parameters._
-import io.github.paoloboni.binance.common.OrderId
+import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -16,25 +13,34 @@ import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
-class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
+class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
+
+  val config: BinanceConfig = BinanceConfig(
+    scheme = "https",
+    host = "testnet.binance.vision",
+    port = 443,
+    infoUrl = "/api/v3/exchangeInfo",
+    apiKey = sys.env("API_KEY"),
+    apiSecret = sys.env("SECRET_KEY")
+  )
 
   "getPrices" in {
-    BinanceClient[IO](config)
-      .use(_.spot.getPrices())
+    BinanceClient[IO, spot.Api[IO]](config)
+      .use(_.api.getPrices())
       .asserting(_ shouldNot be(empty))
   }
 
   "getBalance" in {
-    BinanceClient[IO](config)
-      .use(_.spot.getBalance())
+    BinanceClient[IO, spot.Api[IO]](config)
+      .use(_.api.getBalance())
       .asserting(_ shouldNot be(empty))
   }
 
   "getKLines" in {
     val now = Instant.now()
-    BinanceClient[IO](config)
+    BinanceClient[IO, spot.Api[IO]](config)
       .use(
-        _.spot
+        _.api
           .getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100))
           .compile
           .toList
@@ -44,9 +50,9 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
 
   "createOrder" in {
     val side = Random.shuffle(OrderSide.values).head
-    BinanceClient[IO](config)
+    BinanceClient[IO, spot.Api[IO]](config)
       .use(
-        _.spot.createOrder(
+        _.api.createOrder(
           spot.parameters.OrderCreation(
             symbol = "XRPUSDT",
             side = side,
@@ -65,10 +71,10 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
   }
 
   "cancelOrder" in {
-    BinanceClient[IO](config)
+    BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          id <- client.spot.createOrder(
+          id <- client.api.createOrder(
             spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
@@ -83,7 +89,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
             )
           )
 
-          _ <- client.spot.cancelOrder(
+          _ <- client.api.cancelOrder(
             spot.parameters.OrderCancel(
               symbol = "XRPUSDT",
               orderId = id.some,
@@ -100,10 +106,10 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
   }
 
   "cancelAllOrders" in {
-    BinanceClient[IO](config)
+    BinanceClient[IO, spot.Api[IO]](config)
       .use(client =>
         for {
-          _ <- client.spot.createOrder(
+          _ <- client.api.createOrder(
             spot.parameters.OrderCreation(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
@@ -118,7 +124,7 @@ class E2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
             )
           )
 
-          _ <- client.spot.cancelAllOrders(
+          _ <- client.api.cancelAllOrders(
             spot.parameters.OrderCancelAll(symbol = "XRPUSDT")
           )
         } yield ()
