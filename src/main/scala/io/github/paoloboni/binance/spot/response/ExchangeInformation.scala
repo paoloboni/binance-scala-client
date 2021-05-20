@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common.response
+package io.github.paoloboni.binance.spot.response
 
 import io.circe.generic.extras.Configuration
 import enumeratum.{CirceEnum, Enum, EnumEntry}
@@ -30,6 +30,7 @@ import io.github.paoloboni.http.ratelimit.Rate
 import scala.concurrent.duration._
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.circe.Decoder
+import io.github.paoloboni.binance.common.response.RateLimit
 
 sealed trait Filter
 
@@ -52,41 +53,6 @@ object Filter {
 
   implicit val decoder: Decoder[Filter] = deriveConfiguredDecoder[Filter]
 }
-
-sealed trait RateLimitType extends EnumEntry
-object RateLimitType extends Enum[RateLimitType] with CirceEnum[RateLimitType] {
-
-  override def values = findValues
-
-  case object REQUEST_WEIGHT extends RateLimitType
-  case object ORDERS         extends RateLimitType
-  case object RAW_REQUESTS   extends RateLimitType
-  case object NONE           extends RateLimitType
-}
-
-sealed trait RateLimitInterval extends EnumEntry
-object RateLimitInterval extends Enum[RateLimitInterval] with CirceEnum[RateLimitInterval] {
-
-  override def values = findValues
-
-  case object SECOND extends RateLimitInterval
-  case object MINUTE extends RateLimitInterval
-  case object DAY    extends RateLimitInterval
-}
-
-case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int) {
-  def toRate = Rate(
-    limit,
-    interval match {
-      case RateLimitInterval.SECOND => intervalNum.seconds
-      case RateLimitInterval.MINUTE => intervalNum.minutes
-      case RateLimitInterval.DAY    => intervalNum.days
-    },
-    rateLimitType
-  )
-}
-
-case class RateLimits(rateLimits: List[RateLimit])
 
 case class Symbol(
     symbol: String,

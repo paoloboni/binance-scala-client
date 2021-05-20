@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.binance.common.parameters
 
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.{Enum, EnumEntry, CirceEnum}
 
 sealed trait OrderSide extends EnumEntry
 object OrderSide extends Enum[OrderSide] {
@@ -32,7 +32,7 @@ object OrderSide extends Enum[OrderSide] {
 }
 
 sealed trait OrderType extends EnumEntry
-object OrderType extends Enum[OrderType] with CirceEnum[OrderType]{
+object OrderType extends Enum[OrderType] with CirceEnum[OrderType] {
   val values = findValues
 
   case object LIMIT             extends OrderType
