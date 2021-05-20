@@ -23,7 +23,12 @@ package io.github.paoloboni.binance.common.response
 
 import io.circe.generic.extras.Configuration
 import enumeratum.{CirceEnum, Enum, EnumEntry}
+import cats.effect.kernel.Temporal
+import cats.implicits._
 import io.github.paoloboni.binance.common.parameters.OrderType
+import io.github.paoloboni.http.ratelimit.Rate
+import scala.concurrent.duration._
+import io.github.paoloboni.http.ratelimit.RateLimiter
 
 sealed trait Filter
 
@@ -60,8 +65,17 @@ object RateLimitInterval extends Enum[RateLimitInterval] with CirceEnum[RateLimi
   case object DAY    extends RateLimitInterval
 }
 
-case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int)
-case class RateLimits(rateLimits: List[RateLimit])
+case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int) {
+  def toRate = Rate(
+    limit,
+    interval match {
+      case RateLimitInterval.SECOND => intervalNum.seconds
+      case RateLimitInterval.MINUTE => intervalNum.minutes
+      case RateLimitInterval.DAY    => intervalNum.days
+    },
+    rateLimitType
+  )
+}
 
 case class Symbol(
     symbol: String,
@@ -86,7 +100,13 @@ case class Symbol(
 case class ExchangeInformation(
     timezone: String,
     serverTime: Long,
-    rateLimits: RateLimits,
+    rateLimits: List[RateLimit],
     exchangeFilters: List[Filter],
     symbols: List[Symbol]
-)
+) {
+  def createRateLimiters[F[_]: Temporal](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =
+    rateLimits
+      .map(_.toRate)
+      .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))
+
+}
