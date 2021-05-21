@@ -2,8 +2,8 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import io.github.paoloboni.binance.common.parameters.{OrderSide, OrderType}
-import io.github.paoloboni.binance.common.{BinanceConfig, OrderId}
+import io.github.paoloboni.binance.common.{BinanceConfig, OrderId, OrderSide}
+import io.github.paoloboni.binance.fapi.OrderType
 import io.github.paoloboni.binance.fapi.response.GetBalance
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec

@@ -29,7 +29,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.parameters.{OrderSide, OrderType}
+import io.github.paoloboni.binance.fapi.OrderType
 import io.github.paoloboni.binance.fapi.response.GetBalance
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
@@ -37,8 +37,8 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
-import scala.jdk.CollectionConverters._
 
+import scala.jdk.CollectionConverters._
 import java.time.Instant
 import scala.concurrent.duration._
 
@@ -463,6 +463,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
             .withStatus(200)
             .withBody("""
                         |{
+                        |  "timezone":"UTC",
+                        |  "serverTime":1621543436177,
+                        |  "futuresType":"U_MARGINED",
                         |  "rateLimits": [
                         |    {
                         |      "rateLimitType": "REQUEST_WEIGHT",
@@ -470,7 +473,10 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
                         |      "intervalNum": 1,
                         |      "limit": 1200
                         |    }
-                        |  ]
+                        |  ],
+                        |  "exchangeFilters":[],
+                        |  "assets": [],
+                        |  "symbols":[]
                         |}
                       """.stripMargin)
         )

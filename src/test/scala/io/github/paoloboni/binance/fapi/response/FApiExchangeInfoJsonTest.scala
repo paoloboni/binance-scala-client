@@ -19,30 +19,27 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot.parameters
+package io.github.paoloboni.binance.fapi.response
 
-import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.spot._
-import enumeratum.{CirceEnum, Enum, EnumEntry}
+import org.scalatest.flatspec.AnyFlatSpec
+import io.circe.generic.auto._
+import org.scalatest.matchers.should.Matchers
+import io.circe.parser.decode
+import io.circe.parser
+import io.circe.syntax._
+import scala.io.Source
 
-sealed trait OrderCreateResponseType extends EnumEntry
-object OrderCreateResponseType extends Enum[OrderCreateResponseType] {
-  val values = findValues
+class FApiExchangeInfoJsonTests extends AnyFlatSpec with Matchers {
+  val exchangeInfoTestPath =
+    System.getProperty("user.dir") + "/src/test/scala/io/github/paoloboni/binance/fapi/response/exchangeInfo.json"
 
-  case object ACK    extends OrderCreateResponseType
-  case object RESULT extends OrderCreateResponseType
-  case object FULL   extends OrderCreateResponseType
+  val exchangeInfoStr = Source.fromFile(exchangeInfoTestPath).mkString
+
+  "FApi ExchangeInfos" should "be decodeable from json" in {
+    val result = decode[ExchangeInformation](exchangeInfoStr)
+
+    result.left.map(println(_))
+    result.isRight shouldBe true
+
+  }
 }
-
-case class OrderCreation(
-    symbol: String,
-    side: OrderSide,
-    `type`: OrderType,
-    timeInForce: Option[TimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[OrderCreateResponseType]
-)

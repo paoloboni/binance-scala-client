@@ -27,7 +27,7 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.spot.response.ExchangeInformation
+import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -43,7 +43,7 @@ import java.time.Instant
 final case class Api[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
-    exchangeInfo: ExchangeInformation,
+    exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
 ) extends BinanceApi[F] {
 
@@ -270,7 +270,7 @@ object Api {
     (config: BinanceConfig, client: HttpClient[F]) =>
       for {
         exchangeInfo <- client
-          .get[ExchangeInformation](
+          .get[spot.response.ExchangeInformation](
             url = config.generateFullInfoUrl,
             limiters = List.empty
           )
