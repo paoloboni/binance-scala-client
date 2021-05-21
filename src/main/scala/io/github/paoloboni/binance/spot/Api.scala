@@ -28,6 +28,8 @@ import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common.parameters.{OrderCreateResponseType, OrderSide, OrderType, TimeInForce}
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.response.RateLimits
+import io.github.paoloboni.binance.spot.response.ExchangeInformation
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -43,6 +45,7 @@ import java.time.Instant
 final case class Api[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
+    exchangeInfo: ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
 ) extends BinanceApi[F] {
 
@@ -72,7 +75,10 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
 
       for {
         rawKlines <- Stream.eval(
-          client.get[List[KLine]](url, limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS))
+          client.get[List[KLine]](
+            url,
+            limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+          )
         )
         klines <- rawKlines match {
           //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
@@ -109,7 +115,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     for {
       prices <- client.get[List[Price]](
         url = url,
-        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
+        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         weight = 2
       )
     } yield prices
@@ -136,7 +142,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
       currentTime <- clock.realTime
       balances <- client.get[BinanceBalances](
         url = url(currentTime.toMillis),
-        limiters = rateLimiters.filterNot(_.limitType == RateLimitType.ORDERS),
+        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
       )
@@ -271,5 +277,15 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
 }
 
 object Api {
-  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] = Api.apply _
+  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] =
+    (config: BinanceConfig, client: HttpClient[F]) =>
+      for {
+        exchangeInfo <- client
+          .get[ExchangeInformation](
+            url = config.generateFullInfoUrl,
+            limiters = List.empty
+          )
+
+        rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
+      } yield Api.apply(config, client, exchangeInfo, rateLimiters)
 }

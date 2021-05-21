@@ -25,7 +25,8 @@ import cats.effect.{Async, Resource}
 import cats.implicits._
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
-import io.github.paoloboni.binance.common.RateLimitInterval._
+import io.github.paoloboni.binance.common.response.RateLimitInterval._
+import io.github.paoloboni.binance.common.response.{RateLimitType, RateLimits}
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.Api
 import io.github.paoloboni.http.HttpClient
@@ -40,53 +41,27 @@ import scala.concurrent.duration._
 
 object BinanceClient {
 
-  def createSpotClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig): Resource[F, Api[F]] =
+  def createSpotClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, spot.Api[F]]
+  ): Resource[F, Api[F]] =
     apply[F, spot.Api[F]](config)
 
-  def createFutureClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig): Resource[F, fapi.Api[F]] =
+  def createFutureClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, fapi.Api[F]]
+  ): Resource[F, fapi.Api[F]] =
     apply[F, fapi.Api[F]](config)
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig
-  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] = {
-
+  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] =
     BlazeClientBuilder[F](global)
       .withResponseHeaderTimeout(config.responseHeaderTimeout)
       .withMaxTotalConnections(config.maxTotalConnections)
       .resource
       .evalMap { implicit c =>
-        def requestRateLimits(client: HttpClient[F]) = for {
-          rateLimits <- client.get[RateLimits](
-            Url(
-              scheme = config.scheme,
-              host = config.host,
-              port = config.port,
-              path = config.infoUrl
-            ),
-            limiters = List.empty
-          )
-          requestLimits = rateLimits.rateLimits
-            .map(limit =>
-              Rate(
-                limit.limit,
-                limit.interval match {
-                  case SECOND => limit.intervalNum.seconds
-                  case MINUTE => limit.intervalNum.minutes
-                  case DAY    => limit.intervalNum.days
-                },
-                limit.rateLimitType
-              )
-            )
-        } yield requestLimits
-
         for {
-          client <- HttpClient.make[F]
-          limits <- requestRateLimits(client)
-          limiters <- limits
-            .map(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
-            .sequence
-          spotApi = BinanceApi.Factory[F, API].apply(config, client, limiters)
+          client  <- HttpClient.make[F]
+          spotApi <- BinanceApi.Factory[F, API].apply(config, client)
         } yield spotApi
       }
-  }
 }

@@ -19,16 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common
+package io.github.paoloboni.binance.common.response
 
-import java.time.Instant
-
+import io.circe.generic.extras.Configuration
 import enumeratum.{CirceEnum, Enum, EnumEntry}
+import cats.effect.kernel.Temporal
+import cats.implicits._
+import io.github.paoloboni.binance.common.parameters.OrderType
+import io.github.paoloboni.http.ratelimit.Rate
+import scala.concurrent.duration._
+import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.circe.Decoder
-import shapeless.tag.@@
-
-import scala.collection.immutable
-import scala.concurrent.duration.{Duration, _}
 
 sealed trait RateLimitType extends EnumEntry
 object RateLimitType extends Enum[RateLimitType] with CirceEnum[RateLimitType] {
@@ -51,5 +52,16 @@ object RateLimitInterval extends Enum[RateLimitInterval] with CirceEnum[RateLimi
   case object DAY    extends RateLimitInterval
 }
 
-case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int)
+case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int) {
+  def toRate = Rate(
+    limit,
+    interval match {
+      case RateLimitInterval.SECOND => intervalNum.seconds
+      case RateLimitInterval.MINUTE => intervalNum.minutes
+      case RateLimitInterval.DAY    => intervalNum.days
+    },
+    rateLimitType
+  )
+}
+
 case class RateLimits(rateLimits: List[RateLimit])

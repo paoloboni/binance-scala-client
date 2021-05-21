@@ -27,6 +27,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "io.circe"              %% "circe-core"                    % "0.13.0",
       "io.circe"              %% "circe-generic"                 % "0.13.0",
+      "io.circe"              %% "circe-generic-extras"          % "0.13.0",
       "co.fs2"                %% "fs2-core"                      % "3.0.3",
       "org.typelevel"         %% "cats-core"                     % "2.6.1",
       "org.typelevel"         %% "cats-effect"                   % "3.1.1",
