@@ -30,6 +30,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 
 ### Spot API
 
+* [Exchange information](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#exchange-information): Current exchange trading rules and symbol information
 * [Kline/Candlestick data](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data): Kline/candlestick bars for a symbol
 * [Symbol price ticker](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#symbol-price-ticker): Latest price for a symbol or symbols
 * [Balance information](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#account-information-user_data): Current balance information
@@ -39,8 +40,11 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 
 ### Future API
 
+* [Exchange information](https://binance-docs.github.io/apidocs/#exchange-information): Current exchange trading rules and symbol information
 * [Kline/Candlestick data](https://binance-docs.github.io/apidocs/#kline-candlestick-data): Kline/candlestick bars for a symbol
 * [Symbol price ticker](https://binance-docs.github.io/apidocs/#symbol-price-ticker): Latest price for a symbol or symbols
+* [Account information](https://binance-docs.github.io/apidocs/#account-information-user_data): Get current account information
+* [New order (trade)](https://binance-docs.github.io/apidocs/#new-order-trade): Send in a new order
 
 ## Example
 
