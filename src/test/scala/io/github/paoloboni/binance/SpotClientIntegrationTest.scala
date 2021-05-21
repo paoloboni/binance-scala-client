@@ -392,7 +392,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           spot.parameters.OrderCreation(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
-            `type` = OrderType.MARKET,
+            `type` = spot.OrderType.MARKET,
             timeInForce = None,
             quantity = 10.5,
             price = None,

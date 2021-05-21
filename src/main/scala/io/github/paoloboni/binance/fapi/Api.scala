@@ -27,22 +27,21 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.RateLimits
 import io.github.paoloboni.binance.fapi.response.GetBalance
-import io.github.paoloboni.binance.{BinanceApi, common}
+import io.github.paoloboni.binance.{BinanceApi, common, _}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
 import org.http4s.circe.CirceEntityDecoder._
-import shapeless.tag
 
 import java.time.Instant
 
 final case class Api[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
+    exchangeInfo: fapi.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
 ) extends BinanceApi[F] {
 
@@ -151,15 +150,12 @@ object Api {
   implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] =
     (config: BinanceConfig, client: HttpClient[F]) =>
       for {
-        limits <- client
-          .get[RateLimits](
+        exchangeInfo <- client
+          .get[fapi.response.ExchangeInformation](
             url = config.generateFullInfoUrl,
             limiters = List.empty
           )
 
-        rateLimiters <- limits.rateLimits
-          .map(_.toRate)
-          .traverse(limit => RateLimiter.make[F](limit.perSecond, config.rateLimiterBufferSize, limit.limitType))
-
-      } yield Api.apply(config, client, rateLimiters)
+        rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
+      } yield Api.apply(config, client, exchangeInfo, rateLimiters)
 }

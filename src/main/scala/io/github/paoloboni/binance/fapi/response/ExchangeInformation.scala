@@ -19,30 +19,26 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot.response
+package io.github.paoloboni.binance.fapi.response
 
 import cats.effect.kernel.Temporal
 import cats.implicits._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import io.github.paoloboni.binance.spot.OrderType
+import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.http.ratelimit.RateLimiter
+import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait Filter
 
-case class PRICE_FILTER(minPrice: BigDecimal, maxPrice: BigDecimal, tickSize: BigDecimal)         extends Filter
-case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, avgPriceMins: Int) extends Filter
-case class LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)                 extends Filter
-case class MARKET_LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)          extends Filter
-case class MAX_NUM_ORDERS(maxNumOrders: Int)                                                      extends Filter
-case class MAX_NUM_ALGO_ORDERS(maxNumAlgoOrders: Int)                                             extends Filter
-case class MAX_NUM_ICEBERG_ORDERS(maxNumIcebergOrders: Int)                                       extends Filter
-case class MIN_NOTIONAL(minNotional: BigDecimal, applyToMarket: Boolean, avgPriceMins: Int)       extends Filter
-case class ICEBERG_PARTS(limit: Int)                                                              extends Filter
-case class MAX_POSITION(maxPosition: BigDecimal)                                                  extends Filter
-case class EXCHANGE_MAX_NUM_ORDERS(maxNumOrders: Int)                                             extends Filter
-case class EXCHANGE_MAX_ALGO_ORDERS(maxNumAlgoOrders: Int)                                        extends Filter
+case class PRICE_FILTER(minPrice: BigDecimal, maxPrice: BigDecimal, tickSize: BigDecimal)              extends Filter
+case class LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)                      extends Filter
+case class MARKET_LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)               extends Filter
+case class MAX_NUM_ORDERS(limit: Int)                                                                  extends Filter
+case class MAX_NUM_ALGO_ORDERS(limit: Int)                                                             extends Filter
+case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, multiplierDecimal: Int) extends Filter
+case class MIN_NOTIONAL(notional: Int)                                                                 extends Filter
 
 object Filter {
   implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("filterType")
@@ -51,31 +47,52 @@ object Filter {
   implicit val decoder: Decoder[Filter] = deriveConfiguredDecoder[Filter]
 }
 
+sealed trait ContractType extends EnumEntry
+object ContractType extends Enum[ContractType] with CirceEnum[ContractType] {
+  val values = findValues
+
+  case object PERPETUAL       extends ContractType
+  case object CURRENT_MONTH   extends ContractType
+  case object NEXT_MONTH      extends ContractType
+  case object CURRENT_QUARTER extends ContractType
+  case object NEXT_QUARTER    extends ContractType
+}
+
 case class Symbol(
     symbol: String,
+    pair: String,
+    contractType: String,
+    deliveryDate: Long,
+    onboardDate: Long,
     status: String,
+    maintMarginPercent: BigDecimal,
+    requiredMarginPercent: BigDecimal,
     baseAsset: String,
-    baseAssetPrecision: Int,
     quoteAsset: String,
+    marginAsset: String,
+    pricePrecision: Int,
+    quantityPrecision: Int,
+    baseAssetPrecision: Int,
     quotePrecision: Int,
-    quoteAssetPrecision: Int,
-    baseCommissionPrecision: Int,
-    quoteCommissionPrecision: Int,
+    underlyingType: String,
+    settlePlan: Int,
+    triggerProtect: BigDecimal,
     orderTypes: List[OrderType],
-    icebergAllowed: Boolean,
-    ocoAllowed: Boolean,
-    quoteOrderQtyMarketAllowed: Boolean,
-    isSpotTradingAllowed: Boolean,
-    isMarginTradingAllowed: Boolean,
     filters: List[Filter],
-    permissions: List[String]
-)
+    timeInForce: List[TimeInForce]
+) {
+  def getContractType: Option[ContractType] = ContractType.withNameOption(contractType)
+}
+
+case class AssetInfo(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
 
 case class ExchangeInformation(
     timezone: String,
     serverTime: Long,
+    futuresType: String,
     rateLimits: List[RateLimit],
     exchangeFilters: List[Filter],
+    assets: List[AssetInfo],
     symbols: List[Symbol]
 ) {
   def createRateLimiters[F[_]: Temporal](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =

@@ -392,6 +392,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
             .withStatus(200)
             .withBody("""
                         |{
+                        |  "timezone":"UTC",
+                        |  "serverTime":1621543436177,
+                        |  "futuresType":"U_MARGINED",
                         |  "rateLimits": [
                         |    {
                         |      "rateLimitType": "REQUEST_WEIGHT",
@@ -399,7 +402,10 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
                         |      "intervalNum": 1,
                         |      "limit": 1200
                         |    }
-                        |  ]
+                        |  ],
+                        |  "exchangeFilters":[],
+                        |  "assets": [],
+                        |  "symbols":[]
                         |}
                       """.stripMargin)
         )
