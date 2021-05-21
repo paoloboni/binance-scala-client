@@ -2,7 +2,7 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import io.github.paoloboni.binance.common.{BinanceConfig, OrderId, OrderSide}
+import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
 import io.github.paoloboni.binance.fapi.OrderType
 import io.github.paoloboni.binance.fapi.response.GetBalance
 import io.github.paoloboni.binance.{BinanceClient, _}
@@ -43,7 +43,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createFutureClient[IO](config)
       .use(
-        _.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList
+        _.getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100)).compile.toList
       )
       .asserting(_ shouldNot be(empty))
   }
