@@ -166,7 +166,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     for {
       currentTime <- clock.realTime
       orderId <- client
-        .post[String, fapi.response.CreateOrder](
+        .post[String, fapi.response.FutureOrderCreationResponse](
           url = url(currentTime.toMillis),
           requestBody = "",
           limiters = rateLimiters,

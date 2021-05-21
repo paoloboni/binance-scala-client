@@ -21,4 +21,4 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-case class CreateOrder(orderId: Long)
+case class FutureOrderCreationResponse(orderId: Long)
