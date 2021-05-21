@@ -28,13 +28,15 @@ import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi.response.GetBalance
-import io.github.paoloboni.binance.{BinanceApi, common, _}
+import io.github.paoloboni.binance.{BinanceApi, common, fapi}
 import io.github.paoloboni.encryption.HMAC
-import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.ratelimit.RateLimiter
+import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
+import org.http4s.EntityEncoder
 import org.http4s.circe.CirceEntityDecoder._
+import shapeless.tag
 
 import java.time.Instant
 
@@ -143,6 +145,45 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
         weight = 5
       )
     } yield balance
+  }
+
+  private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
+
+  /** Creates an order.
+    *
+    * @param orderCreate the parameters required to define the order
+    *
+    * @return The id of the order created
+    */
+  def createOrder(orderCreate: fapi.parameters.OrderCreation): F[OrderId] = {
+
+    def url(currentMillis: Long) = {
+      val queryString = QueryStringConverter[fapi.parameters.OrderCreation]
+        .to(orderCreate)
+        .addParams(
+          "recvWindow" -> "5000",
+          "timestamp"  -> currentMillis.toString
+        )
+      val signature = HMAC.sha256(config.apiSecret, queryString.toString())
+      Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/fapi/v1/order"
+      ).withQueryString(queryString.addParam("signature" -> signature))
+    }
+
+    for {
+      currentTime <- clock.realTime
+      orderId <- client
+        .post[String, fapi.response.CreateOrder](
+          url = url(currentTime.toMillis),
+          requestBody = "",
+          limiters = rateLimiters,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+        .map(response => tag[OrderIdTag][Long](response.orderId))
+    } yield orderId
   }
 }
 
