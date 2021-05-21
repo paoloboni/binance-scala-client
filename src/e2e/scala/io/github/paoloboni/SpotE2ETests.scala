@@ -22,8 +22,8 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     host = "testnet.binance.vision",
     port = 443,
     infoUrl = "/api/v3/exchangeInfo",
-    apiKey = sys.env("API_KEY"),
-    apiSecret = sys.env("SECRET_KEY")
+    apiKey = sys.env("SPOT_API_KEY"),
+    apiSecret = sys.env("SPOT_SECRET_KEY")
   )
 
   "getPrices" in {
@@ -50,7 +50,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldNot be(empty))
   }
 
-  "createOrder" ignore {
+  "createOrder" in {
     val side = Random.shuffle(OrderSide.values).head
     BinanceClient
       .createSpotClient[IO](config)
@@ -73,7 +73,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldBe a[OrderId])
   }
 
-  "cancelOrder" ignore {
+  "cancelOrder" in {
     BinanceClient
       .createSpotClient[IO](config)
       .use(client =>
@@ -109,7 +109,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldBe true)
   }
 
-  "cancelAllOrders" ignore {
+  "cancelAllOrders" in {
     BinanceClient
       .createSpotClient[IO](config)
       .use(client =>

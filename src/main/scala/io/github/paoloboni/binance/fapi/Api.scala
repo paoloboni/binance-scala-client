@@ -27,16 +27,14 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.RateLimits
-import io.github.paoloboni.binance._
-import io.github.paoloboni.binance.{BinanceApi, common}
+import io.github.paoloboni.binance.fapi.response.GetBalance
+import io.github.paoloboni.binance.{BinanceApi, common, _}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
 import org.http4s.circe.CirceEntityDecoder._
-import shapeless.tag
 
 import java.time.Instant
 
@@ -123,7 +121,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return The balance (free and locked) for each asset
     */
-  def getBalance(): F[Map[Asset, Balance]] = {
+  def getBalance(): F[GetBalance] = {
     def url(currentMillis: Long) = {
       val query       = s"recvWindow=5000&timestamp=${currentMillis.toString}"
       val signature   = HMAC.sha256(config.apiSecret, query)
@@ -138,13 +136,13 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     }
     for {
       currentTime <- clock.realTime
-      balances <- client.get[BinanceBalances](
+      balance <- client.get[GetBalance](
         url = url(currentTime.toMillis),
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
       )
-    } yield balances.balances.map(b => tag[AssetTag](b.asset) -> Balance(b.free, b.locked)).toMap
+    } yield balance
   }
 }
 

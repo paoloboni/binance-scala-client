@@ -19,34 +19,35 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance
+package io.github.paoloboni.binance.fapi.response
 
-import io.circe.Decoder
-import shapeless.tag
-import shapeless.tag.@@
-import enumeratum.{CirceEnum, Enum, EnumEntry}
+import io.github.paoloboni.binance.common
 
-package object common {
-  case class Price(symbol: String, price: BigDecimal)
-  case class Balance(free: BigDecimal, locked: BigDecimal)
+case class GetBalance(
+    assets: List[Asset],
+    canDeposit: Boolean,
+    canTrade: Boolean,
+    canWithdraw: Boolean,
+    feeTier: Int,
+    maxWithdrawAmount: BigDecimal,
+    totalInitialMargin: BigDecimal,
+    totalMaintMargin: BigDecimal,
+    totalMarginBalance: BigDecimal,
+    totalOpenOrderInitialMargin: BigDecimal,
+    totalPositionInitialMargin: BigDecimal,
+    totalUnrealizedProfit: BigDecimal,
+    totalWalletBalance: BigDecimal,
+    updateTime: Long
+)
 
-  trait AssetTag
-  type Asset = String @@ AssetTag
-
-  implicit val assetDecoder: Decoder[Asset] = Decoder.decodeString.map(tag[AssetTag][String](_))
-
-  trait OrderIdTag
-  type OrderId = Long @@ OrderIdTag
-
-  sealed trait OrderSide extends EnumEntry
-  object OrderSide extends Enum[OrderSide] {
-    val values = findValues
-
-    case object SELL extends OrderSide
-    case object BUY  extends OrderSide
-  }
-
-  case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)
-  case class BinanceBalances(balances: Seq[BinanceBalance])
-
-}
+case class Asset(
+    asset: common.Asset,
+    initialMargin: BigDecimal,
+    maintMargin: BigDecimal,
+    marginBalance: BigDecimal,
+    maxWithdrawAmount: BigDecimal,
+    openOrderInitialMargin: BigDecimal,
+    positionInitialMargin: BigDecimal,
+    unrealizedProfit: BigDecimal,
+    walletBalance: BigDecimal
+)
