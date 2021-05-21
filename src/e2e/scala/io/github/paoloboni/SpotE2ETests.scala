@@ -5,7 +5,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
 import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
 import io.github.paoloboni.binance.spot._
-import io.github.paoloboni.binance.spot.parameters.SpotOrderCreation
+import io.github.paoloboni.binance.spot.parameters.SpotOrderCreationParams
 import io.github.paoloboni.binance.common.parameters._
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
@@ -56,7 +56,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .createSpotClient[IO](config)
       .use(
         _.createOrder(
-          SpotOrderCreation(
+          SpotOrderCreationParams(
             symbol = "XRPUSDT",
             side = side,
             `type` = OrderType.MARKET,
@@ -79,7 +79,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(client =>
         for {
           id <- client.createOrder(
-            SpotOrderCreation(
+            SpotOrderCreationParams(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
               `type` = OrderType.LIMIT,
@@ -115,7 +115,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(client =>
         for {
           _ <- client.createOrder(
-            SpotOrderCreation(
+            SpotOrderCreationParams(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
               `type` = OrderType.LIMIT,
