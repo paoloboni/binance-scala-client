@@ -23,37 +23,15 @@ package io.github.paoloboni.binance.spot
 
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-sealed trait OrderType extends EnumEntry
-object OrderType extends Enum[OrderType] with CirceEnum[OrderType] {
+sealed trait SpotOrderType extends EnumEntry
+object SpotOrderType extends Enum[SpotOrderType] with CirceEnum[SpotOrderType] {
   val values = findValues
 
-  case object LIMIT             extends OrderType
-  case object MARKET            extends OrderType
-  case object STOP_LOSS         extends OrderType
-  case object STOP_LOSS_LIMIT   extends OrderType
-  case object TAKE_PROFIT       extends OrderType
-  case object TAKE_PROFIT_LIMIT extends OrderType
-  case object LIMIT_MAKER       extends OrderType
-}
-
-sealed trait TimeInForce extends EnumEntry
-object TimeInForce extends Enum[TimeInForce] {
-  val values = findValues
-
-  case object GTC extends TimeInForce // Good-Til-Canceled
-  case object IOC extends TimeInForce // Immediate or Cancel
-  case object FOK extends TimeInForce // Fill or Kill
-}
-
-sealed trait OrderStatus extends EnumEntry
-object OrderStatus extends Enum[OrderStatus] {
-  val values = findValues
-
-  case object NEW              extends OrderStatus
-  case object PARTIALLY_FILLED extends OrderStatus
-  case object FILLED           extends OrderStatus
-  case object CANCELED         extends OrderStatus
-  case object PENDING_CANCEL   extends OrderStatus
-  case object REJECTED         extends OrderStatus
-  case object EXPIRED          extends OrderStatus
+  case object LIMIT             extends SpotOrderType
+  case object MARKET            extends SpotOrderType
+  case object STOP_LOSS         extends SpotOrderType
+  case object STOP_LOSS_LIMIT   extends SpotOrderType
+  case object TAKE_PROFIT       extends SpotOrderType
+  case object TAKE_PROFIT_LIMIT extends SpotOrderType
+  case object LIMIT_MAKER       extends SpotOrderType
 }

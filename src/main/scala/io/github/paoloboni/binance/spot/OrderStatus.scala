@@ -19,30 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot.parameters
+package io.github.paoloboni.binance.spot
 
-import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.spot._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-sealed trait OrderCreateResponseType extends EnumEntry
-object OrderCreateResponseType extends Enum[OrderCreateResponseType] {
+sealed trait SpotOrderStatus extends EnumEntry
+object SpotOrderStatus extends Enum[SpotOrderStatus] {
   val values = findValues
 
-  case object ACK    extends OrderCreateResponseType
-  case object RESULT extends OrderCreateResponseType
-  case object FULL   extends OrderCreateResponseType
+  case object NEW              extends SpotOrderStatus
+  case object PARTIALLY_FILLED extends SpotOrderStatus
+  case object FILLED           extends SpotOrderStatus
+  case object CANCELED         extends SpotOrderStatus
+  case object PENDING_CANCEL   extends SpotOrderStatus
+  case object REJECTED         extends SpotOrderStatus
+  case object EXPIRED          extends SpotOrderStatus
 }
-
-case class SpotOrderCreateParams(
-    symbol: String,
-    side: OrderSide,
-    `type`: SpotOrderType,
-    timeInForce: Option[SpotTimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[OrderCreateResponseType]
-)

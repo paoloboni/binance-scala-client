@@ -29,6 +29,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.binance.spot.parameters._
+import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
@@ -465,7 +466,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           SpotOrderCreateParams(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
-            `type` = spot.OrderType.MARKET,
+            `type` = SpotOrderType.MARKET,
             timeInForce = None,
             quantity = 10.5,
             price = None,
