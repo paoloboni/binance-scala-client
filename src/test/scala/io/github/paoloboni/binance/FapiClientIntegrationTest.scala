@@ -430,7 +430,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     result shouldBe FutureAccountInfoResponse(
       assets = List(
-        fapi.response.AccountInfoAsset(
+        OwnedAssetInfo(
           asset = tag[AssetTag][String]("USDT"),
           initialMargin = 9.00000000,
           maintMargin = 0,
