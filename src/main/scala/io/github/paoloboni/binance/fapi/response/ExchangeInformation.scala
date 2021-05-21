@@ -82,7 +82,7 @@ case class Symbol(
     timeInForce: List[TimeInForce]
 )
 
-case class Asset(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
+case class AssetInfo(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
 
 case class ExchangeInformation(
     timezone: String,
@@ -90,7 +90,7 @@ case class ExchangeInformation(
     futuresType: String,
     rateLimits: List[RateLimit],
     exchangeFilters: List[Filter],
-    assets: List[Asset],
+    assets: List[AssetInfo],
     symbols: List[Symbol]
 ) {
   def createRateLimiters[F[_]: Temporal](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =

@@ -28,7 +28,7 @@ import io.circe.parser.decode
 import io.circe.parser
 import io.circe.syntax._
 
-class ExchangeInfoJsonTests extends AnyFlatSpec with Matchers {
+class SpotExchangeInfoJsonTest extends AnyFlatSpec with Matchers {
   val exchangeInfoTest = """
 {
    "timezone":"UTC",
@@ -1460,9 +1460,9 @@ class ExchangeInfoJsonTests extends AnyFlatSpec with Matchers {
    ]
 }"""
 
-  "ExchangeInfos" should "be decodeable from json" in {
+  "Spot ExchangeInfos" should "be decodeable from json" in {
     val result = decode[ExchangeInformation](exchangeInfoTest)
 
-    println(result)
+    result.isRight shouldBe true
   }
 }

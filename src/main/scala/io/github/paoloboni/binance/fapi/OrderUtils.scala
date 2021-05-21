@@ -37,7 +37,7 @@ object OrderType extends Enum[OrderType] with CirceEnum[OrderType] {
 }
 
 sealed trait TimeInForce extends EnumEntry
-object TimeInForce extends Enum[TimeInForce] {
+object TimeInForce extends Enum[TimeInForce] with CirceEnum[TimeInForce] {
   val values = findValues
 
   case object GTC extends TimeInForce // Good-Til-Canceled
@@ -47,7 +47,7 @@ object TimeInForce extends Enum[TimeInForce] {
 }
 
 sealed trait PositionSide extends EnumEntry
-object PositionSide extends Enum[PositionSide] {
+object PositionSide extends Enum[PositionSide] with CirceEnum[PositionSide] {
   val values = findValues
 
   case object SHORT extends PositionSide // Good-Til-Canceled
@@ -56,7 +56,7 @@ object PositionSide extends Enum[PositionSide] {
 }
 
 sealed trait OrderStatus extends EnumEntry
-object OrderStatus extends Enum[OrderStatus] {
+object OrderStatus extends Enum[OrderStatus] with CirceEnum[OrderStatus] {
   val values = findValues
 
   case object NEW              extends OrderStatus
@@ -69,7 +69,7 @@ object OrderStatus extends Enum[OrderStatus] {
 }
 
 sealed trait ContractStatus extends EnumEntry
-object ContractStatus extends Enum[ContractStatus] {
+object ContractStatus extends Enum[ContractStatus] with CirceEnum[ContractStatus] {
   val values = findValues
 
   case object PENDING_TRADING extends ContractStatus
@@ -83,7 +83,7 @@ object ContractStatus extends Enum[ContractStatus] {
 }
 
 sealed trait ContractType extends EnumEntry
-object ContractType extends Enum[ContractType] {
+object ContractType extends Enum[ContractType] with CirceEnum[ContractType] {
   val values = findValues
 
   case object PERPETUAL       extends ContractType

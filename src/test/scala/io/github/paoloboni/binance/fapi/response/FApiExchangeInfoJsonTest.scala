@@ -29,15 +29,17 @@ import io.circe.parser
 import io.circe.syntax._
 import scala.io.Source
 
-class ExchangeInfoJsonTests extends AnyFlatSpec with Matchers {
+class FApiExchangeInfoJsonTests extends AnyFlatSpec with Matchers {
   val exchangeInfoTestPath =
     System.getProperty("user.dir") + "/src/test/scala/io/github/paoloboni/binance/fapi/response/exchangeInfo.json"
 
   val exchangeInfoStr = Source.fromFile(exchangeInfoTestPath).mkString
 
-  "ExchangeInfos" should "be decodeable from json" in {
+  "FApi ExchangeInfos" should "be decodeable from json" in {
     val result = decode[ExchangeInformation](exchangeInfoStr)
 
-    println(result)
+    result.left.map(println(_))
+    result.isRight shouldBe true
+
   }
 }
