@@ -113,7 +113,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return The balance (free and locked) for each asset
     */
-  def getBalance(): F[FutureAccountInformation] = {
+  def getBalance(): F[FutureAccountInfoResponse] = {
     def url(currentMillis: Long) = {
       val query       = s"recvWindow=5000&timestamp=${currentMillis.toString}"
       val signature   = HMAC.sha256(config.apiSecret, query)
@@ -128,7 +128,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     }
     for {
       currentTime <- clock.realTime
-      balance <- client.get[FutureAccountInformation](
+      balance <- client.get[FutureAccountInfoResponse](
         url = url(currentTime.toMillis),
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),

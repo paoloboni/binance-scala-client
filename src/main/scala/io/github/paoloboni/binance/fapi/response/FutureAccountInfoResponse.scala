@@ -23,8 +23,8 @@ package io.github.paoloboni.binance.fapi.response
 
 import io.github.paoloboni.binance.common
 
-case class FutureAccountInformation(
-    assets: List[Asset],
+case class FutureAccountInfoResponse(
+    assets: List[AccountInfoAsset],
     canDeposit: Boolean,
     canTrade: Boolean,
     canWithdraw: Boolean,
@@ -41,7 +41,7 @@ case class FutureAccountInformation(
 )
 
 // Maybe rename to something else?
-case class Asset(
+case class AccountInfoAsset(
     asset: common.Asset,
     initialMargin: BigDecimal,
     maintMargin: BigDecimal,

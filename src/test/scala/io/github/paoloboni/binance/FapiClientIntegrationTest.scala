@@ -30,7 +30,7 @@ import io.circe.parser._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi.OrderType
 import io.github.paoloboni.binance.fapi.parameters.FutureOrderCreation
-import io.github.paoloboni.binance.fapi.response.FutureAccountInformation
+import io.github.paoloboni.binance.fapi.response.FutureAccountInfoResponse
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
 import org.scalatest.freespec.AnyFreeSpec
@@ -428,9 +428,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .use(_.getBalance())
       .unsafeRunSync()
 
-    result shouldBe FutureAccountInformation(
+    result shouldBe FutureAccountInfoResponse(
       assets = List(
-        fapi.response.Asset(
+        fapi.response.AccountInfoAsset(
           asset = tag[AssetTag][String]("USDT"),
           initialMargin = 9.00000000,
           maintMargin = 0,
