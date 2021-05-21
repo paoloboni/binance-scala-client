@@ -1,0 +1,24 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "DarkWingMcQuack",
+      "name": "DarkWingMcQuack",
+      "avatar_url": "https://avatars.githubusercontent.com/u/38857302?v=4",
+      "profile": "https://github.com/DarkWingMcQuack",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "binance-scala-client",
+  "projectOwner": "paoloboni",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}
