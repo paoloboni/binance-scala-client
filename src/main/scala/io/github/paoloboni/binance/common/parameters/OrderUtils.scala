@@ -49,8 +49,9 @@ object TimeInForce extends Enum[TimeInForce] {
   val values = findValues
 
   case object GTC extends TimeInForce // Good-Til-Canceled
-  case object IOT extends TimeInForce // Immediate or Cancel
+  case object IOC extends TimeInForce // Immediate or Cancel
   case object FOK extends TimeInForce // Fill or Kill
+  case object GTX extends TimeInForce // Good Till Crossing (Post Only)
 }
 
 sealed trait OrderCreateResponseType extends EnumEntry
