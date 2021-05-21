@@ -29,6 +29,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.parameters.{OrderSide, OrderType}
 import io.github.paoloboni.binance.fapi.response.GetBalance
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
@@ -36,6 +37,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
+import scala.jdk.CollectionConverters._
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -382,6 +384,75 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       totalWalletBalance = 100000.00000000,
       updateTime = 0
     )
+  }
+
+  "it should create an order" in withWiremockServer { server =>
+    import Env.{log, runtime}
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      post(urlPathMatching("/fapi/v1/order"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParams(
+          Map(
+            "recvWindow" -> equalTo("5000"),
+            "timestamp"  -> equalTo(fixedTime.toString),
+            "signature"  -> equalTo("4828aff6e3cf020c990e84a8a3d61f9228bd35a6c1130d05e53d981dbbdcef3f")
+          ).asJava
+        )
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withBody("""{
+                        |   "accountId": 10012,
+                        |   "clientOrderId": "testOrder",
+                        |   "cumQuote": "0",
+                        |   "executedQty": "0",
+                        |   "orderId": 22542179,
+                        |   "origQty": "10",
+                        |   "price": "10000",
+                        |   "side": "BUY",
+                        |   "status": "NEW",
+                        |   "stopPrice": "0",
+                        |   "symbol": "BTCUSDT",
+                        |   "timeInForce": "GTC",
+                        |   "type": "LIMIT",
+                        |   "updateTime": 1566818724722
+                        |}
+                      """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val result = BinanceClient
+      .createFutureClient[IO](config)
+      .use(
+        _.createOrder(
+          fapi.parameters.OrderCreation(
+            symbol = "BTCUSDT",
+            side = OrderSide.BUY,
+            `type` = OrderType.MARKET,
+            timeInForce = None,
+            quantity = 10,
+            price = None,
+            newClientOrderId = None,
+            stopPrice = None,
+            icebergQty = None,
+            newOrderRespType = None
+          )
+        )
+      )
+      .unsafeRunSync()
+
+    result shouldBe tag[OrderIdTag](22542179L)
   }
 
   private def stubInfoEndpoint(server: WireMockServer) = {

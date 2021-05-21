@@ -2,7 +2,8 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import io.github.paoloboni.binance.common.BinanceConfig
+import io.github.paoloboni.binance.common.parameters.{OrderSide, OrderType}
+import io.github.paoloboni.binance.common.{BinanceConfig, OrderId}
 import io.github.paoloboni.binance.fapi.response.GetBalance
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
@@ -10,6 +11,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
+import scala.util.Random
 
 class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
 
@@ -44,5 +46,28 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
         _.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList
       )
       .asserting(_ shouldNot be(empty))
+  }
+
+  "createOrder" in {
+    val side = Random.shuffle(OrderSide.values).head
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(
+        _.createOrder(
+          fapi.parameters.OrderCreation(
+            symbol = "XRPUSDT",
+            side = side,
+            `type` = OrderType.MARKET,
+            timeInForce = None,
+            quantity = 100,
+            price = None,
+            newClientOrderId = None,
+            stopPrice = None,
+            icebergQty = None,
+            newOrderRespType = None
+          )
+        )
+      )
+      .asserting(_ shouldBe a[OrderId])
   }
 }
