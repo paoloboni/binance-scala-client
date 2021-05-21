@@ -21,8 +21,9 @@
 
 package io.github.paoloboni.binance.common
 
-import scala.concurrent.duration._
 import io.lemonlabs.uri.Url
+
+import scala.concurrent.duration._
 
 case class BinanceConfig(
     scheme: String,

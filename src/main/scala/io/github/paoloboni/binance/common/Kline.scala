@@ -21,15 +21,12 @@
 
 package io.github.paoloboni.binance.common
 
-import java.time.Instant
-
-import enumeratum.{CirceEnum, Enum, EnumEntry}
+import cats.syntax.all._
+import enumeratum.{Enum, EnumEntry}
 import io.circe.Decoder
-import shapeless.tag.@@
 
 import scala.collection.immutable
 import scala.concurrent.duration.{Duration, _}
-import cats.syntax.all._
 
 sealed abstract class Interval(val duration: Duration) extends EnumEntry
 object Interval extends Enum[Interval] {

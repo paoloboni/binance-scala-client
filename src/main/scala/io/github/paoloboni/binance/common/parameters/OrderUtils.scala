@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.binance.common.parameters
 
-import enumeratum.{Enum, EnumEntry, CirceEnum}
+import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait OrderSide extends EnumEntry
 object OrderSide extends Enum[OrderSide] {

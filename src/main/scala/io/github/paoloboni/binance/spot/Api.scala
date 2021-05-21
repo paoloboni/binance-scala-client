@@ -26,14 +26,12 @@ import cats.implicits._
 import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
-import io.github.paoloboni.binance.common.parameters.{OrderCreateResponseType, OrderSide, OrderType, TimeInForce}
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.RateLimits
 import io.github.paoloboni.binance.spot.response.ExchangeInformation
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
-import io.github.paoloboni.http.{HttpClient, QueryStringConverter, StringConverter}
+import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
 import org.http4s.EntityEncoder
@@ -148,15 +146,6 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
       )
     } yield balances.balances.map(b => tag[AssetTag](b.asset) -> Balance(b.free, b.locked)).toMap
   }
-
-  private implicit val orderSideStringConverter: StringConverter[OrderSide] =
-    StringConverter.enumEntryConverter(OrderSide)
-  private implicit val orderTypeStringConverter: StringConverter[OrderType] =
-    StringConverter.enumEntryConverter(OrderType)
-  private implicit val timeInForceStringConverter: StringConverter[TimeInForce] =
-    StringConverter.enumEntryConverter(TimeInForce)
-  private implicit val orderCreateResponseTypeStringConverter: StringConverter[OrderCreateResponseType] =
-    StringConverter.enumEntryConverter(OrderCreateResponseType)
 
   private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
 

@@ -21,12 +21,9 @@
 
 package io.github.paoloboni.binance.common.parameters
 
+import enumeratum.{Enum, EnumEntry}
+
 import java.time.Instant
-
-import enumeratum.{CirceEnum, Enum, EnumEntry}
-import io.circe.Decoder
-import shapeless.tag.@@
-
 import scala.collection.immutable
 import scala.concurrent.duration.{Duration, _}
 

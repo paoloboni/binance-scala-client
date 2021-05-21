@@ -21,6 +21,4 @@
 
 package io.github.paoloboni.binance.spot.response
 
-import io.github.paoloboni.binance.common._
-
 case class CreateOrder(orderId: Long)

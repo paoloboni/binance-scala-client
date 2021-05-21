@@ -23,21 +23,14 @@ package io.github.paoloboni.binance
 
 import cats.effect.{Async, Resource}
 import cats.implicits._
-import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
-import io.github.paoloboni.binance.common.response.RateLimitInterval._
-import io.github.paoloboni.binance.common.response.{RateLimitType, RateLimits}
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.Api
 import io.github.paoloboni.http.HttpClient
-import io.github.paoloboni.http.ratelimit.{Rate, RateLimiter}
-import io.lemonlabs.uri.Url
 import log.effect.LogWriter
-import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.blaze.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
 object BinanceClient {
 

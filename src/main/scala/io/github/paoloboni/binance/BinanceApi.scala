@@ -23,7 +23,6 @@ package io.github.paoloboni.binance
 
 import io.github.paoloboni.binance.common.BinanceConfig
 import io.github.paoloboni.http.HttpClient
-import io.github.paoloboni.http.ratelimit.RateLimiter
 
 trait BinanceApi[F[_]]
 

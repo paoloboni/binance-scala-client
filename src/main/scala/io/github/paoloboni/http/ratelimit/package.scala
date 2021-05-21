@@ -22,7 +22,6 @@
 package io.github.paoloboni.http
 
 import cats.Applicative
-import cats.effect.Concurrent
 import cats.implicits._
 import log.effect.LogWriter
 

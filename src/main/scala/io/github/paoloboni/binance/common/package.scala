@@ -21,14 +21,7 @@
 
 package io.github.paoloboni.binance
 
-import java.time.Instant
-
-import enumeratum.{CirceEnum, Enum, EnumEntry}
-import io.circe.Decoder
 import shapeless.tag.@@
-
-import scala.collection.immutable
-import scala.concurrent.duration.{Duration, _}
 
 package object common {
   case class Price(symbol: String, price: BigDecimal)

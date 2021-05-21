@@ -65,7 +65,7 @@ object StringConverter {
     def to(obj: BigDecimal): String      = obj.bigDecimal.toPlainString
   }
 
-  def enumEntryConverter[T <: EnumEntry](enum: Enum[T]): StringConverter[T] = new StringConverter[T] {
+  implicit def enumEntryConverter[T <: EnumEntry](implicit enum: Enum[T]): StringConverter[T] = new StringConverter[T] {
     def from(s: String): Try[T] = Try(enum.withName(s))
     def to(obj: T): String      = obj.entryName
   }

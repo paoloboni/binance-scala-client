@@ -21,16 +21,13 @@
 
 package io.github.paoloboni.binance.spot.response
 
-import io.circe.generic.extras.Configuration
-import enumeratum.{CirceEnum, Enum, EnumEntry}
 import cats.effect.kernel.Temporal
 import cats.implicits._
-import io.github.paoloboni.binance.common.parameters.OrderType
-import io.github.paoloboni.http.ratelimit.Rate
-import scala.concurrent.duration._
-import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.circe.Decoder
+import io.circe.generic.extras.Configuration
+import io.github.paoloboni.binance.common.parameters.OrderType
 import io.github.paoloboni.binance.common.response.RateLimit
+import io.github.paoloboni.http.ratelimit.RateLimiter
 
 sealed trait Filter
 

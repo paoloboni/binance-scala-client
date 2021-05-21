@@ -21,11 +21,10 @@
 
 package io.github.paoloboni.http.ratelimit
 
-import cats.effect.kernel.{GenConcurrent, Temporal}
-import cats.effect.std.Queue
 import cats.Applicative
+import cats.effect.kernel.Temporal
+import cats.effect.std.Queue
 import cats.effect.syntax.spawn._
-import cats.effect.{Spawn, Sync}
 import cats.implicits._
 import fs2.Stream
 import io.github.paoloboni.binance.common.response.RateLimitType
