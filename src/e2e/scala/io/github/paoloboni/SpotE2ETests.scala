@@ -20,8 +20,8 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     host = "testnet.binance.vision",
     port = 443,
     infoUrl = "/api/v3/exchangeInfo",
-    apiKey = sys.env("API_KEY"),
-    apiSecret = sys.env("SECRET_KEY")
+    apiKey = sys.env("SPOT_API_KEY"),
+    apiSecret = sys.env("SPOT_SECRET_KEY")
   )
 
   "getPrices" in {

@@ -18,8 +18,8 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     host = "testnet.binancefuture.com",
     port = 443,
     infoUrl = "/fapi/v1/exchangeInfo",
-    apiKey = sys.env("API_KEY"),
-    apiSecret = sys.env("SECRET_KEY")
+    apiKey = sys.env("FAPI_API_KEY"),
+    apiSecret = sys.env("FAPI_SECRET_KEY")
   )
 
   "getPrices" in {
