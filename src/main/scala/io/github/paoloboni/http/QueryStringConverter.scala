@@ -26,6 +26,7 @@ import io.lemonlabs.uri.QueryString
 import shapeless.labelled.{FieldType, field}
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
 
+import java.time.Instant
 import scala.util.{Failure, Success, Try}
 
 trait StringConverter[T] {
@@ -63,6 +64,11 @@ object StringConverter {
   implicit val bigDecimalConverter: StringConverter[BigDecimal] = new StringConverter[BigDecimal] {
     def from(s: String): Try[BigDecimal] = Try(BigDecimal(s))
     def to(obj: BigDecimal): String      = obj.bigDecimal.toPlainString
+  }
+
+  implicit val instantConverter: StringConverter[Instant] = new StringConverter[Instant] {
+    override def from(s: String): Try[Instant] = Try(Instant.ofEpochMilli(s.toLong))
+    override def to(t: Instant): String        = t.toEpochMilli.toString
   }
 
   implicit def enumEntryConverter[T <: EnumEntry](implicit enum: Enum[T]): StringConverter[T] = new StringConverter[T] {

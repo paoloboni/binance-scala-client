@@ -3,8 +3,7 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
-import io.github.paoloboni.binance.common.{BinanceConfig, OrderId}
-import io.github.paoloboni.binance.common.OrderSide
+import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.common.parameters._
 import io.github.paoloboni.binance.{BinanceClient, _}
@@ -45,7 +44,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createSpotClient[IO](config)
       .use(
-        _.getKLines(common.parameters.KLines("BTCUSDT", 5.minutes, now.minusSeconds(3600), now, 100)).compile.toList
+        _.getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100)).compile.toList
       )
       .asserting(_ shouldNot be(empty))
   }

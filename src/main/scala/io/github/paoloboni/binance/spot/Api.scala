@@ -27,7 +27,7 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance._
+import io.github.paoloboni.binance.common.parameters.KLines
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -55,48 +55,38 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     * @param query an `KLines` object containing the query parameters
     * @return the stream of Kline objects
     */
-  def getKLines(query: common.parameters.KLines): Stream[F, KLine] = query match {
-    case common.parameters.KLines(symbol, common.Interval(interval), startTime, endTime, limit) =>
-      val url = Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/klines",
-        query = QueryString.fromPairs(
-          "symbol"    -> symbol,
-          "interval"  -> interval.toString,
-          "startTime" -> startTime.toEpochMilli.toString,
-          "endTime"   -> endTime.toEpochMilli.toString,
-          "limit"     -> limit.toString
+  def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
+    println(QueryStringConverter[KLines].to(query))
+    val url = Url(
+      scheme = config.scheme,
+      host = config.host,
+      port = config.port,
+      path = "/api/v3/klines",
+      query = QueryStringConverter[KLines].to(query)
+    )
+
+    for {
+      rawKlines <- Stream.eval(
+        client.get[List[KLine]](
+          url,
+          limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
         )
       )
+      klines <- rawKlines match {
+        //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
+        //to a strange behaviour
+        case loneElement :: Nil
+            if (query.endTime.toEpochMilli - loneElement.openTime) > query.interval.duration.toMillis =>
+          val newQuery = query.copy(startTime = Instant.ofEpochMilli(loneElement.closeTime))
+          Stream.emit(loneElement) ++ getKLines(newQuery)
 
-      for {
-        rawKlines <- Stream.eval(
-          client.get[List[KLine]](
-            url,
-            limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
-          )
-        )
-        klines <- rawKlines match {
-          //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
-          //to a strange behaviour
-          case loneElement :: Nil if (query.endTime.toEpochMilli - loneElement.openTime) > interval.duration.toMillis =>
-            val newQuery = query.copy(startTime = Instant.ofEpochMilli(loneElement.closeTime))
-            Stream.emit(loneElement) ++ getKLines(newQuery)
+        case init :+ last if (query.endTime.toEpochMilli - last.openTime) > query.interval.duration.toMillis =>
+          val newQuery = query.copy(startTime = Instant.ofEpochMilli(last.openTime))
+          Stream.emits(init) ++ getKLines(newQuery)
 
-          case init :+ last if (query.endTime.toEpochMilli - last.openTime) > interval.duration.toMillis =>
-            val newQuery = query.copy(startTime = Instant.ofEpochMilli(last.openTime))
-            Stream.emits(init) ++ getKLines(newQuery)
-
-          case list => Stream.emits(list)
-        }
-      } yield klines
-
-    case other: common.parameters.KLines =>
-      Stream.raiseError[F](
-        new RuntimeException(s"${other.interval} is not a valid interval for Binance")
-      )
+        case list => Stream.emits(list)
+      }
+    } yield klines
   }
 
   /** Returns a snapshot of the prices at the time the query is executed.

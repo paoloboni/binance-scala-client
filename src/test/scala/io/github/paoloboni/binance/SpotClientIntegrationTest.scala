@@ -27,15 +27,14 @@ import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
-import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.parameters._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
+import scala.jdk.CollectionConverters._
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -47,13 +46,22 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       val from      = 1548806400000L
       val to        = 1548866280000L
       val symbol    = "ETHUSDT"
-      val interval  = 1.minute.asBinanceInterval.value
+      val interval  = Interval.`1m`
       val threshold = 2
 
       stubInfoEndpoint(server)
 
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=$from&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo(from.toString),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -68,7 +76,16 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       )
 
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806520000&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo("1548806520000"),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -84,7 +101,16 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548836400000&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo("1548836400000"),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -106,7 +132,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
-                interval = interval.duration,
+                interval = interval,
                 startTime = Instant.ofEpochMilli(from),
                 endTime = Instant.ofEpochMilli(to),
                 limit = threshold
@@ -138,18 +164,27 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     }
   }
 
-  "it should be able to stream klines even with a theshold of 1" in new Env {
+  "it should be able to stream klines even with a threshold of 1" in new Env {
     withWiremockServer { server =>
       val from      = 1548806400000L
       val to        = 1548806640000L
       val symbol    = "ETHUSDT"
-      val interval  = 1.minute.asBinanceInterval.value
+      val interval  = Interval.`1m`
       val threshold = 1
 
       stubInfoEndpoint(server)
 
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=$from&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo(from.toString),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -162,7 +197,16 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       )
 
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806459999&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo("1548806459999"),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -175,7 +219,16 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       )
 
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806519999&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo("1548806519999"),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -189,7 +242,16 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806579999&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo("1548806579999"),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -202,7 +264,16 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       )
 
       server.stubFor(
-        get(s"/api/v3/klines?symbol=$symbol&interval=$interval&startTime=1548806639999&endTime=$to&limit=$threshold")
+        get(urlPathEqualTo("/api/v3/klines"))
+          .withQueryParams(
+            Map(
+              "symbol"    -> equalTo(symbol),
+              "interval"  -> equalTo(interval.entryName),
+              "startTime" -> equalTo("1548806639999"),
+              "endTime"   -> equalTo(to.toString),
+              "limit"     -> equalTo(threshold.toString)
+            ).asJava
+          )
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -223,7 +294,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
-                interval = interval.duration,
+                interval = interval,
                 startTime = Instant.ofEpochMilli(from),
                 endTime = Instant.ofEpochMilli(to),
                 limit = threshold
