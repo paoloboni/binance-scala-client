@@ -21,6 +21,8 @@
 
 package io.github.paoloboni.binance
 
+import io.circe.Decoder
+import shapeless.tag
 import shapeless.tag.@@
 
 package object common {
@@ -29,6 +31,8 @@ package object common {
 
   trait AssetTag
   type Asset = String @@ AssetTag
+
+  implicit val assetDecoder: Decoder[Asset] = Decoder.decodeString.map(tag[AssetTag][String](_))
 
   trait OrderIdTag
   type OrderId = Long @@ OrderIdTag

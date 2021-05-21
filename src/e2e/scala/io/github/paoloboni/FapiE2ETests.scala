@@ -2,16 +2,14 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import cats.implicits._
-import io.github.paoloboni.binance.common.parameters._
-import io.github.paoloboni.binance.common.{BinanceConfig, OrderId}
+import io.github.paoloboni.binance.common.BinanceConfig
+import io.github.paoloboni.binance.fapi.response.GetBalance
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
-import scala.util.Random
 
 class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
 
@@ -29,6 +27,13 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .createFutureClient[IO](config)
       .use(_.getPrices())
       .asserting(_ shouldNot be(empty))
+  }
+
+  "getBalance" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.getBalance())
+      .asserting(_ shouldBe a[GetBalance])
   }
 
   "getKLines" in {

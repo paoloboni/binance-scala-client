@@ -29,7 +29,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common.Interval._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.parameters._
+import io.github.paoloboni.binance.fapi.response.GetBalance
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
 import org.scalatest.freespec.AnyFreeSpec
@@ -289,6 +289,99 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         Price("LTCBTC", BigDecimal(0.01493000))
       )
     }
+  }
+
+  "it should return the balance" in withWiremockServer { server =>
+    import Env.{log, runtime}
+
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      get(urlPathMatching("/fapi/v1/account"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("82f4e72e95e63d666b6da651e82a701722ad8a785a169318d91f36f279c55821"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody("""{
+                        |  "assets": [
+                        |      {
+                        |          "asset": "USDT",
+                        |          "initialMargin": "9.00000000",
+                        |          "maintMargin": "0.00000000",
+                        |          "marginBalance": "22.12659734",
+                        |          "maxWithdrawAmount": "13.12659734",
+                        |          "openOrderInitialMargin": "9.00000000",
+                        |          "positionInitialMargin": "0.00000000",
+                        |          "unrealizedProfit": "0.00000000",
+                        |          "walletBalance": "22.12659734"
+                        |      }
+                        |  ],
+                        |  "feeTier" : 0,
+                        |  "canTrade" : true,
+                        |  "canDeposit" : true,
+                        |  "canWithdraw" : true,
+                        |  "updateTime" : 0,
+                        |  "totalInitialMargin" : "0.00000000",
+                        |  "totalMaintMargin" : "0.00000000",
+                        |  "totalWalletBalance" : "100000.00000000",
+                        |  "totalUnrealizedProfit" : "0.00000000",
+                        |  "totalMarginBalance" : "100000.00000000",
+                        |  "totalPositionInitialMargin" : "0.00000000",
+                        |  "totalOpenOrderInitialMargin" : "0.00000000",
+                        |  "totalCrossWalletBalance" : "100000.00000000",
+                        |  "totalCrossUnPnl" : "0.00000000",
+                        |  "availableBalance" : "100000.00000000",
+                        |  "maxWithdrawAmount" : "100000.00000000"
+                        |}
+                      """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val result = BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.getBalance())
+      .unsafeRunSync()
+
+    result shouldBe GetBalance(
+      assets = List(
+        fapi.response.Asset(
+          asset = tag[AssetTag][String]("USDT"),
+          initialMargin = 9.00000000,
+          maintMargin = 0,
+          marginBalance = 22.12659734,
+          maxWithdrawAmount = 13.12659734,
+          openOrderInitialMargin = 9.00000000,
+          positionInitialMargin = 0,
+          unrealizedProfit = 0,
+          walletBalance = 22.12659734
+        )
+      ),
+      canDeposit = true,
+      canTrade = true,
+      canWithdraw = true,
+      feeTier = 0,
+      maxWithdrawAmount = 100000.00000000,
+      totalInitialMargin = 0,
+      totalMaintMargin = 0,
+      totalMarginBalance = 100000.00000000,
+      totalOpenOrderInitialMargin = 0,
+      totalPositionInitialMargin = 0,
+      totalUnrealizedProfit = 0,
+      totalWalletBalance = 100000.00000000,
+      updateTime = 0
+    )
   }
 
   private def stubInfoEndpoint(server: WireMockServer) = {

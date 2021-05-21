@@ -48,7 +48,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldNot be(empty))
   }
 
-  "createOrder" ignore {
+  "createOrder" in {
     val side = Random.shuffle(OrderSide.values).head
     BinanceClient
       .createSpotClient[IO](config)
@@ -71,7 +71,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldBe a[OrderId])
   }
 
-  "cancelOrder" ignore {
+  "cancelOrder" in {
     BinanceClient
       .createSpotClient[IO](config)
       .use(client =>
@@ -107,7 +107,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldBe true)
   }
 
-  "cancelAllOrders" ignore {
+  "cancelAllOrders" in {
     BinanceClient
       .createSpotClient[IO](config)
       .use(client =>
