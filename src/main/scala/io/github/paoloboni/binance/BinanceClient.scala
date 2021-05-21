@@ -41,10 +41,14 @@ import scala.concurrent.duration._
 
 object BinanceClient {
 
-  def createSpotClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig): Resource[F, Api[F]] =
+  def createSpotClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, spot.Api[F]]
+  ): Resource[F, Api[F]] =
     apply[F, spot.Api[F]](config)
 
-  def createFutureClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig): Resource[F, fapi.Api[F]] =
+  def createFutureClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, fapi.Api[F]]
+  ): Resource[F, fapi.Api[F]] =
     apply[F, fapi.Api[F]](config)
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
