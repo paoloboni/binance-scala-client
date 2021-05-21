@@ -25,9 +25,10 @@ import cats.effect.kernel.Temporal
 import cats.implicits._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import io.github.paoloboni.binance.common.parameters.OrderType
+import io.github.paoloboni.binance.common.parameters.{OrderType, TimeInForce}
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.http.ratelimit.RateLimiter
+import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait Filter
 
@@ -46,31 +47,50 @@ object Filter {
   implicit val decoder: Decoder[Filter] = deriveConfiguredDecoder[Filter]
 }
 
+sealed trait ContractType extends EnumEntry
+object ContractType extends Enum[ContractType] with CirceEnum[ContractType] {
+  val values = findValues
+
+  case object PERPETUAL       extends ContractType
+  case object CURRENT_MONTH   extends ContractType
+  case object NEXT_MONTH      extends ContractType
+  case object CURRENT_QUARTER extends ContractType
+  case object NEXT_QUARTER    extends ContractType
+}
+
 case class Symbol(
     symbol: String,
+    pair: String,
+    contractType: ContractType,
+    deliveryDate: Long,
+    onboardDate: Long,
     status: String,
+    maintMarginPercent: BigDecimal,
+    requiredMarginPercent: BigDecimal,
     baseAsset: String,
-    baseAssetPrecision: Int,
     quoteAsset: String,
+    marginAsset: String,
+    pricePrecision: Int,
+    quantityPrecision: Int,
+    baseAssetPrecision: Int,
     quotePrecision: Int,
-    quoteAssetPrecision: Int,
-    baseCommissionPrecision: Int,
-    quoteCommissionPrecision: Int,
+    underlyingType: String,
+    settlePlan: Int,
+    triggerProtect: BigDecimal,
     orderTypes: List[OrderType],
-    icebergAllowed: Boolean,
-    ocoAllowed: Boolean,
-    quoteOrderQtyMarketAllowed: Boolean,
-    isSpotTradingAllowed: Boolean,
-    isMarginTradingAllowed: Boolean,
     filters: List[Filter],
-    permissions: List[String]
+    timeInForce: List[TimeInForce]
 )
+
+case class Asset(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
 
 case class ExchangeInformation(
     timezone: String,
     serverTime: Long,
+    futuresType: String,
     rateLimits: List[RateLimit],
     exchangeFilters: List[Filter],
+    assets: List[Asset],
     symbols: List[Symbol]
 ) {
   def createRateLimiters[F[_]: Temporal](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =
