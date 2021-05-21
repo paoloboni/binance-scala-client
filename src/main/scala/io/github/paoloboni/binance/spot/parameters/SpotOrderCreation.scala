@@ -34,7 +34,7 @@ object OrderCreateResponseType extends Enum[OrderCreateResponseType] {
   case object FULL   extends OrderCreateResponseType
 }
 
-case class OrderCreation(
+case class SpotOrderCreation(
     symbol: String,
     side: OrderSide,
     `type`: OrderType,

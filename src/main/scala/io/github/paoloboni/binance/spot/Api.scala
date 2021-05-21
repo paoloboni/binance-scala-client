@@ -28,6 +28,8 @@ import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.KLines
+import io.github.paoloboni.binance._
+import io.github.paoloboni.binance.spot.parameters.SpotOrderCreation
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -145,10 +147,10 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return The id of the order created
     */
-  def createOrder(orderCreate: spot.parameters.OrderCreation): F[OrderId] = {
+  def createOrder(orderCreate: SpotOrderCreation): F[OrderId] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[spot.parameters.OrderCreation]
+      val requestBody = QueryStringConverter[SpotOrderCreation]
         .to(orderCreate)
         .addParams(
           "recvWindow" -> "5000",
