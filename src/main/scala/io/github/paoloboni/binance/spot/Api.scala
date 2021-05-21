@@ -30,6 +30,7 @@ import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.KLines
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.spot.parameters.SpotOrderCreationParams
+import io.github.paoloboni.binance.spot.response.SpotOrderCreationResponse
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -170,7 +171,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
       currentTime <- clock.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       orderId <- client
-        .post[String, spot.response.CreateOrder](
+        .post[String, SpotOrderCreationResponse](
           url = url,
           requestBody = requestBody.toString(),
           limiters = rateLimiters,
