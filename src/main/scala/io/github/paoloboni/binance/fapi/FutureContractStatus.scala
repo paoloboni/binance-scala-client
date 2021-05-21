@@ -19,30 +19,20 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.fapi
 
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-
-sealed trait FutureOrderCreateResponseType extends EnumEntry
-object FutureOrderCreateResponseType extends Enum[FutureOrderCreateResponseType] {
+sealed trait FutureContractStatus extends EnumEntry
+object FutureContractStatus extends Enum[FutureContractStatus] with CirceEnum[FutureContractStatus] {
   val values = findValues
 
-  case object ACK    extends FutureOrderCreateResponseType
-  case object RESULT extends FutureOrderCreateResponseType
+  case object PENDING_TRADING extends FutureContractStatus
+  case object TRADING         extends FutureContractStatus
+  case object PRE_DELIVERING  extends FutureContractStatus
+  case object DELIVERING      extends FutureContractStatus
+  case object DELIVERED       extends FutureContractStatus
+  case object PRE_SETTLE      extends FutureContractStatus
+  case object SETTLING        extends FutureContractStatus
+  case object CLOSE           extends FutureContractStatus
 }
-
-case class FutureOrderCreateParams(
-    symbol: String,
-    side: OrderSide,
-    `type`: FutureOrderType,
-    timeInForce: Option[FutureTimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[FutureOrderCreateResponseType]
-)

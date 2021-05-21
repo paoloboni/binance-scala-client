@@ -77,9 +77,9 @@ case class Symbol(
     underlyingType: String,
     settlePlan: Int,
     triggerProtect: BigDecimal,
-    orderTypes: List[OrderType],
+    orderTypes: List[FutureOrderType],
     filters: List[Filter],
-    timeInForce: List[TimeInForce]
+    timeInForce: List[FutureTimeInForce]
 ) {
   def getContractType: Option[ContractType] = ContractType.withNameOption(contractType)
 }

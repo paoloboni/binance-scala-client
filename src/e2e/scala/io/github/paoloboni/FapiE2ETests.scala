@@ -3,9 +3,9 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
-import io.github.paoloboni.binance.fapi.OrderType
-import io.github.paoloboni.binance.fapi.response.FutureAccountInfoResponse
-import io.github.paoloboni.binance.fapi.parameters.FutureOrderCreateParams
+import io.github.paoloboni.binance.fapi._
+import io.github.paoloboni.binance.fapi.response._
+import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -58,7 +58,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           FutureOrderCreateParams(
             symbol = "XRPUSDT",
             side = side,
-            `type` = OrderType.MARKET,
+            `type` = FutureOrderType.MARKET,
             timeInForce = None,
             quantity = 100,
             price = None,

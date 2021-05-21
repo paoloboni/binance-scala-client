@@ -28,7 +28,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.fapi.OrderType
+import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
@@ -511,7 +511,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           FutureOrderCreateParams(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
-            `type` = OrderType.MARKET,
+            `type` = FutureOrderType.MARKET,
             timeInForce = None,
             quantity = 10,
             price = None,
