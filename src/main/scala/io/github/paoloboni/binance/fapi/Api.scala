@@ -29,6 +29,7 @@ import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.fapi.parameters._
+import io.github.paoloboni.binance.common.parameters.KLines
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -166,7 +167,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     for {
       currentTime <- clock.realTime
       orderId <- client
-        .post[String, fapi.response.FutureOrderCreationResponse](
+        .post[String, FutureOrderCreationResponse](
           url = url(currentTime.toMillis),
           requestBody = "",
           limiters = rateLimiters,
