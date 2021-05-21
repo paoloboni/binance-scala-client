@@ -25,7 +25,6 @@ import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-
 sealed trait OrderCreateResponseType extends EnumEntry
 object OrderCreateResponseType extends Enum[OrderCreateResponseType] {
   val values = findValues
