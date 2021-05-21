@@ -25,7 +25,6 @@ import io.github.paoloboni.binance.common.OrderSide
 import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-
 sealed trait FutureOrderCreateResponseType extends EnumEntry
 object FutureOrderCreateResponseType extends Enum[FutureOrderCreateResponseType] {
   val values = findValues
