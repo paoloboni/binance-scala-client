@@ -61,7 +61,7 @@ object ContractType extends Enum[ContractType] with CirceEnum[ContractType] {
 case class Symbol(
     symbol: String,
     pair: String,
-    contractType: ContractType,
+    contractType: String,
     deliveryDate: Long,
     onboardDate: Long,
     status: String,
@@ -80,7 +80,16 @@ case class Symbol(
     orderTypes: List[OrderType],
     filters: List[Filter],
     timeInForce: List[TimeInForce]
-)
+) {
+  def getContractType: Option[ContractType] = contractType match {
+    case "PERPETUAL"       => Some(ContractType.PERPETUAL)
+    case "CURRENT_MONTH"   => Some(ContractType.CURRENT_MONTH)
+    case "NEXT_MONTH"      => Some(ContractType.NEXT_MONTH)
+    case "CURRENT_QUARTER" => Some(ContractType.CURRENT_QUARTER)
+    case "NEXT_QUARTER"    => Some(ContractType.NEXT_QUARTER)
+    case _                 => None
+  }
+}
 
 case class AssetInfo(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
 
