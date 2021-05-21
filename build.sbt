@@ -28,7 +28,7 @@ lazy val root = (project in file("."))
       "io.circe"              %% "circe-core"                    % "0.13.0",
       "io.circe"              %% "circe-generic"                 % "0.13.0",
       "io.circe"              %% "circe-generic-extras"          % "0.13.0",
-      "co.fs2"                %% "fs2-core"                      % "3.0.3",
+      "co.fs2"                %% "fs2-core"                      % "3.0.4",
       "org.typelevel"         %% "cats-core"                     % "2.6.1",
       "org.typelevel"         %% "cats-effect"                   % "3.1.1",
       "io.laserdisc"          %% "log-effect-core"               % "0.16.1",
