@@ -28,10 +28,19 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 
 ## APIs supported
 
+### Spot API
+
 * [Kline/Candlestick data](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data): Kline/candlestick bars for a symbol
 * [Symbol price ticker](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#symbol-price-ticker): Latest price for a symbol or symbols
 * [Balance information](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#account-information-user_data): Current balance information
 * [New order (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#new-order--trade): Send in a new order
+* [Cancel order (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-order-trade): Cancel an active orde
+* [Cancel open orders (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-all-open-orders-on-a-symbol-trade): Cancels all active orders on a symbol
+
+### Future API
+
+* [Kline/Candlestick data](https://binance-docs.github.io/apidocs/#kline-candlestick-data): Kline/candlestick bars for a symbol
+* [Symbol price ticker](https://binance-docs.github.io/apidocs/#symbol-price-ticker): Latest price for a symbol or symbols
 
 ## Example
 
@@ -61,7 +70,7 @@ object PriceMonitor extends IOApp {
     implicit val log                      = consoleLog[IO]
     implicit val withClock: WithClock[IO] = WithClock.create(Clock[IO])
     
-    BinanceClient[IO](config)
+    BinanceClient.createSpotClient[IO](config)
       .use { client =>
         Stream
           .awakeEvery[IO](5.seconds)
