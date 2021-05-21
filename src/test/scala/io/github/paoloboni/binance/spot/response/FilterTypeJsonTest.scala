@@ -57,11 +57,11 @@ class FilterJsonTests extends AnyFlatSpec with Matchers {
     val actual = decode[Filter]("""
                    |{
                    |  "filterType": "MAX_NUM_ALGO_ORDERS",
-                   |  "limit": 100
+                   |  "maxNumAlgoOrders": 100
                    |}
                    """.stripMargin)
 
-    val expected = Right(MAX_NUM_ALGO_ORDERS(limit = 100))
+    val expected = Right(MAX_NUM_ALGO_ORDERS(100))
 
     actual shouldBe expected
   }
@@ -71,11 +71,11 @@ class FilterJsonTests extends AnyFlatSpec with Matchers {
     val actual = decode[Filter]("""
                    |{
                    |  "filterType": "MAX_NUM_ORDERS",
-                   |  "limit": 100
+                   |  "maxNumOrders": 100
                    |}
                    """.stripMargin)
 
-    val expected = Right(MAX_NUM_ORDERS(limit = 100))
+    val expected = Right(MAX_NUM_ORDERS(100))
 
     actual shouldBe expected
   }

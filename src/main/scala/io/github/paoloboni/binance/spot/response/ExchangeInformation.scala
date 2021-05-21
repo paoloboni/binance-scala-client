@@ -38,9 +38,9 @@ case class PRICE_FILTER(minPrice: BigDecimal, maxPrice: BigDecimal, tickSize: Bi
 case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, avgPriceMins: Int) extends Filter
 case class LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)                 extends Filter
 case class MARKET_LOT_SIZE(minQty: BigDecimal, maxQty: BigDecimal, stepSize: BigDecimal)          extends Filter
-case class MAX_NUM_ORDERS(limit: Int)                                                             extends Filter
-case class MAX_NUM_ALGO_ORDERS(limit: Int)                                                        extends Filter
-case class MAX_NUM_ICEBERG_ORDERS(limit: Int)                                                     extends Filter
+case class MAX_NUM_ORDERS(maxNumOrders: Int)                                                      extends Filter
+case class MAX_NUM_ALGO_ORDERS(maxNumAlgoOrders: Int)                                             extends Filter
+case class MAX_NUM_ICEBERG_ORDERS(maxNumIcebergOrders: Int)                                       extends Filter
 case class MIN_NOTIONAL(minNotional: BigDecimal, applyToMarket: Boolean, avgPriceMins: Int)       extends Filter
 case class ICEBERG_PARTS(limit: Int)                                                              extends Filter
 case class MAX_POSITION(maxPosition: BigDecimal)                                                  extends Filter
