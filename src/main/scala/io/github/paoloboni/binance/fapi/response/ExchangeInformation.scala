@@ -25,7 +25,7 @@ import cats.effect.kernel.Temporal
 import cats.implicits._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import io.github.paoloboni.binance.common.parameters.{OrderType, TimeInForce}
+import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import enumeratum.{CirceEnum, Enum, EnumEntry}

@@ -27,7 +27,6 @@ import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
 import io.circe.parser
 import io.circe.syntax._
-import io.github.paoloboni.binance.common.parameters.OrderType
 
 class ExchangeInfoJsonTests extends AnyFlatSpec with Matchers {
   val exchangeInfoTest = """

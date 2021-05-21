@@ -19,17 +19,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common.parameters
+package io.github.paoloboni.binance.spot
 
 import enumeratum.{CirceEnum, Enum, EnumEntry}
-
-sealed trait OrderSide extends EnumEntry
-object OrderSide extends Enum[OrderSide] {
-  val values = findValues
-
-  case object SELL extends OrderSide
-  case object BUY  extends OrderSide
-}
 
 sealed trait OrderType extends EnumEntry
 object OrderType extends Enum[OrderType] with CirceEnum[OrderType] {
@@ -51,14 +43,17 @@ object TimeInForce extends Enum[TimeInForce] {
   case object GTC extends TimeInForce // Good-Til-Canceled
   case object IOC extends TimeInForce // Immediate or Cancel
   case object FOK extends TimeInForce // Fill or Kill
-  case object GTX extends TimeInForce // Good Till Crossing (Post Only)
 }
 
-sealed trait OrderCreateResponseType extends EnumEntry
-object OrderCreateResponseType extends Enum[OrderCreateResponseType] {
+sealed trait OrderStatus extends EnumEntry
+object OrderStatus extends Enum[OrderStatus] {
   val values = findValues
 
-  case object ACK    extends OrderCreateResponseType
-  case object RESULT extends OrderCreateResponseType
-  case object FULL   extends OrderCreateResponseType
+  case object NEW              extends OrderStatus
+  case object PARTIALLY_FILLED extends OrderStatus
+  case object FILLED           extends OrderStatus
+  case object CANCELED         extends OrderStatus
+  case object PENDING_CANCEL   extends OrderStatus
+  case object REJECTED         extends OrderStatus
+  case object EXPIRED          extends OrderStatus
 }

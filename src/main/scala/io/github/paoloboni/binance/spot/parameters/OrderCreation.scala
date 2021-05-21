@@ -21,7 +21,19 @@
 
 package io.github.paoloboni.binance.spot.parameters
 
-import io.github.paoloboni.binance.common.parameters._
+import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.spot._
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+
+
+sealed trait OrderCreateResponseType extends EnumEntry
+object OrderCreateResponseType extends Enum[OrderCreateResponseType] {
+  val values = findValues
+
+  case object ACK    extends OrderCreateResponseType
+  case object RESULT extends OrderCreateResponseType
+  case object FULL   extends OrderCreateResponseType
+}
 
 case class OrderCreation(
     symbol: String,
