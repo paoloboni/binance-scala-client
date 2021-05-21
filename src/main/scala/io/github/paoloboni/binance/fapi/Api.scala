@@ -146,10 +146,10 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return The id of the order created
     */
-  def createOrder(orderCreate: FutureOrderCreation): F[OrderId] = {
+  def createOrder(orderCreate: FutureOrderCreationParams): F[OrderId] = {
 
     def url(currentMillis: Long) = {
-      val queryString = QueryStringConverter[FutureOrderCreation]
+      val queryString = QueryStringConverter[FutureOrderCreationParams]
         .to(orderCreate)
         .addParams(
           "recvWindow" -> "5000",

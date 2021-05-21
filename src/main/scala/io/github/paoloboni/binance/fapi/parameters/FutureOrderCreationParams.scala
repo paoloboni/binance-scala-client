@@ -25,7 +25,7 @@ import io.github.paoloboni.binance.common.OrderSide
 import io.github.paoloboni.binance.fapi.{OrderType, TimeInForce}
 import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
 
-case class FutureOrderCreation(
+case class FutureOrderCreationParams(
     symbol: String,
     side: OrderSide,
     `type`: OrderType,
