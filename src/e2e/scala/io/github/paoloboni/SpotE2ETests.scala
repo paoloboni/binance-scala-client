@@ -5,7 +5,7 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
 import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
 import io.github.paoloboni.binance.spot._
-import io.github.paoloboni.binance.spot.parameters.SpotOrderCreationParams
+import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.common.parameters._
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
@@ -94,7 +94,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           )
 
           _ <- client.cancelOrder(
-            spot.parameters.OrderCancel(
+            SpotOrderCancelParams(
               symbol = "XRPUSDT",
               orderId = id.some,
               origClientOrderId = None
@@ -130,7 +130,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           )
 
           _ <- client.cancelAllOrders(
-            spot.parameters.OrderCancelAll(symbol = "XRPUSDT")
+            SpotOrderCancelAllParams(symbol = "XRPUSDT")
           )
         } yield ()
       )

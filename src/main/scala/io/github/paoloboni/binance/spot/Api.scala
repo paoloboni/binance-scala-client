@@ -29,8 +29,8 @@ import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.KLines
 import io.github.paoloboni.binance._
-import io.github.paoloboni.binance.spot.parameters.SpotOrderCreationParams
-import io.github.paoloboni.binance.spot.response.SpotOrderCreationResponse
+import io.github.paoloboni.binance.spot.parameters._
+import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -187,10 +187,10 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return currently nothing
     */
-  def cancelOrder(orderCancel: spot.parameters.OrderCancel): F[Unit] = {
+  def cancelOrder(orderCancel: SpotOrderCancelParams): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[spot.parameters.OrderCancel]
+      val requestBody = QueryStringConverter[SpotOrderCancelParams]
         .to(orderCancel)
         .addParams(
           "recvWindow" -> "5000",
@@ -225,10 +225,10 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return currently nothing
     */
-  def cancelAllOrders(orderCancel: spot.parameters.OrderCancelAll): F[Unit] = {
+  def cancelAllOrders(orderCancel: SpotOrderCancelAllParams): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[spot.parameters.OrderCancelAll]
+      val requestBody = QueryStringConverter[SpotOrderCancelAllParams]
         .to(orderCancel)
         .addParams(
           "recvWindow" -> "5000",

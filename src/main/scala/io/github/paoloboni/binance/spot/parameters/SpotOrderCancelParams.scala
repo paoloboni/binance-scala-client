@@ -21,10 +21,10 @@
 
 package io.github.paoloboni.binance.spot.parameters
 
-case class OrderCancel(
+case class SpotOrderCancelParams(
     symbol: String,
     orderId: Option[Long],
     origClientOrderId: Option[String]
 )
 
-case class OrderCancelAll(symbol: String)
+case class SpotOrderCancelAllParams(symbol: String)

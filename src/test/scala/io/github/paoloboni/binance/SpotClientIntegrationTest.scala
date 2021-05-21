@@ -28,7 +28,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common.Interval._
-import io.github.paoloboni.binance.spot.parameters.SpotOrderCreationParams
+import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
@@ -528,7 +528,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .use(client =>
         for {
           _ <- client.cancelOrder(
-            spot.parameters.OrderCancel(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
+            SpotOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
           )
         } yield ()
       )
@@ -662,7 +662,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .use(client =>
         for {
           _ <- client.cancelAllOrders(
-            spot.parameters.OrderCancelAll(symbol = "BTCUSDT")
+            SpotOrderCancelAllParams(symbol = "BTCUSDT")
           )
         } yield ()
       )
