@@ -81,14 +81,7 @@ case class Symbol(
     filters: List[Filter],
     timeInForce: List[TimeInForce]
 ) {
-  def getContractType: Option[ContractType] = contractType match {
-    case "PERPETUAL"       => Some(ContractType.PERPETUAL)
-    case "CURRENT_MONTH"   => Some(ContractType.CURRENT_MONTH)
-    case "NEXT_MONTH"      => Some(ContractType.NEXT_MONTH)
-    case "CURRENT_QUARTER" => Some(ContractType.CURRENT_QUARTER)
-    case "NEXT_QUARTER"    => Some(ContractType.NEXT_QUARTER)
-    case _                 => None
-  }
+  def getContractType: Option[ContractType] = ContractType.withNameOption(contractType)
 }
 
 case class AssetInfo(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
