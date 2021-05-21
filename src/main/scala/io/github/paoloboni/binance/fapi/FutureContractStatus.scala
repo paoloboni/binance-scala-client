@@ -19,6 +19,20 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.response
+package io.github.paoloboni.binance.fapi
 
-case class CreateOrder(orderId: Long)
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+
+sealed trait FutureContractStatus extends EnumEntry
+object FutureContractStatus extends Enum[FutureContractStatus] with CirceEnum[FutureContractStatus] {
+  val values = findValues
+
+  case object PENDING_TRADING extends FutureContractStatus
+  case object TRADING         extends FutureContractStatus
+  case object PRE_DELIVERING  extends FutureContractStatus
+  case object DELIVERING      extends FutureContractStatus
+  case object DELIVERED       extends FutureContractStatus
+  case object PRE_SETTLE      extends FutureContractStatus
+  case object SETTLING        extends FutureContractStatus
+  case object CLOSE           extends FutureContractStatus
+}

@@ -19,21 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.spot
 
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi.{OrderType, TimeInForce}
-import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
+import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-case class OrderCreation(
-    symbol: String,
-    side: OrderSide,
-    `type`: OrderType,
-    timeInForce: Option[TimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[OrderCreateResponseType]
-)
+sealed trait SpotOrderStatus extends EnumEntry
+object SpotOrderStatus extends Enum[SpotOrderStatus] {
+  val values = findValues
+
+  case object NEW              extends SpotOrderStatus
+  case object PARTIALLY_FILLED extends SpotOrderStatus
+  case object FILLED           extends SpotOrderStatus
+  case object CANCELED         extends SpotOrderStatus
+  case object PENDING_CANCEL   extends SpotOrderStatus
+  case object REJECTED         extends SpotOrderStatus
+  case object EXPIRED          extends SpotOrderStatus
+}

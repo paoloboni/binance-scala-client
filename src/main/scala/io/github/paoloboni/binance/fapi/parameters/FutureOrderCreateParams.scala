@@ -19,12 +19,29 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot.parameters
+package io.github.paoloboni.binance.fapi.parameters
 
-case class OrderCancel(
+import io.github.paoloboni.binance.common.OrderSide
+import io.github.paoloboni.binance.fapi._
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+
+sealed trait FutureOrderCreateResponseType extends EnumEntry
+object FutureOrderCreateResponseType extends Enum[FutureOrderCreateResponseType] {
+  val values = findValues
+
+  case object ACK    extends FutureOrderCreateResponseType
+  case object RESULT extends FutureOrderCreateResponseType
+}
+
+case class FutureOrderCreateParams(
     symbol: String,
-    orderId: Option[Long],
-    origClientOrderId: Option[String]
+    side: OrderSide,
+    `type`: FutureOrderType,
+    timeInForce: Option[FutureTimeInForce],
+    quantity: BigDecimal,
+    price: Option[BigDecimal],
+    newClientOrderId: Option[String],
+    stopPrice: Option[BigDecimal],
+    icebergQty: Option[BigDecimal],
+    newOrderRespType: Option[FutureOrderCreateResponseType]
 )
-
-case class OrderCancelAll(symbol: String)

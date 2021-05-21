@@ -25,7 +25,7 @@ import cats.effect.kernel.Temporal
 import cats.implicits._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import io.github.paoloboni.binance.spot.OrderType
+import io.github.paoloboni.binance.spot.SpotOrderType
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.http.ratelimit.RateLimiter
 
@@ -61,7 +61,7 @@ case class Symbol(
     quoteAssetPrecision: Int,
     baseCommissionPrecision: Int,
     quoteCommissionPrecision: Int,
-    orderTypes: List[OrderType],
+    orderTypes: List[SpotOrderType],
     icebergAllowed: Boolean,
     ocoAllowed: Boolean,
     quoteOrderQtyMarketAllowed: Boolean,

@@ -19,6 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot.response
+package io.github.paoloboni.binance.fapi
 
-case class CreateOrder(orderId: Long)
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+
+sealed trait FutureOrderType extends EnumEntry
+object FutureOrderType extends Enum[FutureOrderType] with CirceEnum[FutureOrderType] {
+  val values = findValues
+
+  case object LIMIT                extends FutureOrderType
+  case object MARKET               extends FutureOrderType
+  case object STOP                 extends FutureOrderType
+  case object STOP_MARKET          extends FutureOrderType
+  case object TAKE_PROFIT          extends FutureOrderType
+  case object TAKE_PROFIT_MARKET   extends FutureOrderType
+  case object TRAILING_STOP_MARKET extends FutureOrderType
+}
