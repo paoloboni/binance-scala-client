@@ -56,7 +56,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .createSpotClient[IO](config)
       .use(
         _.createOrder(
-          SpotOrderCreationParams(
+          SpotOrderCreateParams(
             symbol = "XRPUSDT",
             side = side,
             `type` = OrderType.MARKET,
@@ -79,7 +79,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(client =>
         for {
           id <- client.createOrder(
-            SpotOrderCreationParams(
+            SpotOrderCreateParams(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
               `type` = OrderType.LIMIT,
@@ -115,7 +115,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(client =>
         for {
           _ <- client.createOrder(
-            SpotOrderCreationParams(
+            SpotOrderCreateParams(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
               `type` = OrderType.LIMIT,

@@ -462,7 +462,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .createSpotClient[IO](config)
       .use(
         _.createOrder(
-          spot.parameters.SpotOrderCreationParams(
+          SpotOrderCreateParams(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
             `type` = spot.OrderType.MARKET,

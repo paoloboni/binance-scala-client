@@ -19,21 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.spot.response
 
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi.{OrderType, TimeInForce}
-import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
-
-case class FutureOrderCreationParams(
-    symbol: String,
-    side: OrderSide,
-    `type`: OrderType,
-    timeInForce: Option[TimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[OrderCreateResponseType]
-)
+case class SpotOrderCreateResponse(orderId: Long)
