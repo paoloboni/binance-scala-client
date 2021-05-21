@@ -19,35 +19,21 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.response
+package io.github.paoloboni.binance.fapi.parameters
 
-import io.github.paoloboni.binance.common
+import io.github.paoloboni.binance.common.OrderSide
+import io.github.paoloboni.binance.fapi.{OrderType, TimeInForce}
+import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
 
-case class GetBalance(
-    assets: List[Asset],
-    canDeposit: Boolean,
-    canTrade: Boolean,
-    canWithdraw: Boolean,
-    feeTier: Int,
-    maxWithdrawAmount: BigDecimal,
-    totalInitialMargin: BigDecimal,
-    totalMaintMargin: BigDecimal,
-    totalMarginBalance: BigDecimal,
-    totalOpenOrderInitialMargin: BigDecimal,
-    totalPositionInitialMargin: BigDecimal,
-    totalUnrealizedProfit: BigDecimal,
-    totalWalletBalance: BigDecimal,
-    updateTime: Long
-)
-
-case class Asset(
-    asset: common.Asset,
-    initialMargin: BigDecimal,
-    maintMargin: BigDecimal,
-    marginBalance: BigDecimal,
-    maxWithdrawAmount: BigDecimal,
-    openOrderInitialMargin: BigDecimal,
-    positionInitialMargin: BigDecimal,
-    unrealizedProfit: BigDecimal,
-    walletBalance: BigDecimal
+case class FutureOrderCreation(
+    symbol: String,
+    side: OrderSide,
+    `type`: OrderType,
+    timeInForce: Option[TimeInForce],
+    quantity: BigDecimal,
+    price: Option[BigDecimal],
+    newClientOrderId: Option[String],
+    stopPrice: Option[BigDecimal],
+    icebergQty: Option[BigDecimal],
+    newOrderRespType: Option[OrderCreateResponseType]
 )

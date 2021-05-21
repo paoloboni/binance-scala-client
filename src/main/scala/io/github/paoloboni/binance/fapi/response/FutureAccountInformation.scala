@@ -19,21 +19,36 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.fapi.response
 
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi.{OrderType, TimeInForce}
-import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
+import io.github.paoloboni.binance.common
 
-case class OrderCreation(
-    symbol: String,
-    side: OrderSide,
-    `type`: OrderType,
-    timeInForce: Option[TimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[OrderCreateResponseType]
+case class FutureAccountInformation(
+    assets: List[Asset],
+    canDeposit: Boolean,
+    canTrade: Boolean,
+    canWithdraw: Boolean,
+    feeTier: Int,
+    maxWithdrawAmount: BigDecimal,
+    totalInitialMargin: BigDecimal,
+    totalMaintMargin: BigDecimal,
+    totalMarginBalance: BigDecimal,
+    totalOpenOrderInitialMargin: BigDecimal,
+    totalPositionInitialMargin: BigDecimal,
+    totalUnrealizedProfit: BigDecimal,
+    totalWalletBalance: BigDecimal,
+    updateTime: Long
+)
+
+// Maybe rename to something else?
+case class Asset(
+    asset: common.Asset,
+    initialMargin: BigDecimal,
+    maintMargin: BigDecimal,
+    marginBalance: BigDecimal,
+    maxWithdrawAmount: BigDecimal,
+    openOrderInitialMargin: BigDecimal,
+    positionInitialMargin: BigDecimal,
+    unrealizedProfit: BigDecimal,
+    walletBalance: BigDecimal
 )

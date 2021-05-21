@@ -27,8 +27,8 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.parameters.KLines
-import io.github.paoloboni.binance.fapi.response.GetBalance
+import io.github.paoloboni.binance.fapi.response._
+import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -113,7 +113,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return The balance (free and locked) for each asset
     */
-  def getBalance(): F[GetBalance] = {
+  def getBalance(): F[FutureAccountInformation] = {
     def url(currentMillis: Long) = {
       val query       = s"recvWindow=5000&timestamp=${currentMillis.toString}"
       val signature   = HMAC.sha256(config.apiSecret, query)
@@ -128,7 +128,7 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     }
     for {
       currentTime <- clock.realTime
-      balance <- client.get[GetBalance](
+      balance <- client.get[FutureAccountInformation](
         url = url(currentTime.toMillis),
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
@@ -145,10 +145,10 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
     *
     * @return The id of the order created
     */
-  def createOrder(orderCreate: fapi.parameters.OrderCreation): F[OrderId] = {
+  def createOrder(orderCreate: FutureOrderCreation): F[OrderId] = {
 
     def url(currentMillis: Long) = {
-      val queryString = QueryStringConverter[fapi.parameters.OrderCreation]
+      val queryString = QueryStringConverter[FutureOrderCreation]
         .to(orderCreate)
         .addParams(
           "recvWindow" -> "5000",
