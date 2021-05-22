@@ -22,6 +22,8 @@
 package io.github.paoloboni.http
 
 import enumeratum.{Enum, EnumEntry}
+import eu.timepit.refined.api.{Refined, Validate}
+import eu.timepit.refined.refineV
 import io.lemonlabs.uri.QueryString
 import shapeless.labelled.{FieldType, field}
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
@@ -75,6 +77,15 @@ object StringConverter {
     def from(s: String): Try[T] = Try(enum.withName(s))
     def to(obj: T): String      = obj.entryName
   }
+
+  implicit def refinedConverter[T: StringConverter, P](implicit v: Validate[T, P]): StringConverter[T Refined P] =
+    new StringConverter[Refined[T, P]] {
+      override def from(s: String): Try[Refined[T, P]] = for {
+        refined <- StringConverter[T].from(s).map(refineV[P](_))
+        res     <- refined.fold(err => Failure(new RuntimeException(err)), Success(_))
+      } yield res
+      override def to(t: Refined[T, P]): String = StringConverter[T].to(t.value)
+    }
 }
 
 trait QueryStringConverter[T] {

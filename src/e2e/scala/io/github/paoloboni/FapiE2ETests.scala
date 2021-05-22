@@ -11,7 +11,6 @@ import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
 class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {

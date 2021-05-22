@@ -100,13 +100,9 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
               origClientOrderId = None
             )
           )
-        } yield ()
+        } yield "OK"
       )
-      .redeem(
-        _ => false,
-        _ => true
-      )
-      .asserting(_ shouldBe true)
+      .asserting(_ shouldBe "OK")
   }
 
   "cancelAllOrders" in {
@@ -132,12 +128,8 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           _ <- client.cancelAllOrders(
             SpotOrderCancelAllParams(symbol = "XRPUSDT")
           )
-        } yield ()
+        } yield "OK"
       )
-      .redeem(
-        _ => false,
-        _ => true
-      )
-      .asserting(_ shouldBe true)
+      .asserting(_ shouldBe "OK")
   }
 }
