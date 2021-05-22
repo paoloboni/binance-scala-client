@@ -59,7 +59,6 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     * @return the stream of Kline objects
     */
   def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
-    println(QueryStringConverter[KLines].to(query))
     val url = Url(
       scheme = config.scheme,
       host = config.host,
@@ -117,8 +116,8 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     * @return The balance (free and locked) for each asset
     */
   def getBalance(): F[Map[Asset, Balance]] = {
-    def url(recvWindow: RecvWindow, currentMillis: Long) = {
-      val query       = QueryStringConverter[TimeParams].to(TimeParams(recvWindow, currentMillis))
+    def url(currentMillis: Long) = {
+      val query       = QueryStringConverter[TimeParams].to(TimeParams(config.recvWindow, currentMillis))
       val signature   = HMAC.sha256(config.apiSecret, query.toString())
       val queryString = query.addParam("signature", signature)
       Url(
@@ -132,7 +131,7 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     for {
       currentTime <- clock.realTime
       balances <- client.get[BinanceBalances](
-        url = url(config.recvWindow, currentTime.toMillis),
+        url = url(currentTime.toMillis),
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
