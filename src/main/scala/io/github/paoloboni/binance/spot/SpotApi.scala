@@ -155,7 +155,6 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
       val queryString = QueryStringConverter[SpotOrderCreateParams]
         .to(orderCreate)
         .addParams(timeParams)
-      println(queryString)
       val signature = HMAC.sha256(config.apiSecret, queryString.toString())
       val url = Url(
         scheme = config.scheme,
