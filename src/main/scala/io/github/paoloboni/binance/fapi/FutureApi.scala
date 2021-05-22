@@ -26,15 +26,16 @@ import cats.implicits._
 import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
+import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.fapi.response._
+import io.github.paoloboni.binance.common.parameters.{KLines, TimeParams}
 import io.github.paoloboni.binance.fapi.parameters._
-import io.github.paoloboni.binance.common.parameters.KLines
+import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
-import io.lemonlabs.uri.{QueryString, Url}
+import io.lemonlabs.uri.Url
 import log.effect.LogWriter
 import org.http4s.EntityEncoder
 import org.http4s.circe.CirceEntityDecoder._
@@ -116,9 +117,9 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     */
   def getBalance(): F[FutureAccountInfoResponse] = {
     def url(currentMillis: Long) = {
-      val query       = s"recvWindow=5000&timestamp=${currentMillis.toString}"
-      val signature   = HMAC.sha256(config.apiSecret, query)
-      val queryString = QueryString.parse(query).addParam("signature", signature)
+      val query       = QueryStringConverter[TimeParams].to(TimeParams(config.recvWindow, currentMillis))
+      val signature   = HMAC.sha256(config.apiSecret, query.toString())
+      val queryString = query.addParam("signature", signature)
       Url(
         scheme = config.scheme,
         host = config.host,
@@ -149,12 +150,10 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
   def createOrder(orderCreate: FutureOrderCreateParams): F[OrderId] = {
 
     def url(currentMillis: Long) = {
+      val timeParams = QueryStringConverter[TimeParams].to(TimeParams(config.recvWindow, currentMillis))
       val queryString = QueryStringConverter[FutureOrderCreateParams]
         .to(orderCreate)
-        .addParams(
-          "recvWindow" -> "5000",
-          "timestamp"  -> currentMillis.toString
-        )
+        .addParams(timeParams)
       val signature = HMAC.sha256(config.apiSecret, queryString.toString())
       Url(
         scheme = config.scheme,

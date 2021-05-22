@@ -27,20 +27,19 @@ import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
-import io.github.paoloboni.binance.common.Interval._
-import io.github.paoloboni.binance.spot.parameters._
-import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.spot._
+import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
-import scala.jdk.CollectionConverters._
 
 import java.time.Instant
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherValues with OptionValues with TestClient {
 
@@ -380,7 +379,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("82f4e72e95e63d666b6da651e82a701722ad8a785a169318d91f36f279c55821"))
+        .withQueryParam("signature", equalTo("6cd35332399b004466463b9ad65a112a14f31fb9ddfd5e19bd7298fbd491dbc7"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -440,7 +439,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withRequestBody(containing("recvWindow=5000"))
         .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=7f87be2e5e10817945f1ada9b33cec59e03a9920e30c03e9cc7e6d6ee61fef08"))
+        .withRequestBody(containing("signature=4d45ab1a04e5f9be345ac45e6b6df2033f0473783433862aaecd8529ddb72bcc"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -496,7 +495,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withRequestBody(containing("recvWindow=5000"))
         .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=f0e47195952cd7ca9877bbf8fbd845b4581c270d7e37e32dc2ad95541ccd98a7"))
+        .withRequestBody(containing("signature=31419491a08b991dab525300c890f2488e039199eb55c1e6a5c5367b9fedc5b0"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -553,7 +552,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withRequestBody(containing("recvWindow=5000"))
         .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=4dd01c83b23c3f059afcb6af54fbc730669d56153a400551ed1ed7f7913837ec"))
+        .withRequestBody(containing("signature=5634d2bdfb9b723e6df85c1551c13acb90b0836c218bc8a08c597eba3f1563e7"))
         .willReturn(
           aResponse()
             .withStatus(201)

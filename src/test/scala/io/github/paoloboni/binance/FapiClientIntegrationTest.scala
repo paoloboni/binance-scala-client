@@ -380,7 +380,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("82f4e72e95e63d666b6da651e82a701722ad8a785a169318d91f36f279c55821"))
+        .withQueryParam("signature", equalTo("6cd35332399b004466463b9ad65a112a14f31fb9ddfd5e19bd7298fbd491dbc7"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -474,7 +474,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           Map(
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
-            "signature"  -> equalTo("4828aff6e3cf020c990e84a8a3d61f9228bd35a6c1130d05e53d981dbbdcef3f")
+            "signature"  -> equalTo("3a63adcfa4a52aa462c8cbd8d390cddf298f23f4aa38b8b465307bcbb5e8b4e8")
           ).asJava
         )
         .willReturn(

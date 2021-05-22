@@ -26,16 +26,16 @@ import cats.implicits._
 import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
+import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.parameters.KLines
-import io.github.paoloboni.binance._
+import io.github.paoloboni.binance.common.parameters.{KLines, TimeParams}
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.github.paoloboni.http.{HttpClient, QueryStringConverter}
-import io.lemonlabs.uri.{QueryString, Url}
+import io.lemonlabs.uri.Url
 import log.effect.LogWriter
 import org.http4s.EntityEncoder
 import org.http4s.circe.CirceEntityDecoder._
@@ -117,10 +117,10 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     * @return The balance (free and locked) for each asset
     */
   def getBalance(): F[Map[Asset, Balance]] = {
-    def url(currentMillis: Long) = {
-      val query       = s"recvWindow=5000&timestamp=${currentMillis.toString}"
-      val signature   = HMAC.sha256(config.apiSecret, query)
-      val queryString = QueryString.parse(query).addParam("signature", signature)
+    def url(recvWindow: RecvWindow, currentMillis: Long) = {
+      val query       = QueryStringConverter[TimeParams].to(TimeParams(recvWindow, currentMillis))
+      val signature   = HMAC.sha256(config.apiSecret, query.toString())
+      val queryString = query.addParam("signature", signature)
       Url(
         scheme = config.scheme,
         host = config.host,
@@ -132,7 +132,7 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     for {
       currentTime <- clock.realTime
       balances <- client.get[BinanceBalances](
-        url = url(currentTime.toMillis),
+        url = url(config.recvWindow, currentTime.toMillis),
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
@@ -151,20 +151,19 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
   def createOrder(orderCreate: SpotOrderCreateParams): F[OrderId] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[SpotOrderCreateParams]
+      val timeParams = QueryStringConverter[TimeParams].to(TimeParams(config.recvWindow, currentMillis))
+      val queryString = QueryStringConverter[SpotOrderCreateParams]
         .to(orderCreate)
-        .addParams(
-          "recvWindow" -> "5000",
-          "timestamp"  -> currentMillis.toString
-        )
-      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
+        .addParams(timeParams)
+      println(queryString)
+      val signature = HMAC.sha256(config.apiSecret, queryString.toString())
       val url = Url(
         scheme = config.scheme,
         host = config.host,
         port = config.port,
         path = "/api/v3/order"
       )
-      (url, requestBody.addParam("signature" -> signature))
+      (url, queryString.addParam("signature" -> signature))
     }
 
     for {
@@ -190,20 +189,18 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
   def cancelOrder(orderCancel: SpotOrderCancelParams): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[SpotOrderCancelParams]
+      val timeParams = QueryStringConverter[TimeParams].to(TimeParams(config.recvWindow, currentMillis))
+      val queryString = QueryStringConverter[SpotOrderCancelParams]
         .to(orderCancel)
-        .addParams(
-          "recvWindow" -> "5000",
-          "timestamp"  -> currentMillis.toString
-        )
-      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
+        .addParams(timeParams)
+      val signature = HMAC.sha256(config.apiSecret, queryString.toString())
       val url = Url(
         scheme = config.scheme,
         host = config.host,
         port = config.port,
         path = "/api/v3/order"
       )
-      (url, requestBody.addParam("signature" -> signature))
+      (url, queryString.addParam("signature" -> signature))
     }
 
     for {
@@ -228,20 +225,18 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
   def cancelAllOrders(orderCancel: SpotOrderCancelAllParams): F[Unit] = {
 
     def urlAndBody(currentMillis: Long) = {
-      val requestBody = QueryStringConverter[SpotOrderCancelAllParams]
+      val timeParams = QueryStringConverter[TimeParams].to(TimeParams(config.recvWindow, currentMillis))
+      val queryString = QueryStringConverter[SpotOrderCancelAllParams]
         .to(orderCancel)
-        .addParams(
-          "recvWindow" -> "5000",
-          "timestamp"  -> currentMillis.toString
-        )
-      val signature = HMAC.sha256(config.apiSecret, requestBody.toString())
+        .addParams(timeParams)
+      val signature = HMAC.sha256(config.apiSecret, queryString.toString())
       val url = Url(
         scheme = config.scheme,
         host = config.host,
         port = config.port,
         path = "/api/v3/openOrders"
       )
-      (url, requestBody.addParam("signature" -> signature))
+      (url, queryString.addParam("signature" -> signature))
     }
 
     for {
