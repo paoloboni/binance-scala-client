@@ -27,6 +27,7 @@ import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
+import io.github.paoloboni.Env.Eff
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
@@ -128,22 +129,26 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient
-        .createFutureClient[IO](config)
-        .use { gw =>
-          gw
-            .getKLines(
-              common.parameters.KLines(
-                symbol = symbol,
-                interval = interval,
-                startTime = Instant.ofEpochMilli(from),
-                endTime = Instant.ofEpochMilli(to),
-                limit = threshold
-              )
-            )
-            .compile
-            .toList
-        }
+      val result = config
+        .flatMap(
+          BinanceClient
+            .createFutureClient[Eff]
+            .use { gw =>
+              gw
+                .getKLines(
+                  common.parameters.KLines(
+                    symbol = symbol,
+                    interval = interval,
+                    startTime = Instant.ofEpochMilli(from),
+                    endTime = Instant.ofEpochMilli(to),
+                    limit = threshold
+                  )
+                )
+                .compile
+                .toList
+            }
+            .run
+        )
         .unsafeRunSync()
 
       val responseFullJson = parse(
@@ -290,22 +295,26 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient
-        .createFutureClient[IO](config)
-        .use { gw =>
-          gw
-            .getKLines(
-              common.parameters.KLines(
-                symbol = symbol,
-                interval = interval,
-                startTime = Instant.ofEpochMilli(from),
-                endTime = Instant.ofEpochMilli(to),
-                limit = threshold
-              )
-            )
-            .compile
-            .toList
-        }
+      val result = config
+        .flatMap(
+          BinanceClient
+            .createFutureClient[Eff]
+            .use { gw =>
+              gw
+                .getKLines(
+                  common.parameters.KLines(
+                    symbol = symbol,
+                    interval = interval,
+                    startTime = Instant.ofEpochMilli(from),
+                    endTime = Instant.ofEpochMilli(to),
+                    limit = threshold
+                  )
+                )
+                .compile
+                .toList
+            }
+            .run
+        )
         .unsafeRunSync()
 
       val responseFullJson = parse(
@@ -353,9 +362,13 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val result = BinanceClient
-        .createFutureClient[IO](config)
-        .use(_.getPrices())
+      val result = config
+        .flatMap(
+          BinanceClient
+            .createFutureClient[Eff]
+            .use(_.getPrices())
+            .run
+        )
         .unsafeRunSync()
 
       result should contain theSameElementsInOrderAs List(
@@ -366,7 +379,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
   }
 
   "it should return the balance" in withWiremockServer { server =>
-    import Env.{log, runtime}
+    import Env.{logEff, runtime, Eff}
 
     stubInfoEndpoint(server)
 
@@ -421,11 +434,15 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val withClock: WithClock[Eff] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(_.getBalance())
+    val result = config
+      .flatMap(
+        BinanceClient
+          .createFutureClient[Eff]
+          .use(_.getBalance())
+          .run
+      )
       .unsafeRunSync()
 
     result shouldBe FutureAccountInfoResponse(
@@ -459,7 +476,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
   }
 
   "it should create an order" in withWiremockServer { server =>
-    import Env.{log, runtime}
+    import Env.{logEff, runtime, Eff}
     stubInfoEndpoint(server)
 
     val fixedTime = 1499827319559L
@@ -502,25 +519,29 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val withClock: WithClock[Eff] = WithClock.create(stubTimer(fixedTime))
 
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(
-        _.createOrder(
-          FutureOrderCreateParams(
-            symbol = "BTCUSDT",
-            side = OrderSide.BUY,
-            `type` = FutureOrderType.MARKET,
-            timeInForce = None,
-            quantity = 10,
-            price = None,
-            newClientOrderId = None,
-            stopPrice = None,
-            icebergQty = None,
-            newOrderRespType = None
+    val result = config
+      .flatMap(
+        BinanceClient
+          .createFutureClient[Eff]
+          .use(
+            _.createOrder(
+              FutureOrderCreateParams(
+                symbol = "BTCUSDT",
+                side = OrderSide.BUY,
+                `type` = FutureOrderType.MARKET,
+                timeInForce = None,
+                quantity = 10,
+                price = None,
+                newClientOrderId = None,
+                stopPrice = None,
+                icebergQty = None,
+                newOrderRespType = None
+              )
+            )
           )
-        )
+          .run
       )
       .unsafeRunSync()
 
@@ -556,11 +577,11 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
   }
 
   private def prepareConfiguration(server: WireMockServer, apiKey: String = "", apiSecret: String = "") =
-    BinanceConfig("http", "localhost", server.port(), "/fapi/v1/exchangeInfo", apiKey, apiSecret)
+    IO.pure(BinanceConfig("http", "localhost", server.port(), "/fapi/v1/exchangeInfo", apiKey, apiSecret))
 
-  private def stubTimer(fixedTime: Long) = new Clock[IO] {
-    override def applicative: Applicative[IO]  = ???
-    override def monotonic: IO[FiniteDuration] = fixedTime.millis.pure[IO]
-    override def realTime: IO[FiniteDuration]  = fixedTime.millis.pure[IO]
+  private def stubTimer(fixedTime: Long) = new Clock[Eff] {
+    override def applicative: Applicative[Eff]  = ???
+    override def monotonic: Eff[FiniteDuration] = fixedTime.millis.pure[Eff]
+    override def realTime: Eff[FiniteDuration]  = fixedTime.millis.pure[Eff]
   }
 }

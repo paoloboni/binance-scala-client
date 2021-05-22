@@ -26,7 +26,7 @@ import cats.implicits._
 import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
-import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
+import io.github.paoloboni.binance.common.BinanceConfig.{AskConfig, RecvWindow}
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.{KLines, TimeParams}
 import io.github.paoloboni.binance.spot.parameters._
@@ -253,9 +253,10 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
 }
 
 object SpotApi {
-  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, SpotApi[F]] =
-    (config: BinanceConfig, client: HttpClient[F]) =>
+  implicit def factory[F[_]: Async: WithClock: LogWriter: AskConfig]: BinanceApi.Factory[F, SpotApi[F]] =
+    (client: HttpClient[F]) =>
       for {
+        config <- AskConfig[F].ask
         exchangeInfo <- client
           .get[spot.response.ExchangeInformation](
             url = config.generateFullInfoUrl,

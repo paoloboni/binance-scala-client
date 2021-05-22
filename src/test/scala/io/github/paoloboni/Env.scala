@@ -21,9 +21,11 @@
 
 package io.github.paoloboni
 
+import cats.data.ReaderT
 import cats.effect.kernel.Temporal
 import cats.effect.unsafe.IORuntime
 import cats.effect.{Clock, IO}
+import io.github.paoloboni.binance.common.BinanceConfig
 import log.effect.LogWriter
 import log.effect.fs2.SyncLogWriter._
 
@@ -32,6 +34,10 @@ trait Env {
   implicit val temporal: Temporal[IO]   = IO.asyncForIO
   implicit val log: LogWriter[IO]       = consoleLog
   implicit val withClock: WithClock[IO] = WithClock.create(Clock[IO])
+
+  type Eff[T] = ReaderT[IO, BinanceConfig, T]
+  implicit val logEff: LogWriter[Eff]       = consoleLog
+  implicit val withClockEff: WithClock[Eff] = WithClock.create(Clock[Eff])
 }
 
 object Env extends Env

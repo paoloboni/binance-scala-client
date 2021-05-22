@@ -21,13 +21,12 @@
 
 package io.github.paoloboni.binance
 
-import io.github.paoloboni.binance.common.BinanceConfig
 import io.github.paoloboni.http.HttpClient
 
 trait BinanceApi[F[_]]
 
 object BinanceApi {
-  type Factory[F[_], API <: BinanceApi[F]] = (BinanceConfig, HttpClient[F]) => F[API]
+  type Factory[F[_], API <: BinanceApi[F]] = HttpClient[F] => F[API]
 
   object Factory {
     def apply[F[_], API <: BinanceApi[F]](implicit instance: Factory[F, API]): Factory[F, API] = instance

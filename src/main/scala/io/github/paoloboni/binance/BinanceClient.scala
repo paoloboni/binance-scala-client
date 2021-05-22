@@ -23,6 +23,7 @@ package io.github.paoloboni.binance
 
 import cats.effect.{Async, Resource}
 import cats.implicits._
+import cats.mtl.Ask
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
@@ -34,15 +35,17 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object BinanceClient {
 
-  def createSpotClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
-      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F]]
+  def createSpotClient[F[_]: WithClock: LogWriter: Async](implicit
+      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F]],
+      C: Ask[F, BinanceConfig]
   ): Resource[F, SpotApi[F]] =
-    apply[F, spot.SpotApi[F]](config)
+    Resource.eval(C.ask).flatMap(apply[F, spot.SpotApi[F]])
 
-  def createFutureClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
-      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F]]
+  def createFutureClient[F[_]: WithClock: LogWriter: Async](implicit
+      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F]],
+      C: Ask[F, BinanceConfig]
   ): Resource[F, fapi.FutureApi[F]] =
-    apply[F, fapi.FutureApi[F]](config)
+    Resource.eval(C.ask).flatMap(apply[F, fapi.FutureApi[F]](_))
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig
@@ -54,7 +57,7 @@ object BinanceClient {
       .evalMap { implicit c =>
         for {
           client  <- HttpClient.make[F]
-          spotApi <- BinanceApi.Factory[F, API].apply(config, client)
+          spotApi <- BinanceApi.Factory[F, API].apply(client)
         } yield spotApi
       }
 }

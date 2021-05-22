@@ -1,7 +1,7 @@
 name := "binance-scala-client"
 
-lazy val scala212               = "2.12.13"
-lazy val scala213               = "2.13.5"
+lazy val scala212               = "2.12.14"
+lazy val scala213               = "2.13.6"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalafmtOnCompile := false
@@ -31,6 +31,7 @@ lazy val root = (project in file("."))
       "co.fs2"                %% "fs2-core"                      % "3.0.4",
       "org.typelevel"         %% "cats-core"                     % "2.6.1",
       "org.typelevel"         %% "cats-effect"                   % "3.1.1",
+      "org.typelevel"         %% "cats-mtl"                      % "1.2.0",
       "io.laserdisc"          %% "log-effect-core"               % "0.16.1",
       "io.laserdisc"          %% "log-effect-fs2"                % "0.16.1",
       "org.slf4j"              % "slf4j-api"                     % "1.7.30",

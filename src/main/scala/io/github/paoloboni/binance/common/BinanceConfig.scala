@@ -21,6 +21,7 @@
 
 package io.github.paoloboni.binance.common
 
+import cats.mtl.Ask
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.{numeric, refineMV}
 import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
@@ -50,5 +51,9 @@ case class BinanceConfig(
 }
 
 object BinanceConfig {
-  type RecvWindow = Int Refined numeric.Interval.Closed[W.`0`.T, W.`60000`.T]
+  type RecvWindow      = Int Refined numeric.Interval.Closed[W.`0`.T, W.`60000`.T]
+  type AskConfig[F[_]] = Ask[F, BinanceConfig]
+  object AskConfig {
+    def apply[F[_]: AskConfig]: AskConfig[F] = implicitly
+  }
 }
