@@ -25,6 +25,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.{numeric, refineMV}
 import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
 import io.lemonlabs.uri.Url
+import shapeless.{Witness => W}
 
 import scala.concurrent.duration._
 
@@ -49,5 +50,5 @@ case class BinanceConfig(
 }
 
 object BinanceConfig {
-  type RecvWindow = Int Refined numeric.Interval.Closed[0, 60000]
+  type RecvWindow = Int Refined numeric.Interval.Closed[W.`0`.T, W.`60000`.T]
 }
