@@ -42,7 +42,7 @@ import shapeless.tag
 
 import java.time.Instant
 
-final case class Api[F[_]: Async: WithClock: LogWriter](
+final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
@@ -178,8 +178,8 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
   }
 }
 
-object Api {
-  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] =
+object FutureApi {
+  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, FutureApi[F]] =
     (config: BinanceConfig, client: HttpClient[F]) =>
       for {
         exchangeInfo <- client
@@ -189,5 +189,5 @@ object Api {
           )
 
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
-      } yield Api.apply(config, client, exchangeInfo, rateLimiters)
+      } yield FutureApi.apply(config, client, exchangeInfo, rateLimiters)
 }

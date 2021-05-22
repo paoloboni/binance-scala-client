@@ -25,7 +25,7 @@ import cats.effect.{Async, Resource}
 import cats.implicits._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.spot.Api
+import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
 import log.effect.LogWriter
 import org.http4s.client.blaze.BlazeClientBuilder
@@ -35,14 +35,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object BinanceClient {
 
   def createSpotClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
-      apiFactory: BinanceApi.Factory[F, spot.Api[F]]
-  ): Resource[F, Api[F]] =
-    apply[F, spot.Api[F]](config)
+      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F]]
+  ): Resource[F, SpotApi[F]] =
+    apply[F, spot.SpotApi[F]](config)
 
   def createFutureClient[F[_]: WithClock: LogWriter: Async](config: BinanceConfig)(implicit
-      apiFactory: BinanceApi.Factory[F, fapi.Api[F]]
-  ): Resource[F, fapi.Api[F]] =
-    apply[F, fapi.Api[F]](config)
+      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F]]
+  ): Resource[F, fapi.FutureApi[F]] =
+    apply[F, fapi.FutureApi[F]](config)
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig

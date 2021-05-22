@@ -531,15 +531,11 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           _ <- client.cancelOrder(
             SpotOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
           )
-        } yield ()
-      )
-      .redeem(
-        _ => false,
-        _ => true
+        } yield "OK"
       )
       .unsafeRunSync()
 
-    result shouldBe true
+    result shouldBe "OK"
 
   }
 
@@ -665,15 +661,11 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           _ <- client.cancelAllOrders(
             SpotOrderCancelAllParams(symbol = "BTCUSDT")
           )
-        } yield ()
-      )
-      .redeem(
-        _ => false,
-        _ => true
+        } yield "OK"
       )
       .unsafeRunSync()
 
-    result shouldBe true
+    result shouldBe "OK"
 
   }
 

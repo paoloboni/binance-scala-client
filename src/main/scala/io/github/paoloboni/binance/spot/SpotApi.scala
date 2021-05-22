@@ -43,7 +43,7 @@ import shapeless.tag
 
 import java.time.Instant
 
-final case class Api[F[_]: Async: WithClock: LogWriter](
+final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
@@ -258,8 +258,8 @@ final case class Api[F[_]: Async: WithClock: LogWriter](
   }
 }
 
-object Api {
-  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, Api[F]] =
+object SpotApi {
+  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, SpotApi[F]] =
     (config: BinanceConfig, client: HttpClient[F]) =>
       for {
         exchangeInfo <- client
@@ -269,5 +269,5 @@ object Api {
           )
 
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
-      } yield Api.apply(config, client, exchangeInfo, rateLimiters)
+      } yield SpotApi.apply(config, client, exchangeInfo, rateLimiters)
 }
