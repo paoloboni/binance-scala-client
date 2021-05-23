@@ -26,7 +26,9 @@ import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait FutureOrderCreateResponseType extends EnumEntry
-object FutureOrderCreateResponseType extends Enum[FutureOrderCreateResponseType] {
+object FutureOrderCreateResponseType
+    extends Enum[FutureOrderCreateResponseType]
+    with CirceEnum[FutureOrderCreateResponseType] {
   val values = findValues
 
   case object ACK    extends FutureOrderCreateResponseType
@@ -36,12 +38,18 @@ object FutureOrderCreateResponseType extends Enum[FutureOrderCreateResponseType]
 case class FutureOrderCreateParams(
     symbol: String,
     side: OrderSide,
+    positionSide: Option[FuturePositionSide],
     `type`: FutureOrderType,
     timeInForce: Option[FutureTimeInForce],
-    quantity: BigDecimal,
+    quantity: Option[BigDecimal],
+    reduceOnly: Option[Boolean],
     price: Option[BigDecimal],
     newClientOrderId: Option[String],
     stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
+    closePosition: Option[Boolean],
+    activationPrice: Option[BigDecimal],
+    callbackRate: Option[BigDecimal],
+    workingType: Option[FutureWorkingType],
+    priceProtect: Option[Boolean],
     newOrderRespType: Option[FutureOrderCreateResponseType]
 )
