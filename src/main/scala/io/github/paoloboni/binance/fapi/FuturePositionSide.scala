@@ -19,34 +19,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance
+package io.github.paoloboni.binance.fapi
 
-import io.circe.Decoder
-import shapeless.tag
-import shapeless.tag.@@
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-package object common {
-  case class Price(symbol: String, price: BigDecimal)
-  case class Balance(free: BigDecimal, locked: BigDecimal)
+sealed trait FuturePositionSide extends EnumEntry
+object FuturePositionSide extends Enum[FuturePositionSide] with CirceEnum[FuturePositionSide] {
+  val values = findValues
 
-  trait AssetTag
-  type Asset = String @@ AssetTag
-
-  implicit val assetDecoder: Decoder[Asset] = Decoder.decodeString.map(tag[AssetTag][String](_))
-
-  trait OrderIdTag
-  type OrderId = Long @@ OrderIdTag
-
-  sealed trait OrderSide extends EnumEntry
-  object OrderSide extends Enum[OrderSide] with CirceEnum[OrderSide] {
-    val values = findValues
-
-    case object SELL extends OrderSide
-    case object BUY  extends OrderSide
-  }
-
-  case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)
-  case class BinanceBalances(balances: Seq[BinanceBalance])
-
+  case object BOTH  extends FuturePositionSide
+  case object SHORT extends FuturePositionSide
+  case object LONG  extends FuturePositionSide
 }

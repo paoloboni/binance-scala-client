@@ -24,24 +24,116 @@ package io.github.paoloboni.binance.fapi.parameters
 import io.github.paoloboni.binance.common.OrderSide
 import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
+import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
+import io.circe.generic.extras.Configuration
+import io.circe.{Decoder, Encoder}
 
 sealed trait FutureOrderCreateResponseType extends EnumEntry
-object FutureOrderCreateResponseType extends Enum[FutureOrderCreateResponseType] {
+object FutureOrderCreateResponseType
+    extends Enum[FutureOrderCreateResponseType]
+    with CirceEnum[FutureOrderCreateResponseType] {
   val values = findValues
 
   case object ACK    extends FutureOrderCreateResponseType
   case object RESULT extends FutureOrderCreateResponseType
 }
 
-case class FutureOrderCreateParams(
-    symbol: String,
-    side: OrderSide,
-    `type`: FutureOrderType,
-    timeInForce: Option[FutureTimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[FutureOrderCreateResponseType]
-)
+sealed trait FutureOrderCreateParams
+
+object FutureOrderCreateParams {
+
+  case class LIMIT(
+      symbol: String,
+      side: OrderSide,
+      positionSide: FuturePositionSide,
+      timeInForce: FutureTimeInForce,
+      quantity: BigDecimal,
+      price: BigDecimal,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+  ) extends FutureOrderCreateParams
+
+  case class MARKET(
+      symbol: String,
+      side: OrderSide,
+      positionSide: FuturePositionSide,
+      quantity: BigDecimal,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+  ) extends FutureOrderCreateParams
+
+  case class STOP(
+      symbol: String,
+      side: OrderSide,
+      positionSide: FuturePositionSide,
+      timeInForce: FutureTimeInForce = FutureTimeInForce.GTC,
+      quantity: BigDecimal,
+      reduceOnly: Boolean = false,
+      stopPrice: BigDecimal,
+      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
+      priceProtect: Boolean = false,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+  ) extends FutureOrderCreateParams
+
+  case class STOP_MARKET(
+      symbol: String,
+      side: OrderSide,
+      positionSide: FuturePositionSide,
+      stopPrice: BigDecimal,
+      closePosition: Boolean,
+      priceProtect: Boolean = false,
+      reduceOnly: Boolean = false,
+      newClientOrderId: Option[String] = None,
+      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
+      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+  ) extends FutureOrderCreateParams
+
+  case class TAKE_PROFIT(
+      symbol: String,
+      side: OrderSide,
+      positionSide: FuturePositionSide,
+      stopPrice: BigDecimal,
+      quantity: BigDecimal,
+      price: BigDecimal,
+      reduceOnly: Boolean = false,
+      timeInForce: FutureTimeInForce = FutureTimeInForce.GTC,
+      newClientOrderId: Option[String] = None,
+      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
+      priceProtect: Boolean = false,
+      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+  ) extends FutureOrderCreateParams
+
+  case class TAKE_PROFIT_MARKET(
+      symbol: String,
+      side: OrderSide,
+      positionSide: FuturePositionSide,
+      stopPrice: BigDecimal,
+      reduceOnly: Boolean = false,
+      newClientOrderId: Option[String] = None,
+      closePosition: Boolean,
+      priceProtect: Boolean = false,
+      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
+      newOrderRespType: Option[FutureOrderCreateResponseType]
+  ) extends FutureOrderCreateParams
+
+  case class TRAILING_STOP_MARKET(
+      symbol: String,
+      side: OrderSide,
+      callbackRate: BigDecimal,
+      reduceOnly: Boolean = false,
+      positionSide: FuturePositionSide,
+      activationPrice: BigDecimal,
+      quantity: BigDecimal,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+  ) extends FutureOrderCreateParams
+
+  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")
+  import io.circe.generic.extras.semiauto._
+
+  implicit val decoder: Decoder[FutureOrderCreateParams] = deriveConfiguredDecoder[FutureOrderCreateParams]
+  implicit val encoder: Encoder[FutureOrderCreateParams] =
+    deriveConfiguredEncoder[FutureOrderCreateParams]
+      .mapJson(_.dropNullValues) // do not include None values in the json
+}

@@ -474,7 +474,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           Map(
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
-            "signature"  -> equalTo("3a63adcfa4a52aa462c8cbd8d390cddf298f23f4aa38b8b465307bcbb5e8b4e8")
+            "signature"  -> equalTo("8ce2105a0cf0ef1b9e2fdc0fd4c1a9225d0de92a26af1a00b8df2f8f4020148f")
           ).asJava
         )
         .willReturn(
@@ -508,17 +508,11 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .createFutureClient[IO](config)
       .use(
         _.createOrder(
-          FutureOrderCreateParams(
+          FutureOrderCreateParams.MARKET(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
-            `type` = FutureOrderType.MARKET,
-            timeInForce = None,
-            quantity = 10,
-            price = None,
-            newClientOrderId = None,
-            stopPrice = None,
-            icebergQty = None,
-            newOrderRespType = None
+            positionSide = FuturePositionSide.BOTH,
+            quantity = 10
           )
         )
       )

@@ -49,8 +49,8 @@ class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeChecke
     val obj1: Test = Test1(1, 0.1)
     val obj2: Test = Test2(5000, 1499827319559L)
 
-    val q1 = QueryString.parse("quantity=1&price=0.1")
-    val q2 = QueryString.parse("recvWindow=5000&timestamp=1499827319559")
+    val q1 = QueryString.parse("quantity=1&price=0.1&type=Test1")
+    val q2 = QueryString.parse("recvWindow=5000&timestamp=1499827319559&type=Test2")
 
     obj1.toQueryString.paramMap should ===(q1.paramMap)
     obj2.toQueryString.paramMap should ===(q2.paramMap)
