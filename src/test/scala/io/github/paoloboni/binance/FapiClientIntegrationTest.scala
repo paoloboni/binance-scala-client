@@ -474,7 +474,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           Map(
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
-            "signature"  -> equalTo("515c0efdac39bfb55a342c1161badf1fb5ecfea069acffa1b41740b46ac1ad70")
+            "signature"  -> equalTo("d91a8820a2e4434f2be96442ae03462c1be49203b191d97fa75ac0ca47eed33f")
           ).asJava
         )
         .willReturn(
@@ -504,27 +504,27 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
+    import io.circe.syntax._
+    val b = FutureOrderCreateParams
+      .MARKET(
+        symbol = "BTCUSDT",
+        side = OrderSide.BUY,
+        positionSide = FuturePositionSide.BOTH,
+        quantity = 10
+      )
+      .asInstanceOf[FutureOrderCreateParams]
+    .asJson
+
+    println(b)
     val result = BinanceClient
       .createFutureClient[IO](config)
       .use(
         _.createOrder(
-          FutureOrderCreateParams(
+          FutureOrderCreateParams.MARKET(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
             positionSide = FuturePositionSide.BOTH,
-            `type` = FutureOrderType.MARKET,
-            timeInForce = None,
-            quantity = BigDecimal(10).some,
-            reduceOnly = None,
-            price = None,
-            newClientOrderId = None,
-            stopPrice = None,
-            closePosition = None,
-            activationPrice = None,
-            callbackRate = None,
-            workingType = None,
-            priceProtect = None,
-            newOrderRespType = None
+            quantity = 10
           )
         )
       )
