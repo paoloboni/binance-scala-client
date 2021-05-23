@@ -24,7 +24,6 @@ package io.github.paoloboni.binance.fapi.parameters
 import io.github.paoloboni.binance.common.OrderSide
 import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
-import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
 import io.circe.generic.extras.Configuration
 import io.circe.{Decoder, Encoder}
 
@@ -114,7 +113,7 @@ object FutureOrderCreateParams {
       closePosition: Boolean,
       priceProtect: Boolean = false,
       workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
-      newOrderRespType: Option[FutureOrderCreateResponseType]
+      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
   ) extends FutureOrderCreateParams
 
   case class TRAILING_STOP_MARKET(
