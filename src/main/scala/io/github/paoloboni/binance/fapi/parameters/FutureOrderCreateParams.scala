@@ -38,7 +38,7 @@ object FutureOrderCreateResponseType
 case class FutureOrderCreateParams(
     symbol: String,
     side: OrderSide,
-    positionSide: Option[FuturePositionSide],
+    positionSide: FuturePositionSide,
     `type`: FutureOrderType,
     timeInForce: Option[FutureTimeInForce],
     quantity: Option[BigDecimal],
