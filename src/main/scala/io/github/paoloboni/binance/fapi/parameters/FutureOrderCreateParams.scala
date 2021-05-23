@@ -24,6 +24,9 @@ package io.github.paoloboni.binance.fapi.parameters
 import io.github.paoloboni.binance.common.OrderSide
 import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
+import io.github.paoloboni.binance.spot.parameters.OrderCreateResponseType
+import io.circe.generic.extras.Configuration
+import io.circe.Decoder
 
 sealed trait FutureOrderCreateResponseType extends EnumEntry
 object FutureOrderCreateResponseType
@@ -35,21 +38,100 @@ object FutureOrderCreateResponseType
   case object RESULT extends FutureOrderCreateResponseType
 }
 
-case class FutureOrderCreateParams(
+sealed trait FutureOrderCreateParams
+
+
+case class LIMIT(
     symbol: String,
     side: OrderSide,
     positionSide: FuturePositionSide,
-    `type`: FutureOrderType,
-    timeInForce: Option[FutureTimeInForce],
-    quantity: Option[BigDecimal],
-    reduceOnly: Option[Boolean],
-    price: Option[BigDecimal],
+    timeInForce: FutureTimeInForce,
+    quantity: BigDecimal,
+    price: BigDecimal,
     newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    closePosition: Option[Boolean],
-    activationPrice: Option[BigDecimal],
-    callbackRate: Option[BigDecimal],
-    workingType: Option[FutureWorkingType],
-    priceProtect: Option[Boolean],
+    newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+) extends FutureOrderCreateParams
+
+case class MARKET(
+    symbol: String,
+    side: OrderSide,
+    positionSide: FuturePositionSide,
+    quantity: BigDecimal,
+    newClientOrderId: Option[String] = None,
+    newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+) extends FutureOrderCreateParams
+
+case class STOP(
+    symbol: String,
+    side: OrderSide,
+    positionSide: FuturePositionSide,
+    timeInForce: FutureTimeInForce = FutureTimeInForce.GTC,
+    quantity: BigDecimal,
+    reduceOnly: Boolean = false,
+    stopPrice: BigDecimal,
+    workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
+    priceProtect: Boolean = false,
+    newClientOrderId: Option[String] = None,
+    newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+) extends FutureOrderCreateParams
+
+case class STOP_MARKET(
+    symbol: String,
+    side: OrderSide,
+    positionSide: FuturePositionSide,
+    stopPrice: BigDecimal,
+    closePosition: Boolean,
+    priceProtect: Boolean = false,
+    reduceOnly: Boolean = false,
+    newClientOrderId: Option[String] = None,
+    workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
+    newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+) extends FutureOrderCreateParams
+
+case class TAKE_PROFIT(
+    symbol: String,
+    side: OrderSide,
+    positionSide: FuturePositionSide,
+    stopPrice: BigDecimal,
+    quantity: BigDecimal,
+    price: BigDecimal,
+    reduceOnly: Boolean = false,
+    timeInForce: FutureTimeInForce = FutureTimeInForce.GTC,
+    newClientOrderId: Option[String] = None,
+    workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
+    priceProtect: Boolean = false,
+    newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+) extends FutureOrderCreateParams
+
+case class TAKE_PROFIT_MARKET(
+    symbol: String,
+    side: OrderSide,
+    positionSide: FuturePositionSide,
+    stopPrice: BigDecimal,
+    reduceOnly: Boolean = false,
+    newClientOrderId: Option[String] = None,
+    closePosition: Boolean,
+    priceProtect: Boolean = false,
+    workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
     newOrderRespType: Option[FutureOrderCreateResponseType]
-)
+) extends FutureOrderCreateParams
+
+case class TRAILING_STOP_MARKET(
+    symbol: String,
+    side: OrderSide,
+    callbackRate: BigDecimal,
+    reduceOnly: Boolean = false,
+    positionSide: FuturePositionSide,
+    activationPrice: BigDecimal,
+    quantity: BigDecimal,
+    newClientOrderId: Option[String] = None,
+    newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+) extends FutureOrderCreateParams
+
+
+object FutureOrderCreateParams {
+  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")
+  import io.circe.generic.extras.semiauto._
+
+  implicit val decoder: Decoder[FutureOrderCreateParams] = deriveConfiguredDecoder[FutureOrderCreateParams]
+}
