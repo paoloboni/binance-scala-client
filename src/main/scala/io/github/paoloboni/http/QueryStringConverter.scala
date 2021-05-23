@@ -45,6 +45,8 @@ object StringConverter {
 
   implicit val longConverter: StringConverter[Long] = (obj: Long) => obj.toString
 
+  implicit val booleanConverter: StringConverter[Boolean] = (obj: Boolean) => obj.toString
+
   implicit val bigDecimalConverter: StringConverter[BigDecimal] = (obj: BigDecimal) => obj.bigDecimal.toPlainString
 
   implicit val instantConverter: StringConverter[Instant] = (t: Instant) => t.toEpochMilli.toString
