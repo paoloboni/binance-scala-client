@@ -27,7 +27,7 @@ sealed trait FuturePositionSide extends EnumEntry
 object FuturePositionSide extends Enum[FuturePositionSide] with CirceEnum[FuturePositionSide] {
   val values = findValues
 
-  case object BOTH extends FuturePositionSide
+  case object BOTH  extends FuturePositionSide
   case object SHORT extends FuturePositionSide
-  case object LONG extends FuturePositionSide
+  case object LONG  extends FuturePositionSide
 }

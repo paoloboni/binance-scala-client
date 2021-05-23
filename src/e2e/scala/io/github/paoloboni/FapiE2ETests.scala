@@ -56,7 +56,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
         _.createOrder(
           FutureOrderCreateParams(
             symbol = "XRPUSDT",
-            side = side
+            side = side,
             positionSide = FuturePositionSide.BOTH,
             `type` = FutureOrderType.MARKET,
             timeInForce = None,
