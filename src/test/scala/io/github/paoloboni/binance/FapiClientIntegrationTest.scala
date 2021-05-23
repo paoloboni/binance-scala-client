@@ -474,7 +474,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           Map(
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
-            "signature"  -> equalTo("d91a8820a2e4434f2be96442ae03462c1be49203b191d97fa75ac0ca47eed33f")
+            "signature"  -> equalTo("8ce2105a0cf0ef1b9e2fdc0fd4c1a9225d0de92a26af1a00b8df2f8f4020148f")
           ).asJava
         )
         .willReturn(
