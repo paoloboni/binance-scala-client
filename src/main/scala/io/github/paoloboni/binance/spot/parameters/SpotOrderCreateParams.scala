@@ -43,7 +43,7 @@ object SpotOrderCreateParams {
       timeInForce: SpotTimeInForce,
       quantity: BigDecimal,
       price: BigDecimal,
-      icebergQty: Option[BigDecimal],
+      icebergQty: Option[BigDecimal] = None,
       newClientOrderId: Option[String] = None,
       newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
   ) extends SpotOrderCreateParams
