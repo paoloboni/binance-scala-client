@@ -7,16 +7,9 @@
 [![Latest version](https://img.shields.io/maven-central/v/io.github.paoloboni/binance-scala-client_2.13.svg)](https://search.maven.org/artifact/io.github.paoloboni/binance-scala-client_2.13)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Join the chat at https://gitter.im/binance-scala-client/community](https://badges.gitter.im/binance-scala-client/community.svg)](https://gitter.im/binance-scala-client/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-A functional Scala client for Binance.
+A functional Scala client for Binance, powered by [cats-effect](https://typelevel.org/cats-effect/) 3.x.
 
 This client is rate limited, based on [Binance API specification](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md).
-
----
-**NOTE**
-
-cats-effect 2.x is supported in v0.0.8 or older. Starting from v1.0.0 this project is using version 3.x of cats-effect. 
-
----
 
 ## Getting started
 
@@ -35,7 +28,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Symbol price ticker](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#symbol-price-ticker): Latest price for a symbol or symbols
 * [Balance information](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#account-information-user_data): Current balance information
 * [New order (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#new-order--trade): Send in a new order
-* [Cancel order (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-order-trade): Cancel an active orde
+* [Cancel order (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-order-trade): Cancel an active order
 * [Cancel open orders (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-all-open-orders-on-a-symbol-trade): Cancels all active orders on a symbol
 
 ### Future API
