@@ -21,13 +21,13 @@
 
 package io.github.paoloboni.http
 
+import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.lemonlabs.uri.QueryString
-
-import scala.util.Success
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class QueryStringConverterTest extends AnyFreeSpec with Matchers {
+class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeCheckedTripleEquals {
 
   "it should convert a query string to an object and viceversa" in {
 
@@ -37,7 +37,7 @@ class QueryStringConverterTest extends AnyFreeSpec with Matchers {
 
     val queryString = QueryString.parse("quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559")
 
-    QueryStringConverter[TestClass].to(obj).paramMap shouldBe queryString.paramMap
-    QueryStringConverter[TestClass].from(queryString) shouldBe Success(obj)
+    obj.toQueryString.paramMap should ===(queryString.paramMap)
+    QueryStringConverter[TestClass].from(queryString) should ===(Right(obj))
   }
 }

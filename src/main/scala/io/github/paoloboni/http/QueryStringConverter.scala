@@ -29,10 +29,10 @@ import shapeless.labelled.{FieldType, field}
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
 
 import java.time.Instant
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait StringConverter[T] {
-  def from(s: String): Try[T]
+  def from(s: String): Either[String, T]
   def to(t: T): String
 }
 
@@ -41,55 +41,53 @@ object StringConverter {
 
   implicit def optionConverter[T: StringConverter]: StringConverter[Option[T]] =
     new StringConverter[Option[T]] {
-      def from(s: String): Try[Option[T]] = s match {
-        case ""       => Success(None)
+      def from(s: String): Either[String, Option[T]] = s match {
+        case ""       => Right(None)
         case nonEmpty => StringConverter[T].from(nonEmpty).map(Some(_))
       }
       def to(obj: Option[T]): String = obj.map(StringConverter[T].to).getOrElse("")
     }
 
   implicit val stringConverter: StringConverter[String] = new StringConverter[String] {
-    def from(s: String): Try[String] = Success(s)
-    def to(obj: String): String      = obj
+    def from(s: String): Either[String, String] = Right(s)
+    def to(obj: String): String                 = obj
   }
 
   implicit val intConverter: StringConverter[Int] = new StringConverter[Int] {
-    def from(s: String): Try[Int] = Try(s.toInt)
-    def to(obj: Int): String      = obj.toString
+    def from(s: String): Either[String, Int] = Try(s.toInt).toEither.left.map(_.getMessage)
+    def to(obj: Int): String                 = obj.toString
   }
 
   implicit val longConverter: StringConverter[Long] = new StringConverter[Long] {
-    def from(s: String): Try[Long] = Try(s.toLong)
-    def to(obj: Long): String      = obj.toString
+    def from(s: String): Either[String, Long] = Try(s.toLong).toEither.left.map(_.getMessage)
+    def to(obj: Long): String                 = obj.toString
   }
 
   implicit val bigDecimalConverter: StringConverter[BigDecimal] = new StringConverter[BigDecimal] {
-    def from(s: String): Try[BigDecimal] = Try(BigDecimal(s))
-    def to(obj: BigDecimal): String      = obj.bigDecimal.toPlainString
+    def from(s: String): Either[String, BigDecimal] = Try(BigDecimal(s)).toEither.left.map(_.getMessage)
+    def to(obj: BigDecimal): String                 = obj.bigDecimal.toPlainString
   }
 
   implicit val instantConverter: StringConverter[Instant] = new StringConverter[Instant] {
-    override def from(s: String): Try[Instant] = Try(Instant.ofEpochMilli(s.toLong))
-    override def to(t: Instant): String        = t.toEpochMilli.toString
+    override def from(s: String): Either[String, Instant] =
+      Try(Instant.ofEpochMilli(s.toLong)).toEither.left.map(_.getMessage)
+    override def to(t: Instant): String = t.toEpochMilli.toString
   }
 
   implicit def enumEntryConverter[T <: EnumEntry](implicit enum: Enum[T]): StringConverter[T] = new StringConverter[T] {
-    def from(s: String): Try[T] = Try(enum.withName(s))
-    def to(obj: T): String      = obj.entryName
+    def from(s: String): Either[String, T] = Try(enum.withName(s)).toEither.left.map(_.getMessage)
+    def to(obj: T): String                 = obj.entryName
   }
 
   implicit def refinedConverter[T: StringConverter, P](implicit v: Validate[T, P]): StringConverter[T Refined P] =
     new StringConverter[Refined[T, P]] {
-      override def from(s: String): Try[Refined[T, P]] = for {
-        refined <- StringConverter[T].from(s).map(refineV[P](_))
-        res     <- refined.fold(err => Failure(new RuntimeException(err)), Success(_))
-      } yield res
-      override def to(t: Refined[T, P]): String = StringConverter[T].to(t.value)
+      override def from(s: String): Either[String, Refined[T, P]] = StringConverter[T].from(s).flatMap(refineV[P](_))
+      override def to(t: Refined[T, P]): String                   = StringConverter[T].to(t.value)
     }
 }
 
 trait QueryStringConverter[T] {
-  def from(s: QueryString): Try[T]
+  def from(s: QueryString): Either[String, T]
   def to(t: T): QueryString
 }
 
@@ -97,8 +95,8 @@ object QueryStringConverter {
   def apply[T: QueryStringConverter]: QueryStringConverter[T] = implicitly
 
   implicit val deriveHNil: QueryStringConverter[HNil] = new QueryStringConverter[HNil] {
-    override def from(s: QueryString): Try[HNil] = Success(HNil)
-    override def to(t: HNil): QueryString        = QueryString.empty
+    override def from(s: QueryString): Either[String, HNil] = Right(HNil)
+    override def to(t: HNil): QueryString                   = QueryString.empty
   }
 
   implicit def deriveHCons[K <: Symbol, H, T <: HList](implicit
@@ -109,7 +107,7 @@ object QueryStringConverter {
 
     private val fieldName = witness.value.name
 
-    override def from(s: QueryString): Try[FieldType[K, H] :: T] = {
+    override def from(s: QueryString): Either[String, FieldType[K, H] :: T] = {
       s.paramMap.get(fieldName) match {
         case Some(value) =>
           value match {
@@ -118,9 +116,9 @@ object QueryStringConverter {
                 head <- scv.value.from(string)
                 tail <- sct.from(s)
               } yield field[K](head) :: tail
-            case v => Failure(new RuntimeException(s"failed to read value for key $fieldName in $v"))
+            case v => Left(s"failed to read value for key $fieldName in $v")
           }
-        case None => Failure(new RuntimeException(s"key not found: $fieldName"))
+        case None => Left(s"key not found: $fieldName")
       }
     }
 
@@ -138,7 +136,11 @@ object QueryStringConverter {
       gen: LabelledGeneric.Aux[A, Repr],
       conv: Lazy[QueryStringConverter[Repr]]
   ): QueryStringConverter[A] = new QueryStringConverter[A] {
-    def from(s: QueryString): Try[A] = conv.map(_.from(s).map(gen.from)).value
-    def to(a: A): QueryString        = conv.map(_.to(gen.to(a))).value
+    def from(s: QueryString): Either[String, A] = conv.map(_.from(s).map(gen.from)).value
+    def to(a: A): QueryString                   = conv.map(_.to(gen.to(a))).value
+  }
+
+  implicit class Ops[T](val t: T) extends AnyVal {
+    def toQueryString(implicit converter: QueryStringConverter[T]): QueryString = converter.to(t)
   }
 }
