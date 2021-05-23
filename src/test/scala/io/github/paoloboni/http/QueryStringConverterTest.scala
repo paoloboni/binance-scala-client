@@ -46,8 +46,8 @@ class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeChecke
     case class Test1(quantity: Int, price: BigDecimal) extends Test
     case class Test2(recvWindow: Int, timestamp: Long) extends Test
 
-    val obj1 = Test1(1, 0.1)
-    val obj2 = Test2(5000, 1499827319559L)
+    val obj1: Test = Test1(1, 0.1)
+    val obj2: Test = Test2(5000, 1499827319559L)
 
     val q1 = QueryString.parse("quantity=1&price=0.1")
     val q2 = QueryString.parse("recvWindow=5000&timestamp=1499827319559")

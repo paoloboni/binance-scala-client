@@ -85,10 +85,10 @@ object QueryStringConverter {
 
   implicit val deriveCNil: QueryStringConverter[CNil] = (t: CNil) => t.impossible
 
-  implicit def deriveCoproduct[H, T <: Coproduct](implicit
+  implicit def deriveCoproduct[K <: Symbol, H, T <: Coproduct](implicit
       hInstance: Lazy[QueryStringConverter[H]],
       tInstance: QueryStringConverter[T]
-  ): QueryStringConverter[H :+: T] = {
+  ): QueryStringConverter[FieldType[K, H] :+: T] = {
     case Inl(head) => hInstance.value.to(head)
     case Inr(tail) => tInstance.to(tail)
   }
