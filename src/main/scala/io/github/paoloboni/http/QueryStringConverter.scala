@@ -23,16 +23,13 @@ package io.github.paoloboni.http
 
 import enumeratum.{Enum, EnumEntry}
 import eu.timepit.refined.api.{Refined, Validate}
-import eu.timepit.refined.refineV
 import io.lemonlabs.uri.QueryString
-import shapeless.labelled.{FieldType, field}
-import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
+import shapeless.labelled.FieldType
+import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, Inl, Inr, LabelledGeneric, Lazy, Witness}
 
 import java.time.Instant
-import scala.util.Try
 
 trait StringConverter[T] {
-  def from(s: String): Either[String, T]
   def to(t: T): String
 }
 
@@ -40,64 +37,33 @@ object StringConverter {
   def apply[T: StringConverter]: StringConverter[T] = implicitly
 
   implicit def optionConverter[T: StringConverter]: StringConverter[Option[T]] =
-    new StringConverter[Option[T]] {
-      def from(s: String): Either[String, Option[T]] = s match {
-        case ""       => Right(None)
-        case nonEmpty => StringConverter[T].from(nonEmpty).map(Some(_))
-      }
-      def to(obj: Option[T]): String = obj.map(StringConverter[T].to).getOrElse("")
-    }
+    (obj: Option[T]) => obj.map(StringConverter[T].to).getOrElse("")
 
-  implicit val stringConverter: StringConverter[String] = new StringConverter[String] {
-    def from(s: String): Either[String, String] = Right(s)
-    def to(obj: String): String                 = obj
-  }
+  implicit val stringConverter: StringConverter[String] = (obj: String) => obj
 
-  implicit val intConverter: StringConverter[Int] = new StringConverter[Int] {
-    def from(s: String): Either[String, Int] = Try(s.toInt).toEither.left.map(_.getMessage)
-    def to(obj: Int): String                 = obj.toString
-  }
+  implicit val intConverter: StringConverter[Int] = (obj: Int) => obj.toString
 
-  implicit val longConverter: StringConverter[Long] = new StringConverter[Long] {
-    def from(s: String): Either[String, Long] = Try(s.toLong).toEither.left.map(_.getMessage)
-    def to(obj: Long): String                 = obj.toString
-  }
+  implicit val longConverter: StringConverter[Long] = (obj: Long) => obj.toString
 
-  implicit val bigDecimalConverter: StringConverter[BigDecimal] = new StringConverter[BigDecimal] {
-    def from(s: String): Either[String, BigDecimal] = Try(BigDecimal(s)).toEither.left.map(_.getMessage)
-    def to(obj: BigDecimal): String                 = obj.bigDecimal.toPlainString
-  }
+  implicit val bigDecimalConverter: StringConverter[BigDecimal] = (obj: BigDecimal) => obj.bigDecimal.toPlainString
 
-  implicit val instantConverter: StringConverter[Instant] = new StringConverter[Instant] {
-    override def from(s: String): Either[String, Instant] =
-      Try(Instant.ofEpochMilli(s.toLong)).toEither.left.map(_.getMessage)
-    override def to(t: Instant): String = t.toEpochMilli.toString
-  }
+  implicit val instantConverter: StringConverter[Instant] = (t: Instant) => t.toEpochMilli.toString
 
-  implicit def enumEntryConverter[T <: EnumEntry](implicit enum: Enum[T]): StringConverter[T] = new StringConverter[T] {
-    def from(s: String): Either[String, T] = Try(enum.withName(s)).toEither.left.map(_.getMessage)
-    def to(obj: T): String                 = obj.entryName
-  }
+  implicit def enumEntryConverter[T <: EnumEntry](implicit enum: Enum[T]): StringConverter[T] = (obj: T) =>
+    obj.entryName
 
   implicit def refinedConverter[T: StringConverter, P](implicit v: Validate[T, P]): StringConverter[T Refined P] =
-    new StringConverter[Refined[T, P]] {
-      override def from(s: String): Either[String, Refined[T, P]] = StringConverter[T].from(s).flatMap(refineV[P](_))
-      override def to(t: Refined[T, P]): String                   = StringConverter[T].to(t.value)
-    }
+    (t: Refined[T, P]) => StringConverter[T].to(t.value)
 }
 
 trait QueryStringConverter[T] {
-  def from(s: QueryString): Either[String, T]
   def to(t: T): QueryString
 }
 
 object QueryStringConverter {
   def apply[T: QueryStringConverter]: QueryStringConverter[T] = implicitly
 
-  implicit val deriveHNil: QueryStringConverter[HNil] = new QueryStringConverter[HNil] {
-    override def from(s: QueryString): Either[String, HNil] = Right(HNil)
-    override def to(t: HNil): QueryString                   = QueryString.empty
-  }
+  implicit val deriveHNil: QueryStringConverter[HNil] = (t: HNil) => QueryString.empty
 
   implicit def deriveHCons[K <: Symbol, H, T <: HList](implicit
       witness: Witness.Aux[K],
@@ -106,21 +72,6 @@ object QueryStringConverter {
   ): QueryStringConverter[FieldType[K, H] :: T] = new QueryStringConverter[FieldType[K, H] :: T] {
 
     private val fieldName = witness.value.name
-
-    override def from(s: QueryString): Either[String, FieldType[K, H] :: T] = {
-      s.paramMap.get(fieldName) match {
-        case Some(value) =>
-          value match {
-            case Vector(string) =>
-              for {
-                head <- scv.value.from(string)
-                tail <- sct.from(s)
-              } yield field[K](head) :: tail
-            case v => Left(s"failed to read value for key $fieldName in $v")
-          }
-        case None => Left(s"key not found: $fieldName")
-      }
-    }
 
     override def to(hList: FieldType[K, H] :: T): QueryString = hList match {
       case h :: t =>
@@ -132,13 +83,20 @@ object QueryStringConverter {
     }
   }
 
+  implicit val deriveCNil: QueryStringConverter[CNil] = (t: CNil) => t.impossible
+
+  implicit def deriveCoproduct[H, T <: Coproduct](implicit
+      hInstance: Lazy[QueryStringConverter[H]],
+      tInstance: QueryStringConverter[T]
+  ): QueryStringConverter[H :+: T] = {
+    case Inl(head) => hInstance.value.to(head)
+    case Inr(tail) => tInstance.to(tail)
+  }
+
   implicit def deriveClass[A, Repr](implicit
       gen: LabelledGeneric.Aux[A, Repr],
       conv: Lazy[QueryStringConverter[Repr]]
-  ): QueryStringConverter[A] = new QueryStringConverter[A] {
-    def from(s: QueryString): Either[String, A] = conv.map(_.from(s).map(gen.from)).value
-    def to(a: A): QueryString                   = conv.map(_.to(gen.to(a))).value
-  }
+  ): QueryStringConverter[A] = (a: A) => conv.map(_.to(gen.to(a))).value
 
   implicit class Ops[T](val t: T) extends AnyVal {
     def toQueryString(implicit converter: QueryStringConverter[T]): QueryString = converter.to(t)

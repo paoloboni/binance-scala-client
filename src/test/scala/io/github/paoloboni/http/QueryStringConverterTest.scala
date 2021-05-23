@@ -29,7 +29,7 @@ import org.scalatest.matchers.should.Matchers
 
 class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeCheckedTripleEquals {
 
-  "it should convert a query string to an object and viceversa" in {
+  "it should convert a query string to an object" in {
 
     case class TestClass(quantity: Int, price: BigDecimal, recvWindow: Int, timestamp: Long)
 
@@ -38,6 +38,21 @@ class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeChecke
     val queryString = QueryString.parse("quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559")
 
     obj.toQueryString.paramMap should ===(queryString.paramMap)
-    QueryStringConverter[TestClass].from(queryString) should ===(Right(obj))
+  }
+
+  "it should convert sum types" in {
+
+    sealed trait Test
+    case class Test1(quantity: Int, price: BigDecimal) extends Test
+    case class Test2(recvWindow: Int, timestamp: Long) extends Test
+
+    val obj1 = Test1(1, 0.1)
+    val obj2 = Test2(5000, 1499827319559L)
+
+    val q1 = QueryString.parse("quantity=1&price=0.1")
+    val q2 = QueryString.parse("recvWindow=5000&timestamp=1499827319559")
+
+    obj1.toQueryString.paramMap should ===(q1.paramMap)
+    obj2.toQueryString.paramMap should ===(q2.paramMap)
   }
 }
