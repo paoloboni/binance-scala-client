@@ -52,7 +52,7 @@ object SpotOrderCreateParams {
       symbol: String,
       side: OrderSide,
       quantity: Option[BigDecimal],
-      quoteOrderQty: Option[BigDecimal],
+      quoteOrderQty: Option[BigDecimal] = None,
       newClientOrderId: Option[String] = None,
       newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
   ) extends SpotOrderCreateParams

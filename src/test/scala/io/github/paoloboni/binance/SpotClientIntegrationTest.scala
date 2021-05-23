@@ -439,7 +439,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withRequestBody(containing("recvWindow=5000"))
         .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=4d45ab1a04e5f9be345ac45e6b6df2033f0473783433862aaecd8529ddb72bcc"))
+        .withRequestBody(containing("signature=2c3c83554ef58b4951239a24f26f7d413fc75c186eed5ecd7d502565c6972768"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -462,17 +462,10 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .createSpotClient[IO](config)
       .use(
         _.createOrder(
-          SpotOrderCreateParams(
+          SpotOrderCreateParams.MARKET(
             symbol = "BTCUSDT",
             side = OrderSide.BUY,
-            `type` = SpotOrderType.MARKET,
-            timeInForce = None,
-            quantity = 10.5,
-            price = None,
-            newClientOrderId = None,
-            stopPrice = None,
-            icebergQty = None,
-            newOrderRespType = None
+            quantity = BigDecimal(10.5).some
           )
         )
       )
