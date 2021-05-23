@@ -88,7 +88,7 @@ object QueryStringConverter {
   implicit val deriveCNil: QueryStringConverter[CNil] = (t: CNil) => t.impossible
 
   implicit def deriveCoproduct[K <: Symbol, H, T <: Coproduct](implicit
-       witness: Witness.Aux[K],
+      witness: Witness.Aux[K],
       hInstance: Lazy[QueryStringConverter[H]],
       tInstance: QueryStringConverter[T]
   ): QueryStringConverter[FieldType[K, H] :+: T] = {
