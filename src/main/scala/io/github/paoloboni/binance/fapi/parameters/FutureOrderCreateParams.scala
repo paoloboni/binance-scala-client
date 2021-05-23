@@ -48,7 +48,7 @@ case class LIMIT(
     timeInForce: FutureTimeInForce,
     quantity: BigDecimal,
     price: BigDecimal,
-    newClientOrderId: Option[String],
+    newClientOrderId: Option[String] = None,
     newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
 ) extends FutureOrderCreateParams
 
