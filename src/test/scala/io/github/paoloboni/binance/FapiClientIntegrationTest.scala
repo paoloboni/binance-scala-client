@@ -504,18 +504,6 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    import io.circe.syntax._
-    val b = FutureOrderCreateParams
-      .MARKET(
-        symbol = "BTCUSDT",
-        side = OrderSide.BUY,
-        positionSide = FuturePositionSide.BOTH,
-        quantity = 10
-      )
-      .asInstanceOf[FutureOrderCreateParams]
-    .asJson
-
-    println(b)
     val result = BinanceClient
       .createFutureClient[IO](config)
       .use(
