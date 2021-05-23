@@ -26,7 +26,7 @@ import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait FutureWorkingType extends EnumEntry
-object FutureWorkingType extends Enum[FutureWorkingType] {
+object FutureWorkingType extends Enum[FutureWorkingType] with CirceEnum[FutureWorkingType] {
   val values = findValues
 
   case object MARK_PRICE     extends FutureWorkingType

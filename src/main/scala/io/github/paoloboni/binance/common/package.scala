@@ -39,7 +39,7 @@ package object common {
   type OrderId = Long @@ OrderIdTag
 
   sealed trait OrderSide extends EnumEntry
-  object OrderSide extends Enum[OrderSide] {
+  object OrderSide extends Enum[OrderSide] with CirceEnum[OrderSide]{
     val values = findValues
 
     case object SELL extends OrderSide
