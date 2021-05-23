@@ -21,10 +21,9 @@
 
 package io.github.paoloboni
 
-import cats.effect.kernel.Async
 import cats.effect.{IO, Resource}
+import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.duration._
