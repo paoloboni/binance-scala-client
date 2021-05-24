@@ -45,7 +45,7 @@ lazy val root = (project in file("."))
       "org.scalatest"         %% "scalatest"                     % "3.2.9"  % "test",
       "io.circe"              %% "circe-parser"                  % "0.13.0" % "test",
       "com.github.tomakehurst" % "wiremock"                      % "2.27.2" % "test",
-      "org.typelevel"         %% "cats-effect-testing-scalatest" % "1.1.0"  % "test"
+      "org.typelevel"         %% "cats-effect-testing-scalatest" % "1.1.1"  % "test"
     )
   )
   .enablePlugins(AutomateHeaderPlugin)
