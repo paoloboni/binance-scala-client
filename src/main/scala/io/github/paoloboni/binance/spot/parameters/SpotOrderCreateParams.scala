@@ -25,24 +25,88 @@ import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-sealed trait OrderCreateResponseType extends EnumEntry
-object OrderCreateResponseType extends Enum[OrderCreateResponseType] {
+sealed trait SpotOrderCreateResponseType extends EnumEntry
+object SpotOrderCreateResponseType extends Enum[SpotOrderCreateResponseType] {
   val values = findValues
 
-  case object ACK    extends OrderCreateResponseType
-  case object RESULT extends OrderCreateResponseType
-  case object FULL   extends OrderCreateResponseType
+  case object ACK    extends SpotOrderCreateResponseType
+  case object RESULT extends SpotOrderCreateResponseType
+  case object FULL   extends SpotOrderCreateResponseType
 }
 
-case class SpotOrderCreateParams(
-    symbol: String,
-    side: OrderSide,
-    `type`: SpotOrderType,
-    timeInForce: Option[SpotTimeInForce],
-    quantity: BigDecimal,
-    price: Option[BigDecimal],
-    newClientOrderId: Option[String],
-    stopPrice: Option[BigDecimal],
-    icebergQty: Option[BigDecimal],
-    newOrderRespType: Option[OrderCreateResponseType]
-)
+sealed trait SpotOrderCreateParams
+
+object SpotOrderCreateParams {
+  case class LIMIT(
+      symbol: String,
+      side: OrderSide,
+      timeInForce: SpotTimeInForce,
+      quantity: BigDecimal,
+      price: BigDecimal,
+      icebergQty: Option[BigDecimal] = None,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
+  ) extends SpotOrderCreateParams
+
+  case class MARKET(
+      symbol: String,
+      side: OrderSide,
+      quantity: Option[BigDecimal],
+      quoteOrderQty: Option[BigDecimal] = None,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
+  ) extends SpotOrderCreateParams
+
+  case class STOP_LOSS(
+      symbol: String,
+      side: OrderSide,
+      quantity: BigDecimal,
+      stopPrice: BigDecimal,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
+  ) extends SpotOrderCreateParams
+
+  case class STOP_LOSS_LIMIT(
+      symbol: String,
+      side: OrderSide,
+      timeInForce: SpotTimeInForce,
+      quantity: BigDecimal,
+      price: BigDecimal,
+      stopPrice: BigDecimal,
+      icebergQty: Option[BigDecimal],
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
+  ) extends SpotOrderCreateParams
+
+  case class TAKE_PROFIT(
+      symbol: String,
+      side: OrderSide,
+      quantity: BigDecimal,
+      stopPrice: BigDecimal,
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
+  ) extends SpotOrderCreateParams
+
+  case class TAKE_PROFIT_LIMIT(
+      symbol: String,
+      side: OrderSide,
+      timeInForce: SpotTimeInForce,
+      quantity: BigDecimal,
+      price: BigDecimal,
+      stopPrice: BigDecimal,
+      icebergQty: Option[BigDecimal],
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
+  ) extends SpotOrderCreateParams
+
+  case class LIMIT_MAKER(
+      symbol: String,
+      side: OrderSide,
+      timeInForce: SpotTimeInForce,
+      quantity: BigDecimal,
+      price: BigDecimal,
+      icebergQty: Option[BigDecimal],
+      newClientOrderId: Option[String] = None,
+      newOrderRespType: SpotOrderCreateResponseType = SpotOrderCreateResponseType.ACK
+  ) extends SpotOrderCreateParams
+}

@@ -56,17 +56,10 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .createSpotClient[IO](config)
       .use(
         _.createOrder(
-          SpotOrderCreateParams(
+          SpotOrderCreateParams.MARKET(
             symbol = "XRPUSDT",
             side = side,
-            `type` = SpotOrderType.MARKET,
-            timeInForce = None,
-            quantity = 100,
-            price = None,
-            newClientOrderId = None,
-            stopPrice = None,
-            icebergQty = None,
-            newOrderRespType = None
+            quantity = BigDecimal(100).some
           )
         )
       )
@@ -79,17 +72,12 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(client =>
         for {
           id <- client.createOrder(
-            SpotOrderCreateParams(
+            SpotOrderCreateParams.LIMIT(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
-              `type` = SpotOrderType.LIMIT,
-              timeInForce = SpotTimeInForce.GTC.some,
+              timeInForce = SpotTimeInForce.GTC,
               quantity = 10,
-              price = BigDecimal(1).some,
-              newClientOrderId = None,
-              stopPrice = None,
-              icebergQty = None,
-              newOrderRespType = None
+              price = 1
             )
           )
 
@@ -111,17 +99,12 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(client =>
         for {
           _ <- client.createOrder(
-            SpotOrderCreateParams(
+            SpotOrderCreateParams.LIMIT(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
-              `type` = SpotOrderType.LIMIT,
-              timeInForce = SpotTimeInForce.GTC.some,
+              timeInForce = SpotTimeInForce.GTC,
               quantity = 10,
-              price = BigDecimal(1).some,
-              newClientOrderId = None,
-              stopPrice = None,
-              icebergQty = None,
-              newOrderRespType = None
+              price = 1
             )
           )
 
