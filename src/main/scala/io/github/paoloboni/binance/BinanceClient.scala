@@ -28,7 +28,7 @@ import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
 import log.effect.LogWriter
-import org.http4s.blaze.client.BlazeClientBuilder
+import org.http4s.client.blaze.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
