@@ -19,19 +19,20 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni
+package io.github.paoloboni.binance.spot.response
 
-import cats.effect.{IO, Resource}
-import org.http4s.client.Client
-import org.http4s.client.blaze.BlazeClientBuilder
+import io.github.paoloboni.binance.common.BinanceBalance
 
-import scala.concurrent.ExecutionContext.global
-import scala.concurrent.duration._
-
-trait TestClient {
-  def clientResource: Resource[IO, Client[IO]] =
-    BlazeClientBuilder[IO](global)
-      .withResponseHeaderTimeout(60.seconds)
-      .withMaxTotalConnections(20)
-      .resource
-}
+case class SpotAccountInfoResponse(
+    balances: Seq[BinanceBalance],
+    makerCommission: BigDecimal,
+    takerCommission: BigDecimal,
+    buyerCommission: BigDecimal,
+    sellerCommission: BigDecimal,
+    canTrade: Boolean,
+    canWithdraw: Boolean,
+    canDeposit: Boolean,
+    updateTime: Long,
+    accountType: String,
+    permissions: List[String]
+)

@@ -7,6 +7,7 @@ import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, Ord
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.common.parameters._
+import io.github.paoloboni.binance.spot.response.SpotAccountInfoResponse
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -37,7 +38,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createSpotClient[IO](config)
       .use(_.getBalance())
-      .asserting(_ shouldNot be(empty))
+      .asserting(_ shouldBe a[SpotAccountInfoResponse])
   }
 
   "getKLines" in {

@@ -30,6 +30,7 @@ import io.circe.parser._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
+import io.github.paoloboni.binance.spot.response.SpotAccountInfoResponse
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
 import org.scalatest.freespec.AnyFreeSpec
@@ -392,6 +393,10 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
                         |  "canTrade": true,
                         |  "canWithdraw": true,
                         |  "canDeposit": true,
+                        |  "accountType": "SPOT",
+                        |  "permissions": [
+                        |    "SPOT"
+                        |  ],
                         |  "updateTime": 123456789,
                         |  "balances": [
                         |    {
@@ -419,9 +424,21 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .use(_.getBalance())
       .unsafeRunSync()
 
-    result shouldBe Map(
-      tag[AssetTag]("BTC") -> Balance(BigDecimal("4723846.89208129"), BigDecimal("0.00000000")),
-      tag[AssetTag]("LTC") -> Balance(BigDecimal("4763368.68006011"), BigDecimal("0.00000001"))
+    result shouldBe SpotAccountInfoResponse(
+      balances = List(
+        BinanceBalance(tag[AssetTag][String]("BTC"), BigDecimal("4723846.89208129"), BigDecimal("0.00000000")),
+        BinanceBalance(tag[AssetTag][String]("LTC"), BigDecimal("4763368.68006011"), BigDecimal("0.00000001"))
+      ),
+      makerCommission = 15,
+      takerCommission = 15,
+      buyerCommission = 0,
+      sellerCommission = 0,
+      canTrade = true,
+      canWithdraw = true,
+      canDeposit = true,
+      updateTime = 123456789L,
+      accountType = "SPOT",
+      permissions = List("SPOT")
     )
   }
 

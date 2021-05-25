@@ -28,7 +28,6 @@ import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 package object common {
   case class Price(symbol: String, price: BigDecimal)
-  case class Balance(free: BigDecimal, locked: BigDecimal)
 
   trait AssetTag
   type Asset = String @@ AssetTag
@@ -46,7 +45,5 @@ package object common {
     case object BUY  extends OrderSide
   }
 
-  case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)
-  case class BinanceBalances(balances: Seq[BinanceBalance])
-
+  case class BinanceBalance(asset: Asset, free: BigDecimal, locked: BigDecimal)
 }
