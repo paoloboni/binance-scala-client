@@ -22,33 +22,56 @@
 package io.github.paoloboni.binance.fapi.response
 
 import io.github.paoloboni.binance.common
+import io.github.paoloboni.binance.fapi.FuturePositionSide
 
 case class FutureAccountInfoResponse(
-    assets: List[OwnedAssetInfo],
+    feeTier: Int,
     canDeposit: Boolean,
     canTrade: Boolean,
     canWithdraw: Boolean,
-    feeTier: Int,
-    maxWithdrawAmount: BigDecimal,
+    updateTime: Long,
     totalInitialMargin: BigDecimal,
     totalMaintMargin: BigDecimal,
-    totalMarginBalance: BigDecimal,
-    totalOpenOrderInitialMargin: BigDecimal,
-    totalPositionInitialMargin: BigDecimal,
-    totalUnrealizedProfit: BigDecimal,
     totalWalletBalance: BigDecimal,
-    updateTime: Long
+    totalUnrealizedProfit: BigDecimal,
+    totalMarginBalance: BigDecimal,
+    totalPositionInitialMargin: BigDecimal,
+    totalOpenOrderInitialMargin: BigDecimal,
+    totalCrossWalletBalance: BigDecimal,
+    totalCrossUnPnl: BigDecimal,
+    availableBalance: BigDecimal,
+    maxWithdrawAmount: BigDecimal,
+    assets: List[OwnedAsset],
+    positions: List[OpenPosition]
 )
 
-// Maybe rename to something else?
-case class OwnedAssetInfo(
+case class OwnedAsset(
     asset: common.Asset,
+    walletBalance: BigDecimal,
+    unrealizedProfit: BigDecimal,
+    marginBalance: BigDecimal,
+    maintMargin: BigDecimal,
+    initialMargin: BigDecimal,
+    positionInitialMargin: BigDecimal,
+    openOrderInitialMargin: BigDecimal,
+    crossWalletBalance: BigDecimal,
+    crossUnPnl: BigDecimal,
+    availableBalance: BigDecimal,
+    maxWithdrawAmount: BigDecimal,
+    marginAvailable: Boolean
+)
+
+case class OpenPosition(
+    symbol: String,
     initialMargin: BigDecimal,
     maintMargin: BigDecimal,
-    marginBalance: BigDecimal,
-    maxWithdrawAmount: BigDecimal,
-    openOrderInitialMargin: BigDecimal,
-    positionInitialMargin: BigDecimal,
     unrealizedProfit: BigDecimal,
-    walletBalance: BigDecimal
+    positionInitialMargin: BigDecimal,
+    openOrderInitialMargin: BigDecimal,
+    leverage: BigDecimal,
+    isolated: Boolean,
+    entryPrice: BigDecimal,
+    maxNotional: BigDecimal,
+    positionSide: FuturePositionSide,
+    positionAmt: BigDecimal
 )

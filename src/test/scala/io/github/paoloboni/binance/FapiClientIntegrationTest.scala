@@ -384,38 +384,59 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         .willReturn(
           aResponse()
             .withStatus(200)
-            .withBody("""{
-                        |  "assets": [
-                        |      {
-                        |          "asset": "USDT",
-                        |          "initialMargin": "9.00000000",
-                        |          "maintMargin": "0.00000000",
-                        |          "marginBalance": "22.12659734",
-                        |          "maxWithdrawAmount": "13.12659734",
-                        |          "openOrderInitialMargin": "9.00000000",
-                        |          "positionInitialMargin": "0.00000000",
-                        |          "unrealizedProfit": "0.00000000",
-                        |          "walletBalance": "22.12659734"
-                        |      }
-                        |  ],
-                        |  "feeTier" : 0,
-                        |  "canTrade" : true,
-                        |  "canDeposit" : true,
-                        |  "canWithdraw" : true,
-                        |  "updateTime" : 0,
-                        |  "totalInitialMargin" : "0.00000000",
-                        |  "totalMaintMargin" : "0.00000000",
-                        |  "totalWalletBalance" : "100000.00000000",
-                        |  "totalUnrealizedProfit" : "0.00000000",
-                        |  "totalMarginBalance" : "100000.00000000",
-                        |  "totalPositionInitialMargin" : "0.00000000",
-                        |  "totalOpenOrderInitialMargin" : "0.00000000",
-                        |  "totalCrossWalletBalance" : "100000.00000000",
-                        |  "totalCrossUnPnl" : "0.00000000",
-                        |  "availableBalance" : "100000.00000000",
-                        |  "maxWithdrawAmount" : "100000.00000000"
+            .withBody("""
+                        |{
+                        |    "feeTier": 0,
+                        |    "canTrade": true,
+                        |    "canDeposit": true,
+                        |    "canWithdraw": true,
+                        |    "updateTime": 0,
+                        |    "totalInitialMargin": "0.00000000",
+                        |    "totalMaintMargin": "0.00000000",
+                        |    "totalWalletBalance": "23.72469206",
+                        |    "totalUnrealizedProfit": "0.00000000",
+                        |    "totalMarginBalance": "23.72469206",
+                        |    "totalPositionInitialMargin": "0.00000000",
+                        |    "totalOpenOrderInitialMargin": "0.00000000",
+                        |    "totalCrossWalletBalance": "23.72469206",
+                        |    "totalCrossUnPnl": "0.00000000",
+                        |    "availableBalance": "23.72469206",
+                        |    "maxWithdrawAmount": "23.72469206",
+                        |    "assets": [
+                        |        {
+                        |            "asset": "USDT",
+                        |            "walletBalance": "23.72469206",
+                        |            "unrealizedProfit": "0.00000000",
+                        |            "marginBalance": "23.72469206",
+                        |            "maintMargin": "0.00000000",
+                        |            "initialMargin": "0.00000000",
+                        |            "positionInitialMargin": "0.00000000",
+                        |            "openOrderInitialMargin": "0.00000000",
+                        |            "crossWalletBalance": "23.72469206",
+                        |            "crossUnPnl": "0.00000000",
+                        |            "availableBalance": "23.72469206",
+                        |            "maxWithdrawAmount": "23.72469206",
+                        |            "marginAvailable": true
+                        |        }
+                        |    ],
+                        |    "positions": [
+                        |        {
+                        |            "symbol": "BTCUSDT",
+                        |            "initialMargin": "0",
+                        |            "maintMargin": "0",
+                        |            "unrealizedProfit": "0.00000000",
+                        |            "positionInitialMargin": "0",
+                        |            "openOrderInitialMargin": "0",
+                        |            "leverage": "100",
+                        |            "isolated": true,
+                        |            "entryPrice": "0.00000",
+                        |            "maxNotional": "250000",
+                        |            "positionSide": "BOTH",
+                        |            "positionAmt": "0"
+                        |        }
+                        |    ]
                         |}
-                      """.stripMargin)
+                        """.stripMargin)
         )
     )
 
@@ -429,32 +450,55 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       .unsafeRunSync()
 
     result shouldBe FutureAccountInfoResponse(
-      assets = List(
-        OwnedAssetInfo(
-          asset = tag[AssetTag][String]("USDT"),
-          initialMargin = 9.00000000,
-          maintMargin = 0,
-          marginBalance = 22.12659734,
-          maxWithdrawAmount = 13.12659734,
-          openOrderInitialMargin = 9.00000000,
-          positionInitialMargin = 0,
-          unrealizedProfit = 0,
-          walletBalance = 22.12659734
-        )
-      ),
-      canDeposit = true,
-      canTrade = true,
-      canWithdraw = true,
       feeTier = 0,
-      maxWithdrawAmount = 100000.00000000,
+      canTrade = true,
+      canDeposit = true,
+      canWithdraw = true,
+      updateTime = 0L,
       totalInitialMargin = 0,
       totalMaintMargin = 0,
-      totalMarginBalance = 100000.00000000,
-      totalOpenOrderInitialMargin = 0,
-      totalPositionInitialMargin = 0,
-      totalUnrealizedProfit = 0,
-      totalWalletBalance = 100000.00000000,
-      updateTime = 0
+      totalWalletBalance = 23.72469206,
+      totalUnrealizedProfit = 0.00000000,
+      totalMarginBalance = 23.72469206,
+      totalPositionInitialMargin = 0.00000000,
+      totalOpenOrderInitialMargin = 0.00000000,
+      totalCrossWalletBalance = 23.72469206,
+      totalCrossUnPnl = 0.00000000,
+      availableBalance = 23.72469206,
+      maxWithdrawAmount = 23.72469206,
+      assets = List(
+        OwnedAsset(
+          asset = tag[AssetTag][String]("USDT"),
+          walletBalance = 23.72469206,
+          unrealizedProfit = 0.00000000,
+          marginBalance = 23.72469206,
+          maintMargin = 0.00000000,
+          initialMargin = 0.00000000,
+          positionInitialMargin = 0.00000000,
+          openOrderInitialMargin = 0.00000000,
+          crossWalletBalance = 23.72469206,
+          crossUnPnl = 0.00000000,
+          availableBalance = 23.72469206,
+          maxWithdrawAmount = 23.72469206,
+          marginAvailable = true
+        )
+      ),
+      positions = List(
+        OpenPosition(
+          symbol = "BTCUSDT",
+          initialMargin = 0,
+          maintMargin = 0,
+          unrealizedProfit = 0.00000000,
+          positionInitialMargin = 0,
+          openOrderInitialMargin = 0,
+          leverage = 100,
+          isolated = true,
+          entryPrice = 0.00000,
+          maxNotional = 250000,
+          positionSide = FuturePositionSide.BOTH,
+          positionAmt = 0
+        )
+      )
     )
   }
 
