@@ -113,9 +113,9 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
 
   /** Returns the current balance, at the time the query is executed.
     *
-    * @return The balance (free and locked) for each asset
+    * @return The account information including the balance (free and locked) for each asset
     */
-  def getBalance(): F[Map[Asset, Balance]] = {
+  def getBalance(): F[SpotAccountInfoResponse] = {
     def url(currentMillis: Long) = {
       val query       = TimeParams(config.recvWindow, currentMillis).toQueryString
       val signature   = HMAC.sha256(config.apiSecret, query.toString())
@@ -130,13 +130,13 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     }
     for {
       currentTime <- clock.realTime
-      balances <- client.get[BinanceBalances](
+      response <- client.get[SpotAccountInfoResponse](
         url = url(currentTime.toMillis),
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
-        weight = 5
+        weight = 10
       )
-    } yield balances.balances.map(b => tag[AssetTag](b.asset) -> Balance(b.free, b.locked)).toMap
+    } yield response
   }
 
   private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
