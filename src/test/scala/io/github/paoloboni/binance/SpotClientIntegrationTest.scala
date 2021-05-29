@@ -28,11 +28,12 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.spot._
+import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import io.github.paoloboni.binance.spot.parameters._
-import io.github.paoloboni.binance.spot.response.SpotAccountInfoResponse
+import io.github.paoloboni.binance.spot.response.{SpotFill, SpotAccountInfoResponse, SpotOrderCreateResponse}
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
@@ -42,7 +43,13 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherValues with OptionValues with TestClient {
+class SpotClientIntegrationTest
+    extends AnyFreeSpec
+    with Matchers
+    with EitherValues
+    with OptionValues
+    with TestClient
+    with TypeCheckedTripleEquals {
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>
@@ -454,18 +461,34 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     server.stubFor(
       post(urlPathMatching("/api/v3/order"))
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withRequestBody(containing("recvWindow=5000"))
-        .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=2c3c83554ef58b4951239a24f26f7d413fc75c186eed5ecd7d502565c6972768"))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("1fdf1f9299acbc36b7d4db23bea2e295c5fda706fc9f7f47e51c771c34a2e3bd"))
         .willReturn(
           aResponse()
             .withStatus(201)
-            .withBody("""
-                        |{
+            .withBody("""{
                         |  "symbol": "BTCUSDT",
                         |  "orderId": 28,
+                        |  "orderListId": -1,
                         |  "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
-                        |  "transactTime": 1507725176595
+                        |  "transactTime": 1507725176595,
+                        |  "price": "0.00000000",
+                        |  "origQty": "10.00000000",
+                        |  "executedQty": "10.00000000",
+                        |  "cummulativeQuoteQty": "10.00000000",
+                        |  "status": "FILLED",
+                        |  "timeInForce": "GTC",
+                        |  "type": "MARKET",
+                        |  "side": "SELL",
+                        |  "fills": [
+                        |    {
+                        |      "price": "4000.00000000",
+                        |      "qty": "1.00000000",
+                        |      "commission": "4.00000000",
+                        |      "commissionAsset": "USDT"
+                        |    }
+                        |  ]
                         |}
                       """.stripMargin)
         )
@@ -488,7 +511,26 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       )
       .unsafeRunSync()
 
-    result shouldBe tag[OrderIdTag](28L)
+    result should ===(
+      SpotOrderCreateResponse(
+        orderId = tag[OrderIdTag](28L),
+        symbol = "BTCUSDT",
+        orderListId = -1,
+        clientOrderId = "6gCrw2kRUAF9CvJDGP16IP",
+        transactTime = 1507725176595L,
+        price = 0,
+        origQty = 10,
+        executedQty = 10,
+        cummulativeQuoteQty = 10,
+        status = SpotOrderStatus.FILLED,
+        timeInForce = SpotTimeInForce.GTC,
+        `type` = SpotOrderType.MARKET,
+        side = OrderSide.SELL,
+        fills = List(
+          SpotFill(price = 4000, qty = 1, commission = 4, commissionAsset = tag[AssetTag][String]("USDT"))
+        )
+      )
+    )
   }
 
   "it should cancel an order" in withWiremockServer { server =>

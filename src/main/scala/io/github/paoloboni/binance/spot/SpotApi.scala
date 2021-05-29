@@ -39,7 +39,6 @@ import io.lemonlabs.uri.Url
 import log.effect.LogWriter
 import org.http4s.EntityEncoder
 import org.http4s.circe.CirceEntityDecoder._
-import shapeless.tag
 
 import java.time.Instant
 
@@ -147,33 +146,34 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     *
     * @return The id of the order created
     */
-  def createOrder(orderCreate: SpotOrderCreateParams): F[OrderId] = {
+  def createOrder(orderCreate: SpotOrderCreateParams): F[SpotOrderCreateResponse] = {
 
-    def urlAndBody(currentMillis: Long) = {
-      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = orderCreate.toQueryString.addParams(timeParams)
-      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      val url = Url(
+    def url(currentMillis: Long) = {
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryString
+      val query = orderCreate.toQueryString
+        .addParams(timeParams)
+        .addParam("newOrderRespType" -> SpotOrderCreateResponseType.FULL.entryName)
+      val signature   = HMAC.sha256(config.apiSecret, query.toString())
+      val queryString = query.addParam("signature" -> signature)
+      Url(
         scheme = config.scheme,
         host = config.host,
         port = config.port,
-        path = "/api/v3/order"
+        path = "/api/v3/order",
+        query = queryString
       )
-      (url, queryString.addParam("signature" -> signature))
     }
 
     for {
       currentTime <- clock.realTime
-      (url, requestBody) = urlAndBody(currentTime.toMillis)
-      orderId <- client
+      response <- client
         .post[String, SpotOrderCreateResponse](
-          url = url,
-          requestBody = requestBody.toString(),
+          url = url(currentTime.toMillis),
+          requestBody = "",
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
-        .map(response => tag[OrderIdTag][Long](response.orderId))
-    } yield orderId
+    } yield response
   }
 
   /** Cancels an order.

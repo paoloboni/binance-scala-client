@@ -24,7 +24,7 @@ package io.github.paoloboni.binance.spot
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait SpotOrderStatus extends EnumEntry
-object SpotOrderStatus extends Enum[SpotOrderStatus] {
+object SpotOrderStatus extends Enum[SpotOrderStatus] with CirceEnum[SpotOrderStatus] {
   val values = findValues
 
   case object NEW              extends SpotOrderStatus
