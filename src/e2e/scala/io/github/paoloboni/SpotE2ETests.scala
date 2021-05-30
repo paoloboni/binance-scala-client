@@ -3,17 +3,15 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
-import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
+import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderSide}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
-import io.github.paoloboni.binance.common.parameters._
-import io.github.paoloboni.binance.spot.response.SpotAccountInfoResponse
+import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotOrderCreateResponse}
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
 class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
@@ -64,7 +62,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           )
         )
       )
-      .asserting(_ shouldBe a[OrderId])
+      .asserting(_ shouldBe a[SpotOrderCreateResponse])
   }
 
   "cancelOrder" in {
@@ -72,7 +70,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .createSpotClient[IO](config)
       .use(client =>
         for {
-          id <- client.createOrder(
+          createOrderResponse <- client.createOrder(
             SpotOrderCreateParams.LIMIT(
               symbol = "XRPUSDT",
               side = OrderSide.SELL,
@@ -85,7 +83,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           _ <- client.cancelOrder(
             SpotOrderCancelParams(
               symbol = "XRPUSDT",
-              orderId = id.some,
+              orderId = createOrderResponse.orderId.some,
               origClientOrderId = None
             )
           )

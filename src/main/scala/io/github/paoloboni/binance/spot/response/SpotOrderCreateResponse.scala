@@ -21,4 +21,29 @@
 
 package io.github.paoloboni.binance.spot.response
 
-case class SpotOrderCreateResponse(orderId: Long)
+import io.github.paoloboni.binance.common.{Asset, OrderSide}
+import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
+
+case class SpotOrderCreateResponse(
+    symbol: String,
+    orderId: Long,
+    orderListId: Long,
+    clientOrderId: String,
+    transactTime: Long,
+    price: BigDecimal,
+    origQty: BigDecimal,
+    executedQty: BigDecimal,
+    cummulativeQuoteQty: BigDecimal,
+    status: SpotOrderStatus,
+    timeInForce: SpotTimeInForce,
+    `type`: SpotOrderType,
+    side: OrderSide,
+    fills: List[SpotFill]
+)
+
+case class SpotFill(
+    price: BigDecimal,
+    qty: BigDecimal,
+    commission: BigDecimal,
+    commissionAsset: Asset
+)
