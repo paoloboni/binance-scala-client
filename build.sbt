@@ -25,9 +25,9 @@ lazy val root = (project in file("."))
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
-      "io.circe"              %% "circe-core"                    % "0.13.0",
-      "io.circe"              %% "circe-generic"                 % "0.13.0",
-      "io.circe"              %% "circe-generic-extras"          % "0.13.0",
+      "io.circe"              %% "circe-core"                    % "0.14.1",
+      "io.circe"              %% "circe-generic"                 % "0.14.1",
+      "io.circe"              %% "circe-generic-extras"          % "0.14.1",
       "co.fs2"                %% "fs2-core"                      % "3.0.4",
       "org.typelevel"         %% "cats-core"                     % "2.6.1",
       "org.typelevel"         %% "cats-effect"                   % "3.1.1",
@@ -43,7 +43,7 @@ lazy val root = (project in file("."))
       "eu.timepit"            %% "refined"                       % "0.9.25",
       "org.slf4j"              % "slf4j-simple"                  % "1.7.30" % "test",
       "org.scalatest"         %% "scalatest"                     % "3.2.9"  % "test",
-      "io.circe"              %% "circe-parser"                  % "0.13.0" % "test",
+      "io.circe"              %% "circe-parser"                  % "0.14.1" % "test",
       "com.github.tomakehurst" % "wiremock"                      % "2.27.2" % "test",
       "org.typelevel"         %% "cats-effect-testing-scalatest" % "1.1.1"  % "test"
     )
