@@ -502,6 +502,50 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     )
   }
 
+  "it should be able to change the position mode" in withWiremockServer { server =>
+    import Env.{log, runtime}
+
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      post(urlPathMatching("/fapi/v1/positionSide/dual"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParam("dualSidePosition", equalTo(true.toString))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("32789fb9396ee7087528096011b766b83de86afcd51a58b60d487d0e07a97676"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody("""
+                      |{
+                      |    "code": 200,
+                      |    "msg": "success"
+                      |}""".stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val changePositionParams = ChangePositionModeParams(true)
+
+    val result = BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.changePositionMode(changePositionParams))
+      .redeem(_ => false, _ => true)
+      .unsafeRunSync()
+
+    result shouldBe true
+
+  }
+
   "it should create an order" in withWiremockServer { server =>
     import Env.{log, runtime}
     stubInfoEndpoint(server)

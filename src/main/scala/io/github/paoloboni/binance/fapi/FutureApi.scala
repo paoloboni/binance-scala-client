@@ -42,6 +42,7 @@ import org.http4s.circe.CirceEntityDecoder._
 import shapeless.tag
 
 import java.time.Instant
+import io.circe.Json
 
 final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
@@ -109,6 +110,33 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
         weight = 2
       )
     } yield prices
+  }
+
+  def changePositionMode(changePosition: ChangePositionModeParams): F[Unit] = {
+
+    def url(currentMillis: Long) = {
+      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
+      val queryString = changePosition.toQueryString.addParams(timeParams)
+      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
+      Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/fapi/v1/positionSide/dual"
+      ).withQueryString(queryString.addParam("signature" -> signature))
+    }
+
+    for {
+      currentTime <- clock.realTime
+      _ <- client
+        .post[String, Json](
+          url = url(currentTime.toMillis),
+          requestBody = "",
+          limiters = rateLimiters,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+    } yield ()
+
   }
 
   /** Returns the current balance, at the time the query is executed.

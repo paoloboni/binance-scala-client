@@ -48,6 +48,16 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldNot be(empty))
   }
 
+  "changePositionMode" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(
+        _.changePositionMode(ChangePositionModeParams(true))
+      )
+      .redeem(_ => false, _ => true)
+      .asserting(_ shouldBe true)
+  }
+
   "createOrder" in {
     val side = Random.shuffle(OrderSide.values).head
     BinanceClient
