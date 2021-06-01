@@ -19,9 +19,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance
 
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi._
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined._
 
-case class ChangeInitialLeverageParams(symbol: String, leverage: Leverage)
+package object fapi {
+  type Leverage = Int Refined numeric.Interval.Closed[W.`0`.T, W.`125`.T]
+}

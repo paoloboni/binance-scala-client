@@ -37,6 +37,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
+import eu.timepit.refined.refineMV
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -611,14 +612,18 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 100)
+    val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(100))
 
     val result = BinanceClient
       .createFutureClient[IO](config)
       .use(_.changeInitialLeverage(changeLeverageParams))
       .unsafeRunSync()
 
-    result shouldBe ChangeInitialLeverageResponse(symbol = "BTCUSDT", leverage = 100, maxNotionalValue = 1000000)
+    result shouldBe ChangeInitialLeverageResponse(
+      symbol = "BTCUSDT",
+      leverage = 100,
+      maxNotionalValue = 1000000
+    )
 
   }
 

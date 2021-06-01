@@ -121,9 +121,9 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     )
 
     client.get[Price](
-         url = url,
-         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
-       )
+      url = url,
+      limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+    )
   }
 
   def changePositionMode(changePosition: ChangePositionModeParams): F[Unit] = {
