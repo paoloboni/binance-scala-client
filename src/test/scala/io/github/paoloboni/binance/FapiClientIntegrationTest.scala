@@ -365,6 +365,36 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     }
   }
 
+  "it should return a single price" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      server.stubFor(
+        get("/fapi/v1/ticker/price")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |{
+                          |    "symbol": "ETHBTC",
+                          |    "price": "0.03444300"
+                          |}""".stripMargin)
+          )
+      )
+
+      val config = prepareConfiguration(server)
+
+      val param = PriceTickerParams(symbol = "ETHBTC")
+
+      val result = BinanceClient
+        .createFutureClient[IO](config)
+        .use(_.getPrice(param))
+        .unsafeRunSync()
+
+      result shouldBe Price("ETHBTC", BigDecimal(0.03444300))
+    }
+  }
+
   "it should return the balance" in withWiremockServer { server =>
     import Env.{log, runtime}
 

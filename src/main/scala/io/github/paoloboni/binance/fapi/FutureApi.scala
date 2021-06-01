@@ -112,6 +112,22 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     } yield prices
   }
 
+  def getPrice(getPriceParams: PriceTickerParams): F[Price] = {
+    val url = Url(
+      scheme = config.scheme,
+      host = config.host,
+      port = config.port,
+      path = "/fapi/v1/ticker/price"
+    )
+
+    for {
+      price <- client.get[Price](
+        url = url,
+        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+      )
+    } yield price
+  }
+
   def changePositionMode(changePosition: ChangePositionModeParams): F[Unit] = {
     def url(currentMillis: Long) = {
       val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString

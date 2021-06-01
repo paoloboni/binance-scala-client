@@ -2,7 +2,7 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
+import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.fapi.parameters._
@@ -29,6 +29,13 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .createFutureClient[IO](config)
       .use(_.getPrices())
       .asserting(_ shouldNot be(empty))
+  }
+
+  "getPrice" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.getPrice(PriceTickerParams(symbol = "BTCUSDT")))
+      .asserting(_ shouldBe a[Price])
   }
 
   "getBalance" in {
