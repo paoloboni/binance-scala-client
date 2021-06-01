@@ -120,12 +120,10 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
       path = "/fapi/v1/ticker/price"
     )
 
-    for {
-      price <- client.get[Price](
-        url = url,
-        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
-      )
-    } yield price
+    client.get[Price](
+         url = url,
+         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+       )
   }
 
   def changePositionMode(changePosition: ChangePositionModeParams): F[Unit] = {
