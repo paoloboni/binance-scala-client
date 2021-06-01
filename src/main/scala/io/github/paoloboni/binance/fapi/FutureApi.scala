@@ -113,7 +113,6 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
   }
 
   def changePositionMode(changePosition: ChangePositionModeParams): F[Unit] = {
-
     def url(currentMillis: Long) = {
       val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
       val queryString = changePosition.toQueryString.addParams(timeParams)
@@ -137,6 +136,32 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
         )
     } yield ()
 
+  }
+
+  def changeInitialLeverage(changeLeverage: ChangeInitialLeverageParams): F[ChangeInitialLeverageResponse] = {
+
+    def url(currentMillis: Long) = {
+      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
+      val queryString = changeLeverage.toQueryString.addParams(timeParams)
+      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
+      Url(
+        scheme = config.scheme,
+        host = config.host,
+        port = config.port,
+        path = "/fapi/v1/leverage"
+      ).withQueryString(queryString.addParam("signature" -> signature))
+    }
+
+    for {
+      currentTime <- clock.realTime
+      response <- client
+        .post[String, ChangeInitialLeverageResponse](
+          url = url(currentTime.toMillis),
+          requestBody = "",
+          limiters = rateLimiters,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+    } yield response
   }
 
   /** Returns the current balance, at the time the query is executed.

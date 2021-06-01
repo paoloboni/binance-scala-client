@@ -58,6 +58,15 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldBe true)
   }
 
+  "changeInitialLeverage" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(
+        _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 1))
+      )
+      .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
+  }
+
   "createOrder" in {
     val side = Random.shuffle(OrderSide.values).head
     BinanceClient

@@ -546,6 +546,52 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
   }
 
+  "it should be able to change the inital leverage" in withWiremockServer { server =>
+    import Env.{log, runtime}
+
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      post(urlPathMatching("/fapi/v1/leverage"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParam("symbol", equalTo("BTCUSDT"))
+        .withQueryParam("leverage", equalTo(100.toString))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("88ad5448acafacdda1da384cb71962785c43dc0b142ec550bbb6dcca53aa68d2"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody("""
+                      |{
+                      |    "leverage": 100,
+                      |    "maxNotionalValue": "1000000",
+                      |    "symbol": "BTCUSDT"
+                      |}
+                      """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 100)
+
+    val result = BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.changeInitialLeverage(changeLeverageParams))
+      .unsafeRunSync()
+
+    result shouldBe ChangeInitialLeverageResponse(symbol = "BTCUSDT", leverage = 100, maxNotionalValue = 1000000)
+
+  }
+
   "it should create an order" in withWiremockServer { server =>
     import Env.{log, runtime}
     stubInfoEndpoint(server)
