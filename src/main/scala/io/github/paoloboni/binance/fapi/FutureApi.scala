@@ -216,12 +216,14 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     *
     * @return The id of the order created
     */
-  def createOrder(orderCreate: FutureOrderCreateParams): F[OrderId] = {
+  def createOrder(orderCreate: FutureOrderCreateParams): F[FutureOrderCreateResponse] = {
 
     def url(currentMillis: Long) = {
-      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = orderCreate.toQueryString.addParams(timeParams)
-      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryString
+      val queryString = orderCreate.toQueryString
+        .addParams(timeParams)
+        .addParam("newOrderRespType" -> FutureOrderCreateResponseType.RESULT.entryName)
+      val signature = HMAC.sha256(config.apiSecret, queryString.toString())
       Url(
         scheme = config.scheme,
         host = config.host,
@@ -232,15 +234,14 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
 
     for {
       currentTime <- clock.realTime
-      orderId <- client
+      response <- client
         .post[String, FutureOrderCreateResponse](
           url = url(currentTime.toMillis),
           requestBody = "",
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
-        .map(response => tag[OrderIdTag][Long](response.orderId))
-    } yield orderId
+    } yield response
   }
 }
 

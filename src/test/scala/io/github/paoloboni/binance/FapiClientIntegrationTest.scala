@@ -638,29 +638,37 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           Map(
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
-            "signature"  -> equalTo("8ce2105a0cf0ef1b9e2fdc0fd4c1a9225d0de92a26af1a00b8df2f8f4020148f")
+            "signature"  -> equalTo("e41b485fdf1b2b4e7b50c24c82c8f37d639e52f542bb1deae9de0effe2863576")
           ).asJava
         )
         .willReturn(
           aResponse()
             .withStatus(201)
             .withBody("""{
-                        |   "accountId": 10012,
-                        |   "clientOrderId": "testOrder",
-                        |   "cumQuote": "0",
-                        |   "executedQty": "0",
-                        |   "orderId": 22542179,
-                        |   "origQty": "10",
-                        |   "price": "10000",
-                        |   "side": "BUY",
-                        |   "status": "NEW",
-                        |   "stopPrice": "0",
-                        |   "symbol": "BTCUSDT",
-                        |   "timeInForce": "GTC",
-                        |   "type": "LIMIT",
-                        |   "updateTime": 1566818724722
-                        |}
-                      """.stripMargin)
+                        |    "clientOrderId": "testOrder",
+                        |    "cumQty": "0",
+                        |    "cumQuote": "0",
+                        |    "executedQty": "0",
+                        |    "orderId": 22542179,
+                        |    "avgPrice": "0.00000",
+                        |    "origQty": "10",
+                        |    "price": "0",
+                        |    "reduceOnly": false,
+                        |    "side": "BUY",
+                        |    "positionSide": "SHORT",
+                        |    "status": "NEW",
+                        |    "stopPrice": "9300",
+                        |    "closePosition": false,
+                        |    "symbol": "BTCUSDT",
+                        |    "timeInForce": "GTC",
+                        |    "type": "TRAILING_STOP_MARKET",
+                        |    "origType": "TRAILING_STOP_MARKET",
+                        |    "activatePrice": "9020",
+                        |    "priceRate": "0.3",
+                        |    "updateTime": 1566818724722,
+                        |    "workingType": "CONTRACT_PRICE",
+                        |    "priceProtect": false
+                        |}""".stripMargin)
         )
     )
 
@@ -682,7 +690,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       )
       .unsafeRunSync()
 
-    result shouldBe tag[OrderIdTag](22542179L)
+    result shouldBe a[FutureOrderCreateResponse]
   }
 
   private def stubInfoEndpoint(server: WireMockServer) = {

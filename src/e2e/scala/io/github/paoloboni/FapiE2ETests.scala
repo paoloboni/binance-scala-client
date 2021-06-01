@@ -88,6 +88,6 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           )
         )
       )
-      .asserting(_ shouldBe a[OrderId])
+      .asserting(_ shouldBe a[FutureOrderCreateResponse])
   }
 }
