@@ -21,35 +21,16 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import io.github.paoloboni.binance.fapi.FuturePositionSide
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi.FutureOrderStatus
-import io.github.paoloboni.binance.fapi.FutureTimeInForce
-import io.github.paoloboni.binance.fapi.parameters.FutureWorkingType
-import io.github.paoloboni.binance.fapi.FutureOrderType
+import io.github.paoloboni.binance.common
+import io.github.paoloboni.binance.fapi._
+import io.circe.generic.semiauto._
+import io.circe.{Encoder, Decoder}
 
-case class FutureOrderCreateResponse(
-    clientOrderId: String,
-    cumQty: BigDecimal,
-    cumQuote: BigDecimal,
-    executedQty: BigDecimal,
-    orderId: Long,
-    avgPrice: BigDecimal,
-    origQty: BigDecimal,
-    price: BigDecimal,
-    reduceOnly: Boolean,
-    side: OrderSide,
-    positionSide: FuturePositionSide,
-    status: FutureOrderStatus,
-    stopPrice: BigDecimal,
-    closePosition: Boolean,
-    symbol: String,
-    timeInForce: FutureTimeInForce,
-    `type`: FutureOrderType,
-    origType: FutureOrderType,
-    activatePrice: BigDecimal,
-    priceRate: BigDecimal,
-    updateTime: Long,
-    workingType: FutureWorkingType,
-    priceProtect: Boolean
-)
+case class ChangeInitialLeverageResponse(symbol: String, leverage: Leverage, maxNotionalValue: BigDecimal)
+
+object ChangeInitialLeverageResponse {
+  import io.circe.refined._
+
+  implicit val leverageEncoder: Encoder[ChangeInitialLeverageResponse] = deriveEncoder[ChangeInitialLeverageResponse]
+  implicit val leverageDecoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder[ChangeInitialLeverageResponse]
+}

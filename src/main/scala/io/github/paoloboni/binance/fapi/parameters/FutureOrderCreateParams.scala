@@ -48,8 +48,7 @@ object FutureOrderCreateParams {
       timeInForce: FutureTimeInForce,
       quantity: BigDecimal,
       price: BigDecimal,
-      newClientOrderId: Option[String] = None,
-      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+      newClientOrderId: Option[String] = None
   ) extends FutureOrderCreateParams
 
   case class MARKET(
@@ -57,8 +56,7 @@ object FutureOrderCreateParams {
       side: OrderSide,
       positionSide: FuturePositionSide,
       quantity: BigDecimal,
-      newClientOrderId: Option[String] = None,
-      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+      newClientOrderId: Option[String] = None
   ) extends FutureOrderCreateParams
 
   case class STOP(
@@ -71,8 +69,7 @@ object FutureOrderCreateParams {
       stopPrice: BigDecimal,
       workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
       priceProtect: Boolean = false,
-      newClientOrderId: Option[String] = None,
-      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+      newClientOrderId: Option[String] = None
   ) extends FutureOrderCreateParams
 
   case class STOP_MARKET(
@@ -84,8 +81,7 @@ object FutureOrderCreateParams {
       priceProtect: Boolean = false,
       reduceOnly: Boolean = false,
       newClientOrderId: Option[String] = None,
-      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
-      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE
   ) extends FutureOrderCreateParams
 
   case class TAKE_PROFIT(
@@ -99,8 +95,7 @@ object FutureOrderCreateParams {
       timeInForce: FutureTimeInForce = FutureTimeInForce.GTC,
       newClientOrderId: Option[String] = None,
       workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
-      priceProtect: Boolean = false,
-      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+      priceProtect: Boolean = false
   ) extends FutureOrderCreateParams
 
   case class TAKE_PROFIT_MARKET(
@@ -112,8 +107,7 @@ object FutureOrderCreateParams {
       newClientOrderId: Option[String] = None,
       closePosition: Boolean,
       priceProtect: Boolean = false,
-      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
-      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+      workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE
   ) extends FutureOrderCreateParams
 
   case class TRAILING_STOP_MARKET(
@@ -124,8 +118,7 @@ object FutureOrderCreateParams {
       positionSide: FuturePositionSide,
       activationPrice: BigDecimal,
       quantity: BigDecimal,
-      newClientOrderId: Option[String] = None,
-      newOrderRespType: FutureOrderCreateResponseType = FutureOrderCreateResponseType.ACK
+      newClientOrderId: Option[String] = None
   ) extends FutureOrderCreateParams
 
   implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")

@@ -19,37 +19,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.response
+package io.github.paoloboni.binance
 
-import io.github.paoloboni.binance.fapi.FuturePositionSide
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi.FutureOrderStatus
-import io.github.paoloboni.binance.fapi.FutureTimeInForce
-import io.github.paoloboni.binance.fapi.parameters.FutureWorkingType
-import io.github.paoloboni.binance.fapi.FutureOrderType
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined._
 
-case class FutureOrderCreateResponse(
-    clientOrderId: String,
-    cumQty: BigDecimal,
-    cumQuote: BigDecimal,
-    executedQty: BigDecimal,
-    orderId: Long,
-    avgPrice: BigDecimal,
-    origQty: BigDecimal,
-    price: BigDecimal,
-    reduceOnly: Boolean,
-    side: OrderSide,
-    positionSide: FuturePositionSide,
-    status: FutureOrderStatus,
-    stopPrice: BigDecimal,
-    closePosition: Boolean,
-    symbol: String,
-    timeInForce: FutureTimeInForce,
-    `type`: FutureOrderType,
-    origType: FutureOrderType,
-    activatePrice: BigDecimal,
-    priceRate: BigDecimal,
-    updateTime: Long,
-    workingType: FutureWorkingType,
-    priceProtect: Boolean
-)
+package object fapi {
+  type Leverage = Int Refined numeric.Interval.Closed[W.`0`.T, W.`125`.T]
+}

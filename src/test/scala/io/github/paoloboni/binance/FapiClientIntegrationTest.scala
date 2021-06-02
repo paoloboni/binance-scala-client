@@ -37,6 +37,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import shapeless.tag
+import eu.timepit.refined.refineMV
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -365,6 +366,36 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     }
   }
 
+  "it should return a single price" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      server.stubFor(
+        get("/fapi/v1/ticker/price")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |{
+                          |    "symbol": "ETHBTC",
+                          |    "price": "0.03444300"
+                          |}""".stripMargin)
+          )
+      )
+
+      val config = prepareConfiguration(server)
+
+      val param = PriceTickerParams(symbol = "ETHBTC")
+
+      val result = BinanceClient
+        .createFutureClient[IO](config)
+        .use(_.getPrice(param))
+        .unsafeRunSync()
+
+      result shouldBe Price("ETHBTC", BigDecimal(0.03444300))
+    }
+  }
+
   "it should return the balance" in withWiremockServer { server =>
     import Env.{log, runtime}
 
@@ -502,6 +533,100 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     )
   }
 
+  "it should be able to change the position mode" in withWiremockServer { server =>
+    import Env.{log, runtime}
+
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      post(urlPathMatching("/fapi/v1/positionSide/dual"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParam("dualSidePosition", equalTo(true.toString))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("32789fb9396ee7087528096011b766b83de86afcd51a58b60d487d0e07a97676"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody("""
+                      |{
+                      |    "code": 200,
+                      |    "msg": "success"
+                      |}""".stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val changePositionParams = ChangePositionModeParams(true)
+
+    val result = BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.changePositionMode(changePositionParams))
+      .redeem(_ => false, _ => true)
+      .unsafeRunSync()
+
+    result shouldBe true
+
+  }
+
+  "it should be able to change the inital leverage" in withWiremockServer { server =>
+    import Env.{log, runtime}
+
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      post(urlPathMatching("/fapi/v1/leverage"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParam("symbol", equalTo("BTCUSDT"))
+        .withQueryParam("leverage", equalTo(100.toString))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("88ad5448acafacdda1da384cb71962785c43dc0b142ec550bbb6dcca53aa68d2"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody("""
+                      |{
+                      |    "leverage": 100,
+                      |    "maxNotionalValue": "1000000",
+                      |    "symbol": "BTCUSDT"
+                      |}
+                      """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+
+    val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(100))
+
+    val result = BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.changeInitialLeverage(changeLeverageParams))
+      .unsafeRunSync()
+
+    result shouldBe ChangeInitialLeverageResponse(
+      symbol = "BTCUSDT",
+      leverage = refineMV(100),
+      maxNotionalValue = 1000000
+    )
+
+  }
+
   "it should create an order" in withWiremockServer { server =>
     import Env.{log, runtime}
     stubInfoEndpoint(server)
@@ -518,29 +643,37 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
           Map(
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
-            "signature"  -> equalTo("8ce2105a0cf0ef1b9e2fdc0fd4c1a9225d0de92a26af1a00b8df2f8f4020148f")
+            "signature"  -> equalTo("e41b485fdf1b2b4e7b50c24c82c8f37d639e52f542bb1deae9de0effe2863576")
           ).asJava
         )
         .willReturn(
           aResponse()
             .withStatus(201)
             .withBody("""{
-                        |   "accountId": 10012,
-                        |   "clientOrderId": "testOrder",
-                        |   "cumQuote": "0",
-                        |   "executedQty": "0",
-                        |   "orderId": 22542179,
-                        |   "origQty": "10",
-                        |   "price": "10000",
-                        |   "side": "BUY",
-                        |   "status": "NEW",
-                        |   "stopPrice": "0",
-                        |   "symbol": "BTCUSDT",
-                        |   "timeInForce": "GTC",
-                        |   "type": "LIMIT",
-                        |   "updateTime": 1566818724722
-                        |}
-                      """.stripMargin)
+                        |    "clientOrderId": "testOrder",
+                        |    "cumQty": "0",
+                        |    "cumQuote": "0",
+                        |    "executedQty": "0",
+                        |    "orderId": 22542179,
+                        |    "avgPrice": "0.00000",
+                        |    "origQty": "10",
+                        |    "price": "0",
+                        |    "reduceOnly": false,
+                        |    "side": "BUY",
+                        |    "positionSide": "SHORT",
+                        |    "status": "NEW",
+                        |    "stopPrice": "9300",
+                        |    "closePosition": false,
+                        |    "symbol": "BTCUSDT",
+                        |    "timeInForce": "GTC",
+                        |    "type": "TRAILING_STOP_MARKET",
+                        |    "origType": "TRAILING_STOP_MARKET",
+                        |    "activatePrice": "9020",
+                        |    "priceRate": "0.3",
+                        |    "updateTime": 1566818724722,
+                        |    "workingType": "CONTRACT_PRICE",
+                        |    "priceProtect": false
+                        |}""".stripMargin)
         )
     )
 
@@ -562,7 +695,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       )
       .unsafeRunSync()
 
-    result shouldBe tag[OrderIdTag](22542179L)
+    result shouldBe a[FutureOrderCreateResponse]
   }
 
   private def stubInfoEndpoint(server: WireMockServer) = {

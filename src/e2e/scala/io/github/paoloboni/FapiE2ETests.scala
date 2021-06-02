@@ -2,7 +2,7 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderId, OrderSide}
+import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.fapi.parameters._
@@ -31,6 +31,13 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldNot be(empty))
   }
 
+  "getPrice" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.getPrice(PriceTickerParams(symbol = "BTCUSDT")))
+      .asserting(_ shouldBe a[Price])
+  }
+
   "getBalance" in {
     BinanceClient
       .createFutureClient[IO](config)
@@ -48,6 +55,25 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldNot be(empty))
   }
 
+  "changePositionMode" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(
+        _.changePositionMode(ChangePositionModeParams(true))
+      )
+      .redeem(_ => false, _ => true)
+      .asserting(_ shouldBe true)
+  }
+
+  "changeInitialLeverage" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(
+        _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 1))
+      )
+      .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
+  }
+
   "createOrder" in {
     val side = Random.shuffle(OrderSide.values).head
     BinanceClient
@@ -62,6 +88,6 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
           )
         )
       )
-      .asserting(_ shouldBe a[OrderId])
+      .asserting(_ shouldBe a[FutureOrderCreateResponse])
   }
 }
