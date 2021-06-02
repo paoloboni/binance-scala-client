@@ -117,7 +117,8 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
       scheme = config.scheme,
       host = config.host,
       port = config.port,
-      path = "/fapi/v1/ticker/price"
+      path = "/fapi/v1/ticker/price",
+      query = getPriceParams.toQueryString
     )
 
     client.get[Price](
