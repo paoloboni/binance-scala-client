@@ -621,7 +621,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     result shouldBe ChangeInitialLeverageResponse(
       symbol = "BTCUSDT",
-      leverage = 100,
+      leverage = refineMV(100),
       maxNotionalValue = 1000000
     )
 

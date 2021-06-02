@@ -23,5 +23,14 @@ package io.github.paoloboni.binance.fapi.response
 
 import io.github.paoloboni.binance.common
 import io.github.paoloboni.binance.fapi._
+import io.circe.generic.semiauto._
+import io.circe.{Encoder, Decoder}
 
-case class ChangeInitialLeverageResponse(symbol: String, leverage: Int, maxNotionalValue: BigDecimal)
+case class ChangeInitialLeverageResponse(symbol: String, leverage: Leverage, maxNotionalValue: BigDecimal)
+
+object ChangeInitialLeverageResponse {
+  import io.circe.refined._
+
+  implicit val leverageEncoder: Encoder[ChangeInitialLeverageResponse] = deriveEncoder[ChangeInitialLeverageResponse]
+  implicit val leverageDecoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder[ChangeInitialLeverageResponse]
+}
