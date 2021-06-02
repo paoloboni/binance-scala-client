@@ -40,6 +40,7 @@ import log.effect.LogWriter
 import org.http4s.EntityEncoder
 import org.http4s.circe.CirceEntityDecoder._
 import shapeless.tag
+import io.circe.refined._
 
 import java.time.Instant
 import io.circe.Json

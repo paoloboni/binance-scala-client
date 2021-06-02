@@ -371,7 +371,8 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       stubInfoEndpoint(server)
 
       server.stubFor(
-        get("/fapi/v1/ticker/price")
+        get(urlPathEqualTo("/fapi/v1/ticker/price"))
+          .withQueryParam("symbol", equalTo("ETHBTC"))
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -622,7 +623,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     result shouldBe ChangeInitialLeverageResponse(
       symbol = "BTCUSDT",
       leverage = refineMV(100),
-      maxNotionalValue = 1000000
+      maxNotionalValue = Left(1000000)
     )
 
   }

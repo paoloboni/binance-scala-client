@@ -23,14 +23,33 @@ package io.github.paoloboni.binance.fapi.response
 
 import io.github.paoloboni.binance.common
 import io.github.paoloboni.binance.fapi._
-import io.circe.generic.semiauto._
+import io.circe.generic.auto._
 import io.circe.{Encoder, Decoder}
+import cats.implicits._
 
-case class ChangeInitialLeverageResponse(symbol: String, leverage: Leverage, maxNotionalValue: BigDecimal)
+case object INF
+
+case class ChangeInitialLeverageResponse(
+    symbol: String,
+    leverage: Leverage,
+    maxNotionalValue: Either[BigDecimal, INF.type]
+)
 
 object ChangeInitialLeverageResponse {
   import io.circe.refined._
 
-  implicit val leverageEncoder: Encoder[ChangeInitialLeverageResponse] = deriveEncoder[ChangeInitialLeverageResponse]
-  implicit val leverageDecoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder[ChangeInitialLeverageResponse]
+  implicit def h[A, B](implicit a: Decoder[A], b: Decoder[B]): Decoder[Either[A, B]] = {
+    val l: Decoder[Either[A, B]] = a.map(Left.apply)
+    val r: Decoder[Either[A, B]] = b.map(Right.apply)
+    l or r
+  }
+
+  implicit val leverageDecoder: Decoder[ChangeInitialLeverageResponse] = Decoder.instance { c =>
+    for {
+      symbol           <- c.downField("symbol").as[String]
+      leverage         <- c.downField("leverage").as[Leverage]
+      maxNotionalValue <- c.downField("maxNotionalValue").as[Either[BigDecimal, INF.type]]
+
+    } yield ChangeInitialLeverageResponse(symbol, leverage, maxNotionalValue)
+  }
 }
