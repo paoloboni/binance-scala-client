@@ -9,6 +9,7 @@ import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.{BinanceClient, _}
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
+import eu.timepit.refined.refineMV
 
 import java.time.Instant
 import scala.util.Random
@@ -69,7 +70,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createFutureClient[IO](config)
       .use(
-        _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 1))
+        _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(1)))
       )
       .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
   }
