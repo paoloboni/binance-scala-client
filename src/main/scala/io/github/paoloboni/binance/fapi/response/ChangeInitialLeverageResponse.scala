@@ -21,35 +21,31 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import io.github.paoloboni.binance.common
+import io.circe.Decoder
+import io.circe.generic.semiauto._
 import io.github.paoloboni.binance.fapi._
-import io.circe.generic.auto._
-import io.circe.{Encoder, Decoder}
-import cats.implicits._
 
 case object INF
 
 case class ChangeInitialLeverageResponse(
     symbol: String,
     leverage: Leverage,
-    maxNotionalValue: Either[BigDecimal, INF.type]
+    maxNotionalValue: MaxNotionalValue
 )
+
+sealed trait MaxNotionalValue
+object MaxNotionalValue {
+  case class Value(value: BigDecimal) extends MaxNotionalValue
+  case object INF                     extends MaxNotionalValue
+}
 
 object ChangeInitialLeverageResponse {
   import io.circe.refined._
 
-  implicit def h[A, B](implicit a: Decoder[A], b: Decoder[B]): Decoder[Either[A, B]] = {
-    val l: Decoder[Either[A, B]] = a.map(Left.apply)
-    val r: Decoder[Either[A, B]] = b.map(Right.apply)
-    l or r
+  implicit val maxNotionalValueDecoder: Decoder[MaxNotionalValue] = Decoder.decodeString.flatMap {
+    case "INF" => Decoder.const(MaxNotionalValue.INF)
+    case _     => Decoder.decodeBigDecimal.map(MaxNotionalValue.Value)
   }
 
-  implicit val leverageDecoder: Decoder[ChangeInitialLeverageResponse] = Decoder.instance { c =>
-    for {
-      symbol           <- c.downField("symbol").as[String]
-      leverage         <- c.downField("leverage").as[Leverage]
-      maxNotionalValue <- c.downField("maxNotionalValue").as[Either[BigDecimal, INF.type]]
-
-    } yield ChangeInitialLeverageResponse(symbol, leverage, maxNotionalValue)
-  }
+  implicit val decoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder
 }
