@@ -62,7 +62,13 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.changePositionMode(ChangePositionModeParams(true))
       )
-      .redeem(_ => false, _ => true)
+      .redeem(
+        ex => {
+          ex.printStackTrace()
+          false
+        },
+        _ => true
+      )
       .asserting(_ shouldBe true)
   }
 
@@ -72,7 +78,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(1)))
       )
-      .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
+      .asserting(x => (x.leverage.value, x.symbol) shouldBe (1, "BTCUSDT"))
   }
 
   "createOrder" in {
