@@ -47,8 +47,8 @@ case class FutureOrderCreateResponse(
     timeInForce: FutureTimeInForce,
     `type`: FutureOrderType,
     origType: FutureOrderType,
-    activatePrice: BigDecimal,
-    priceRate: BigDecimal,
+    activatePrice: Option[BigDecimal],
+    priceRate: Option[BigDecimal],
     updateTime: Long,
     workingType: FutureWorkingType,
     priceProtect: Boolean
