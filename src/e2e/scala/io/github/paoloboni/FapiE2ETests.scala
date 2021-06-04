@@ -56,20 +56,13 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldBe a[List[KLine]])
   }
 
-  "changePositionMode" in {
+  "changePositionMode" ignore {
     BinanceClient
       .createFutureClient[IO](config)
       .use(
         _.changePositionMode(ChangePositionModeParams(true))
       )
-      .redeem(
-        ex => {
-          ex.printStackTrace()
-          false
-        },
-        _ => true
-      )
-      .asserting(_ shouldBe true)
+      .asserting(_ shouldBe Unit)
   }
 
   "changeInitialLeverage" in {
