@@ -62,7 +62,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.changePositionMode(ChangePositionModeParams(true))
       )
-      .asserting(_ shouldBe Unit)
+      .asserting(_ shouldBe ())
   }
 
   "changeInitialLeverage" in {
