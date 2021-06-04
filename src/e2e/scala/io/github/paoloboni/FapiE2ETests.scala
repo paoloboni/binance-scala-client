@@ -53,7 +53,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100)).compile.toList
       )
-      .asserting(_ shouldNot be(empty))
+      .asserting(_ shouldBe a[List[KLine]])
   }
 
   "changePositionMode" in {
