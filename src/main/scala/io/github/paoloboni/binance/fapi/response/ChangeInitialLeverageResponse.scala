@@ -21,16 +21,31 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import io.github.paoloboni.binance.common
-import io.github.paoloboni.binance.fapi._
+import io.circe.Decoder
 import io.circe.generic.semiauto._
-import io.circe.{Encoder, Decoder}
+import io.github.paoloboni.binance.fapi._
 
-case class ChangeInitialLeverageResponse(symbol: String, leverage: Leverage, maxNotionalValue: BigDecimal)
+case object INF
+
+case class ChangeInitialLeverageResponse(
+    symbol: String,
+    leverage: Leverage,
+    maxNotionalValue: MaxNotionalValue
+)
+
+sealed trait MaxNotionalValue
+object MaxNotionalValue {
+  case class Value(value: BigDecimal) extends MaxNotionalValue
+  case object INF                     extends MaxNotionalValue
+}
 
 object ChangeInitialLeverageResponse {
   import io.circe.refined._
 
-  implicit val leverageEncoder: Encoder[ChangeInitialLeverageResponse] = deriveEncoder[ChangeInitialLeverageResponse]
-  implicit val leverageDecoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder[ChangeInitialLeverageResponse]
+  implicit val maxNotionalValueDecoder: Decoder[MaxNotionalValue] = Decoder.decodeString.flatMap {
+    case "INF" => Decoder.const(MaxNotionalValue.INF)
+    case _     => Decoder.decodeBigDecimal.map(MaxNotionalValue.Value)
+  }
+
+  implicit val decoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder
 }

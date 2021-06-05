@@ -35,7 +35,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   "getPrice" in {
     BinanceClient
       .createFutureClient[IO](config)
-      .use(_.getPrice(PriceTickerParams(symbol = "BTCUSDT")))
+      .use(_.getPrice(symbol = "BTCUSDT"))
       .asserting(_ shouldBe a[Price])
   }
 
@@ -53,17 +53,16 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100)).compile.toList
       )
-      .asserting(_ shouldNot be(empty))
+      .asserting(_ shouldBe a[List[_]])
   }
 
-  "changePositionMode" in {
+  "changePositionMode" ignore {
     BinanceClient
       .createFutureClient[IO](config)
       .use(
-        _.changePositionMode(ChangePositionModeParams(true))
+        _.changePositionMode(true)
       )
-      .redeem(_ => false, _ => true)
-      .asserting(_ shouldBe true)
+      .asserting(_ shouldBe ())
   }
 
   "changeInitialLeverage" in {
@@ -72,7 +71,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(1)))
       )
-      .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
+      .asserting(x => (x.leverage.value, x.symbol) shouldBe (1, "BTCUSDT"))
   }
 
   "createOrder" in {
@@ -85,7 +84,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
             symbol = "XRPUSDT",
             side = side,
             positionSide = FuturePositionSide.BOTH,
-            quantity = 100
+            quantity = 20
           )
         )
       )

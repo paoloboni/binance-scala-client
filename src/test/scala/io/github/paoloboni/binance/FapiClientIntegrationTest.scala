@@ -371,7 +371,8 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       stubInfoEndpoint(server)
 
       server.stubFor(
-        get("/fapi/v1/ticker/price")
+        get(urlPathEqualTo("/fapi/v1/ticker/price"))
+          .withQueryParam("symbol", equalTo("ETHBTC"))
           .willReturn(
             aResponse()
               .withStatus(200)
@@ -385,11 +386,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val param = PriceTickerParams(symbol = "ETHBTC")
-
       val result = BinanceClient
         .createFutureClient[IO](config)
-        .use(_.getPrice(param))
+        .use(_.getPrice("ETHBTC"))
         .unsafeRunSync()
 
       result shouldBe Price("ETHBTC", BigDecimal(0.03444300))
@@ -565,16 +564,12 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val changePositionParams = ChangePositionModeParams(true)
+    val changePositionParams = true
 
-    val result = BinanceClient
+    BinanceClient
       .createFutureClient[IO](config)
       .use(_.changePositionMode(changePositionParams))
-      .redeem(_ => false, _ => true)
       .unsafeRunSync()
-
-    result shouldBe true
-
   }
 
   "it should be able to change the inital leverage" in withWiremockServer { server =>
@@ -622,7 +617,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     result shouldBe ChangeInitialLeverageResponse(
       symbol = "BTCUSDT",
       leverage = refineMV(100),
-      maxNotionalValue = 1000000
+      maxNotionalValue = MaxNotionalValue.Value(1000000)
     )
 
   }
