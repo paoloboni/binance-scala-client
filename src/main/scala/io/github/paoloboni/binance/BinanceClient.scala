@@ -28,9 +28,8 @@ import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
 import log.effect.LogWriter
-import org.http4s.client.blaze.BlazeClientBuilder
-
-import scala.concurrent.ExecutionContext.Implicits.global
+import org.asynchttpclient.{AsyncHttpClientConfig, DefaultAsyncHttpClientConfig}
+import sttp.client3.asynchttpclient.cats.AsyncHttpClientCatsBackend
 
 object BinanceClient {
 
@@ -46,15 +45,19 @@ object BinanceClient {
 
   def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
       config: BinanceConfig
-  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] =
-    BlazeClientBuilder[F](global)
-      .withResponseHeaderTimeout(config.responseHeaderTimeout)
-      .withMaxTotalConnections(config.maxTotalConnections)
-      .resource
+  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] = {
+    val conf: AsyncHttpClientConfig =
+      new DefaultAsyncHttpClientConfig.Builder()
+        .setMaxConnections(config.maxTotalConnections)
+        .setRequestTimeout(config.responseHeaderTimeout.toMillis.toInt)
+        .build()
+    AsyncHttpClientCatsBackend
+      .resourceUsingConfig(conf)
       .evalMap { implicit c =>
         for {
           client  <- HttpClient.make[F]
           spotApi <- BinanceApi.Factory[F, API].apply(config, client)
         } yield spotApi
       }
+  }
 }
