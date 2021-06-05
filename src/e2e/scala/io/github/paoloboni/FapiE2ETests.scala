@@ -84,7 +84,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
             symbol = "XRPUSDT",
             side = side,
             positionSide = FuturePositionSide.BOTH,
-            quantity = 10
+            quantity = 20
           )
         )
       )
