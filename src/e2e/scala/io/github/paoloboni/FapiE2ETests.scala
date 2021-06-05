@@ -35,7 +35,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   "getPrice" in {
     BinanceClient
       .createFutureClient[IO](config)
-      .use(_.getPrice(PriceTickerParams(symbol = "BTCUSDT")))
+      .use(_.getPrice(symbol = "BTCUSDT"))
       .asserting(_ shouldBe a[Price])
   }
 
@@ -60,7 +60,7 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createFutureClient[IO](config)
       .use(
-        _.changePositionMode(ChangePositionModeParams(true))
+        _.changePositionMode(true)
       )
       .asserting(_ shouldBe ())
   }

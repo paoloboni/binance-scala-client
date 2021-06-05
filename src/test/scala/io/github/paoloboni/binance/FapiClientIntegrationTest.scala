@@ -386,11 +386,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
       val config = prepareConfiguration(server)
 
-      val param = PriceTickerParams(symbol = "ETHBTC")
-
       val result = BinanceClient
         .createFutureClient[IO](config)
-        .use(_.getPrice(param))
+        .use(_.getPrice("ETHBTC"))
         .unsafeRunSync()
 
       result shouldBe Price("ETHBTC", BigDecimal(0.03444300))
@@ -566,16 +564,12 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
 
-    val changePositionParams = ChangePositionModeParams(true)
+    val changePositionParams = true
 
-    val result = BinanceClient
+    BinanceClient
       .createFutureClient[IO](config)
       .use(_.changePositionMode(changePositionParams))
-      .redeem(_ => false, _ => true)
       .unsafeRunSync()
-
-    result shouldBe true
-
   }
 
   "it should be able to change the inital leverage" in withWiremockServer { server =>

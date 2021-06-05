@@ -24,6 +24,7 @@ package io.github.paoloboni.binance.fapi
 import cats.effect.Async
 import cats.implicits._
 import fs2.Stream
+import io.circe.Json
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
@@ -35,15 +36,12 @@ import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
-import io.lemonlabs.uri.Url
+import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
 import org.http4s.EntityEncoder
 import org.http4s.circe.CirceEntityDecoder._
-import shapeless.tag
-import io.circe.refined._
 
 import java.time.Instant
-import io.circe.Json
 
 final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     config: BinanceConfig,
@@ -113,13 +111,18 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     } yield prices
   }
 
-  def getPrice(getPriceParams: PriceTickerParams): F[Price] = {
+  /** Returns the latest price for a symbol.
+    *
+    * @param symbol The symbol
+    * @return The price for the symbol
+    */
+  def getPrice(symbol: String): F[Price] = {
     val url = Url(
       scheme = config.scheme,
       host = config.host,
       port = config.port,
       path = "/fapi/v1/ticker/price",
-      query = getPriceParams.toQueryString
+      query = QueryString.fromPairs("symbol" -> symbol)
     )
 
     client.get[Price](
@@ -128,10 +131,15 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     )
   }
 
-  def changePositionMode(changePosition: ChangePositionModeParams): F[Unit] = {
+  /** Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
+    *
+    * @param dualSidePosition "true": Hedge Mode; "false": One-way Mode
+    * @return Unit
+    */
+  def changePositionMode(dualSidePosition: Boolean): F[Unit] = {
     def url(currentMillis: Long) = {
       val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = changePosition.toQueryString.addParams(timeParams)
+      val queryString = QueryString.fromPairs("dualSidePosition" -> dualSidePosition).addParams(timeParams)
       val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
       Url(
         scheme = config.scheme,
