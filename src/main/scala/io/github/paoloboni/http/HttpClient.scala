@@ -26,102 +26,72 @@ import cats.syntax.all._
 import io.github.paoloboni.http.ratelimit._
 import io.lemonlabs.uri.Url
 import log.effect.LogWriter
-import org.http4s.client.Client
-import org.http4s.{Status, _}
-import org.typelevel.ci.CIString
+import sttp.client3.{BodySerializer, SttpBackend, _}
 
-sealed class HttpClient[F[_]: Async: Client: LogWriter] {
+sealed class HttpClient[F[_]: Async: LogWriter](implicit client: SttpBackend[F, Any]) {
 
   def get[Response](
       url: Url,
+      responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  )(implicit responseDecoder: EntityDecoder[F, Response]): F[Response] = for {
-    uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
-    request = Request[F](
-      method = Method.GET,
-      uri = uri,
-      headers = Headers(headers.map { case (name, value) =>
-        Header.Raw(CIString(name), value)
-      }.toList)
-    )
-    response <- sendRequest[Response](request, limiters, weight)
-  } yield response
+  ): F[Response] = {
+    val httpRequest = basicRequest
+      .headers(headers)
+      .get(uri"${url.toStringPunycode}")
+      .response(responseAs)
+    sendRequest(httpRequest, limiters, weight)
+  }
 
-  def post[Request, Response](
+  def post[Request: BodySerializer, Response](
       url: Url,
-      requestBody: Request,
+      requestBody: Option[Request],
+      responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  )(implicit
-      requestEncoder: EntityEncoder[F, Request],
-      responseDecoder: EntityDecoder[F, Response]
-  ): F[Response] =
-    for {
-      uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
-      request = Request[F](
-        method = Method.POST,
-        uri = uri,
-        headers = Headers(headers.map { case (name, value) =>
-          Header.Raw(CIString(name), value)
-        }.toList)
-      ).withEntity(requestBody)
-      response <- sendRequest[Response](request, limiters, weight)
-    } yield response
+  ): F[Response] = {
+    val preparedRequest = basicRequest
+      .headers(headers)
+      .post(uri"${url.toStringPunycode}")
+      .response(responseAs)
+    val httpRequest = requestBody.fold(preparedRequest)(preparedRequest.body(_))
+    sendRequest(httpRequest, limiters, weight)
+  }
 
-  def delete[Request, Response](
+  def delete[Request: BodySerializer, Response](
       url: Url,
-      requestBody: Request,
+      requestBody: Option[Request],
+      responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  )(implicit
-      requestEncoder: EntityEncoder[F, Request],
-      responseDecoder: EntityDecoder[F, Response]
-  ): F[Response] =
-    for {
-      uri <- Uri.fromString(url.toStringPunycode).pure[F].rethrow
-      request = Request[F](
-        method = Method.DELETE,
-        uri = uri,
-        headers = Headers(headers.map { case (name, value) =>
-          Header.Raw(CIString(name), value)
-        }.toList)
-      ).withEntity(requestBody)
-      response <- sendRequest[Response](request, limiters, weight)
-    } yield response
+  ): F[Response] = {
+    val preparedRequest = basicRequest
+      .headers(headers)
+      .delete(uri"${url.toStringPunycode}")
+      .response(responseAs)
+    val httpRequest = requestBody.fold(preparedRequest)(preparedRequest.body(_))
+    sendRequest(httpRequest, limiters, weight)
+  }
 
   private def sendRequest[Response](
-      request: Request[F],
+      request: RequestT[Identity, Response, Any],
       limiters: List[RateLimiter[F]],
       weight: Int
-  )(implicit
-      decoder: EntityDecoder[F, Response]
   ): F[Response] = {
-    for {
-      _ <- LogWriter.debug(s"${request.method} ${request.uri}")
-      decoded <- {
-        val httpRequest = implicitly[Client[F]]
-          .expectOr(request) { error =>
-            for {
-              errorBody <- error.as[String]
-              _         <- LogWriter.error(s"Failed response. Status=${error.status} Body='$errorBody'")
-            } yield HttpError(error.status, errorBody)
-          }
-
-        limiters.foldLeft(httpRequest) { case (response, limiter) =>
-          limiter.await(response, weight = weight)
-        }
-      }
-    } yield decoded
+    val processRequest = for {
+      _           <- LogWriter.debug(s"${request.method} ${request.uri}")
+      rawResponse <- request.send(client)
+    } yield rawResponse.body
+    limiters.foldLeft(processRequest) { case (response, limiter) =>
+      limiter.await(response, weight = weight)
+    }
   }
 }
 
-case class HttpError(status: Status, body: String) extends Exception
-
 object HttpClient {
-  def make[F[_]: Async: Client: LogWriter]: F[HttpClient[F]] =
+  def make[F[_]: Async: LogWriter](implicit client: SttpBackend[F, Any]): F[HttpClient[F]] =
     new HttpClient[F]().pure[F]
 }

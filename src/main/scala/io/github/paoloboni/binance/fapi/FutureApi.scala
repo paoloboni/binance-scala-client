@@ -24,11 +24,11 @@ package io.github.paoloboni.binance.fapi
 import cats.effect.Async
 import cats.implicits._
 import fs2.Stream
-import io.circe.Json
 import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
+import io.github.paoloboni.binance.common.response.CirceResponse
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
@@ -38,17 +38,18 @@ import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
-import org.http4s.EntityEncoder
-import org.http4s.circe.CirceEntityDecoder._
+import sttp.client3.ResponseAsByteArray
+import sttp.client3.circe.{asJson, _}
 
 import java.time.Instant
 
-final case class FutureApi[F[_]: Async: WithClock: LogWriter](
+final case class FutureApi[F[_]: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
-) extends BinanceApi[F] {
+)(implicit F: Async[F])
+    extends BinanceApi[F] {
 
   private val clock = implicitly[WithClock[F]].clock
 
@@ -68,14 +69,16 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     )
 
     for {
-      rawKlines <- Stream.eval(
-        client.get[List[KLine]](
-          url,
+      response <- Stream.eval(
+        client.get[CirceResponse[List[KLine]]](
+          url = url,
+          responseAs = asJson[List[KLine]],
           limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
         )
       )
+      rawKlines <- Stream.eval(F.fromEither(response))
       klines <- rawKlines match {
-        //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
+        //check if a lone element is enough to fulfill the query. Otherwise a limit of 1 leads
         //to a strange behaviour
         case loneElement :: Nil
             if (query.endTime.toEpochMilli - loneElement.openTime) > query.interval.duration.toMillis =>
@@ -103,11 +106,13 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
       path = "/fapi/v1/ticker/price"
     )
     for {
-      prices <- client.get[List[Price]](
+      pricesOrError <- client.get[CirceResponse[List[Price]]](
         url = url,
+        responseAs = asJson[List[Price]],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         weight = 2
       )
+      prices <- F.fromEither(pricesOrError)
     } yield prices
   }
 
@@ -125,10 +130,13 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
       query = QueryString.fromPairs("symbol" -> symbol)
     )
 
-    client.get[Price](
-      url = url,
-      limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
-    )
+    client
+      .get[CirceResponse[Price]](
+        url = url,
+        responseAs = asJson[Price],
+        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+      )
+      .flatMap(F.fromEither)
   }
 
   /** Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
@@ -152,9 +160,10 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     for {
       currentTime <- clock.realTime
       _ <- client
-        .post[String, Json](
+        .post[String, Array[Byte]](
           url = url(currentTime.toMillis),
-          requestBody = "",
+          responseAs = ResponseAsByteArray,
+          requestBody = None,
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
@@ -178,13 +187,15 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
 
     for {
       currentTime <- clock.realTime
-      response <- client
-        .post[String, ChangeInitialLeverageResponse](
+      responseOrError <- client
+        .post[String, CirceResponse[ChangeInitialLeverageResponse]](
           url = url(currentTime.toMillis),
-          requestBody = "",
+          responseAs = asJson[ChangeInitialLeverageResponse],
+          requestBody = None,
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
+      response <- F.fromEither(responseOrError)
     } yield response
   }
 
@@ -207,16 +218,16 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
     }
     for {
       currentTime <- clock.realTime
-      balance <- client.get[FutureAccountInfoResponse](
+      balanceOrError <- client.get[CirceResponse[FutureAccountInfoResponse]](
         url = url(currentTime.toMillis),
+        responseAs = asJson[FutureAccountInfoResponse],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 5
       )
+      balance <- F.fromEither(balanceOrError)
     } yield balance
   }
-
-  private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
 
   /** Creates an order.
     *
@@ -242,27 +253,30 @@ final case class FutureApi[F[_]: Async: WithClock: LogWriter](
 
     for {
       currentTime <- clock.realTime
-      response <- client
-        .post[String, FutureOrderCreateResponse](
+      responseOrError <- client
+        .post[String, CirceResponse[FutureOrderCreateResponse]](
           url = url(currentTime.toMillis),
-          requestBody = "",
+          responseAs = asJson[FutureOrderCreateResponse],
+          requestBody = None,
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
+      response <- F.fromEither(responseOrError)
     } yield response
   }
 }
 
 object FutureApi {
-  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, FutureApi[F]] =
+  implicit def factory[F[_]: WithClock: LogWriter](implicit F: Async[F]): BinanceApi.Factory[F, FutureApi[F]] =
     (config: BinanceConfig, client: HttpClient[F]) =>
       for {
-        exchangeInfo <- client
-          .get[fapi.response.ExchangeInformation](
+        exchangeInfoEither <- client
+          .get[CirceResponse[fapi.response.ExchangeInformation]](
             url = config.generateFullInfoUrl,
+            responseAs = asJson[fapi.response.ExchangeInformation],
             limiters = List.empty
           )
-
+        exchangeInfo <- F.fromEither(exchangeInfoEither)
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
       } yield FutureApi.apply(config, client, exchangeInfo, rateLimiters)
 }

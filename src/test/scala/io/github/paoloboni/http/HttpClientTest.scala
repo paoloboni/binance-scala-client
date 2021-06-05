@@ -24,13 +24,15 @@ package io.github.paoloboni.http
 import cats.effect.IO
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.Json
+import io.github.paoloboni.binance.common.response.CirceResponse
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient}
 import io.lemonlabs.uri.Url
-import org.http4s.circe.CirceEntityDecoder._
 import org.scalatest.EitherValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import sttp.client3.HttpError
+import sttp.client3.circe._
 
 class HttpClientTest extends AnyFreeSpec with Matchers with EitherValues with Env with TestClient {
   "a bad request response should be translated into a HttpError" in withWiremockServer { server =>
@@ -42,16 +44,17 @@ class HttpClientTest extends AnyFreeSpec with Matchers with EitherValues with En
         for {
           httpClient <- HttpClient.make[IO]
           url = Url.parse(s"http://localhost:${server.port().toString}/test")
-          response <- httpClient.get[Json](url, limiters = List.empty)
+          responseOrError <- httpClient.get[CirceResponse[Json]](url, asJson[Json], limiters = List.empty)
+          response        <- IO.fromEither(responseOrError)
         } yield response
       }
       .attempt
       .unsafeRunSync()
 
-    result.left.value shouldBe a[HttpError]
+    result.left.value shouldBe a[HttpError[_]]
 
-    val error = result.left.value.asInstanceOf[HttpError]
-    error.status.code shouldBe 400
+    val error = result.left.value.asInstanceOf[HttpError[String]]
+    error.statusCode.code shouldBe 400
     error.body shouldBe responseBody
   }
 }

@@ -28,6 +28,7 @@ import io.circe.generic.auto._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
+import io.github.paoloboni.binance.common.response.CirceResponse
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
@@ -37,17 +38,18 @@ import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.lemonlabs.uri.Url
 import log.effect.LogWriter
-import org.http4s.EntityEncoder
-import org.http4s.circe.CirceEntityDecoder._
+import sttp.client3.ResponseAsByteArray
+import sttp.client3.circe._
 
 import java.time.Instant
 
-final case class SpotApi[F[_]: Async: WithClock: LogWriter](
+final case class SpotApi[F[_]: WithClock: LogWriter](
     config: BinanceConfig,
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
-) extends BinanceApi[F] {
+)(implicit F: Async[F])
+    extends BinanceApi[F] {
 
   private val clock = implicitly[WithClock[F]].clock
 
@@ -67,14 +69,16 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     )
 
     for {
-      rawKlines <- Stream.eval(
-        client.get[List[KLine]](
-          url,
+      response <- Stream.eval(
+        client.get[CirceResponse[List[KLine]]](
+          url = url,
+          responseAs = asJson[List[KLine]],
           limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
         )
       )
+      rawKlines <- Stream.eval(F.fromEither(response))
       klines <- rawKlines match {
-        //check if a lone element is enough to fullfill the query. Otherwise a limit of 1 leads
+        //check if a lone element is enough to fulfill the query. Otherwise a limit of 1 leads
         //to a strange behaviour
         case loneElement :: Nil
             if (query.endTime.toEpochMilli - loneElement.openTime) > query.interval.duration.toMillis =>
@@ -102,11 +106,13 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
       path = "/api/v3/ticker/price"
     )
     for {
-      prices <- client.get[List[Price]](
+      pricesOrError <- client.get[CirceResponse[List[Price]]](
         url = url,
+        responseAs = asJson[List[Price]],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         weight = 2
       )
+      prices <- F.fromEither(pricesOrError)
     } yield prices
   }
 
@@ -129,16 +135,16 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
     }
     for {
       currentTime <- clock.realTime
-      response <- client.get[SpotAccountInfoResponse](
+      responseOrError <- client.get[CirceResponse[SpotAccountInfoResponse]](
         url = url(currentTime.toMillis),
+        responseAs = asJson[SpotAccountInfoResponse],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
         weight = 10
       )
+      response <- F.fromEither(responseOrError)
     } yield response
   }
-
-  private implicit val stringEncoder: EntityEncoder[F, String] = EntityEncoder.showEncoder
 
   /** Creates an order.
     *
@@ -166,13 +172,15 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
 
     for {
       currentTime <- clock.realTime
-      response <- client
-        .post[String, SpotOrderCreateResponse](
+      responseOrError <- client
+        .post[String, CirceResponse[SpotOrderCreateResponse]](
           url = url(currentTime.toMillis),
-          requestBody = "",
+          responseAs = asJson[SpotOrderCreateResponse],
+          requestBody = None,
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
+      response <- F.fromEither(responseOrError)
     } yield response
   }
 
@@ -201,9 +209,10 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
       currentTime <- clock.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       _ <- client
-        .delete[String, io.circe.Json](
+        .delete[String, CirceResponse[io.circe.Json]](
           url = url,
-          requestBody = requestBody.toString(),
+          responseAs = asJson[io.circe.Json],
+          requestBody = Some(requestBody.toString()),
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
@@ -235,9 +244,10 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
       currentTime <- clock.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       _ <- client
-        .delete[String, io.circe.Json](
+        .delete[String, Array[Byte]](
           url = url,
-          requestBody = requestBody.toString(),
+          responseAs = ResponseAsByteArray,
+          requestBody = Some(requestBody.toString()),
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
@@ -246,15 +256,16 @@ final case class SpotApi[F[_]: Async: WithClock: LogWriter](
 }
 
 object SpotApi {
-  implicit def factory[F[_]: Async: WithClock: LogWriter]: BinanceApi.Factory[F, SpotApi[F]] =
+  implicit def factory[F[_]: WithClock: LogWriter](implicit F: Async[F]): BinanceApi.Factory[F, SpotApi[F]] =
     (config: BinanceConfig, client: HttpClient[F]) =>
       for {
-        exchangeInfo <- client
-          .get[spot.response.ExchangeInformation](
+        exchangeInfoEither <- client
+          .get[CirceResponse[spot.response.ExchangeInformation]](
             url = config.generateFullInfoUrl,
+            responseAs = asJson[spot.response.ExchangeInformation],
             limiters = List.empty
           )
-
+        exchangeInfo <- F.fromEither(exchangeInfoEither)
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
       } yield SpotApi.apply(config, client, exchangeInfo, rateLimiters)
 }
