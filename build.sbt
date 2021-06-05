@@ -38,7 +38,7 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.client3" %% "core"                           % "3.3.6",
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-cats" % "3.3.6",
       "com.softwaremill.sttp.client3" %% "circe"                          % "3.3.6",
-      "io.lemonlabs"                  %% "scala-uri"                      % "3.2.0",
+      "io.lemonlabs"                  %% "scala-uri"                      % "3.3.0",
       "com.beachape"                  %% "enumeratum"                     % "1.6.1",
       "com.beachape"                  %% "enumeratum-circe"               % "1.6.1",
       "com.chuusai"                   %% "shapeless"                      % "2.3.7",
