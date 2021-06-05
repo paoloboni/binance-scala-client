@@ -37,7 +37,7 @@ lazy val root = (project in file("."))
       "org.slf4j"              % "slf4j-api"                     % "1.7.30",
       "org.http4s"            %% "http4s-blaze-client"           % "1.0.0-M21",
       "org.http4s"            %% "http4s-circe"                  % "1.0.0-M21",
-      "io.lemonlabs"          %% "scala-uri"                     % "3.2.0",
+      "io.lemonlabs"          %% "scala-uri"                     % "3.3.0",
       "com.beachape"          %% "enumeratum"                    % "1.6.1",
       "com.beachape"          %% "enumeratum-circe"              % "1.6.1",
       "com.chuusai"           %% "shapeless"                     % "2.3.7",
