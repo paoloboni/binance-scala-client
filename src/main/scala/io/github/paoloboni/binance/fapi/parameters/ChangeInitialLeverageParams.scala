@@ -21,7 +21,6 @@
 
 package io.github.paoloboni.binance.fapi.parameters
 
-import io.github.paoloboni.binance.common.OrderSide
 import io.github.paoloboni.binance.fapi._
 
 case class ChangeInitialLeverageParams(symbol: String, leverage: Leverage)

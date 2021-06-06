@@ -171,6 +171,11 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
 
   }
 
+  /** Change user's initial leverage of specific symbol market.
+    *
+    * @param changeLeverage request parameters
+    * @return the new leverage
+    */
   def changeInitialLeverage(changeLeverage: ChangeInitialLeverageParams): F[ChangeInitialLeverageResponse] = {
 
     def url(currentMillis: Long) = {
