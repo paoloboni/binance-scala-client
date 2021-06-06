@@ -28,7 +28,7 @@ import io.lemonlabs.uri.Url
 import log.effect.LogWriter
 import sttp.client3.{BodySerializer, SttpBackend, _}
 
-sealed class HttpClient[F[_]: Async: LogWriter](implicit client: SttpBackend[F, Any]) {
+sealed class HttpClient[F[_]: LogWriter](implicit F: Async[F], client: SttpBackend[F, Any]) {
 
   def get[Response](
       url: Url,
@@ -81,10 +81,10 @@ sealed class HttpClient[F[_]: Async: LogWriter](implicit client: SttpBackend[F, 
       limiters: List[RateLimiter[F]],
       weight: Int
   ): F[Response] = {
-    val processRequest = for {
+    val processRequest = F.defer(for {
       _           <- LogWriter.debug(s"${request.method} ${request.uri}")
       rawResponse <- request.send(client)
-    } yield rawResponse.body
+    } yield rawResponse.body)
     limiters.foldLeft(processRequest) { case (response, limiter) =>
       limiter.await(response, weight = weight)
     }
