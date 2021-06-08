@@ -50,7 +50,7 @@ lazy val root = (project in file("."))
       "org.typelevel"                 %% "cats-effect-testing-scalatest" % "1.1.1"     % "test",
       "org.http4s"                    %% "http4s-core"                   % "1.0.0-M21" % "test",
       "org.http4s"                    %% "http4s-dsl"                    % "1.0.0-M21" % "test",
-      "org.http4s"                    %% "blaze-http"                    % "0.15.0"    % "test",
+      "org.http4s"                    %% "blaze-http"                    % "0.15.1"    % "test",
       "org.http4s"                    %% "http4s-blaze-server"           % "1.0.0-M21" % "test",
       "org.http4s"                    %% "http4s-circe"                  % "1.0.0-M21" % "test"
     )
