@@ -48,10 +48,10 @@ lazy val root = (project in file("."))
       "io.circe"                      %% "circe-parser"                  % "0.13.0"    % "test",
       "com.github.tomakehurst"         % "wiremock"                      % "2.27.2"    % "test",
       "org.typelevel"                 %% "cats-effect-testing-scalatest" % "1.1.1"     % "test",
-      "org.http4s"                    %% "http4s-core"                   % "1.0.0-M21" % "test",
-      "org.http4s"                    %% "http4s-dsl"                    % "1.0.0-M21" % "test",
+      "org.http4s"                    %% "http4s-core"                   % "1.0.0-M23" % "test",
+      "org.http4s"                    %% "http4s-dsl"                    % "1.0.0-M23" % "test",
       "org.http4s"                    %% "blaze-http"                    % "0.15.0"    % "test",
-      "org.http4s"                    %% "http4s-blaze-server"           % "1.0.0-M21" % "test",
+      "org.http4s"                    %% "http4s-blaze-server"           % "1.0.0-M23" % "test",
       "org.http4s"                    %% "http4s-circe"                  % "1.0.0-M21" % "test"
     )
   )
