@@ -261,7 +261,7 @@ object SpotApi {
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[spot.response.ExchangeInformation]](
-            url = config.generateFullInfoUrl,
+            url = config.fullInfoUrl,
             responseAs = asJson[spot.response.ExchangeInformation],
             limiters = List.empty
           )

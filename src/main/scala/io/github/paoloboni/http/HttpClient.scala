@@ -23,12 +23,19 @@ package io.github.paoloboni.http
 
 import cats.effect.kernel.Async
 import cats.syntax.all._
+import fs2.Pipe
 import io.github.paoloboni.http.ratelimit._
 import io.lemonlabs.uri.Url
 import log.effect.LogWriter
+import sttp.capabilities
+import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.{BodySerializer, SttpBackend, _}
+import sttp.ws.WebSocketFrame
 
-sealed class HttpClient[F[_]: LogWriter](implicit F: Async[F], client: SttpBackend[F, Any]) {
+sealed class HttpClient[F[_]: LogWriter](implicit
+    F: Async[F],
+    client: SttpBackend[F, Any with Fs2Streams[F] with capabilities.WebSockets]
+) {
 
   def get[Response](
       url: Url,
@@ -76,6 +83,18 @@ sealed class HttpClient[F[_]: LogWriter](implicit F: Async[F], client: SttpBacke
     sendRequest(httpRequest, limiters, weight)
   }
 
+  def ws(
+      url: Url,
+      webSocketFramePipe: Pipe[F, WebSocketFrame.Data[_], WebSocketFrame]
+  ): F[Unit] = {
+    LogWriter.debug("ws connecting to: " + url.toStringPunycode) *>
+      basicRequest
+        .get(uri"${url.toStringPunycode}")
+        .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe))
+        .send(client)
+        .void
+  }
+
   private def sendRequest[Response](
       request: RequestT[Identity, Response, Any],
       limiters: List[RateLimiter[F]],
@@ -92,6 +111,8 @@ sealed class HttpClient[F[_]: LogWriter](implicit F: Async[F], client: SttpBacke
 }
 
 object HttpClient {
-  def make[F[_]: Async: LogWriter](implicit client: SttpBackend[F, Any]): F[HttpClient[F]] =
+  def make[F[_]: Async: LogWriter](implicit
+      client: SttpBackend[F, Any with Fs2Streams[F] with capabilities.WebSockets]
+  ): F[HttpClient[F]] =
     new HttpClient[F]().pure[F]
 }

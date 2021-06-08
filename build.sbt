@@ -43,11 +43,16 @@ lazy val root = (project in file("."))
       "com.beachape"                  %% "enumeratum-circe"              % "1.6.1",
       "com.chuusai"                   %% "shapeless"                     % "2.3.7",
       "eu.timepit"                    %% "refined"                       % "0.9.25",
-      "org.slf4j"                      % "slf4j-simple"                  % "1.7.30" % "test",
-      "org.scalatest"                 %% "scalatest"                     % "3.2.9"  % "test",
-      "io.circe"                      %% "circe-parser"                  % "0.13.0" % "test",
-      "com.github.tomakehurst"         % "wiremock"                      % "2.27.2" % "test",
-      "org.typelevel"                 %% "cats-effect-testing-scalatest" % "1.1.1"  % "test"
+      "org.slf4j"                      % "slf4j-simple"                  % "1.7.30"    % "test",
+      "org.scalatest"                 %% "scalatest"                     % "3.2.9"     % "test",
+      "io.circe"                      %% "circe-parser"                  % "0.13.0"    % "test",
+      "com.github.tomakehurst"         % "wiremock"                      % "2.27.2"    % "test",
+      "org.typelevel"                 %% "cats-effect-testing-scalatest" % "1.1.1"     % "test",
+      "org.http4s"                    %% "http4s-core"                   % "1.0.0-M21" % "test",
+      "org.http4s"                    %% "http4s-dsl"                    % "1.0.0-M21" % "test",
+      "org.http4s"                    %% "blaze-http"                    % "0.15.0"    % "test",
+      "org.http4s"                    %% "http4s-blaze-server"           % "1.0.0-M21" % "test",
+      "org.http4s"                    %% "http4s-circe"                  % "1.0.0-M21" % "test"
     )
   )
   .enablePlugins(AutomateHeaderPlugin)
