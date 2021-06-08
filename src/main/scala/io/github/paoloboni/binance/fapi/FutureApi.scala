@@ -22,9 +22,11 @@
 package io.github.paoloboni.binance.fapi
 
 import cats.effect.Async
+import cats.effect.std.Queue
 import cats.implicits._
-import fs2.Stream
+import fs2.{Pipe, Stream}
 import io.circe.generic.auto._
+import io.circe.parser._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
@@ -40,6 +42,7 @@ import io.lemonlabs.uri.{QueryString, Url}
 import log.effect.LogWriter
 import sttp.client3.ResponseAsByteArray
 import sttp.client3.circe.{asJson, _}
+import sttp.ws.WebSocketFrame
 
 import java.time.Instant
 
@@ -269,6 +272,39 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
       response <- F.fromEither(responseOrError)
     } yield response
   }
+
+  /** The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100 milliseconds.
+    *
+    * @param symbol the symbol
+    * @return a stream of aggregate trade events
+    */
+  def aggregateTradeStreams(symbol: String): Stream[F, AggregateTrade] = {
+    def webSocketFramePipe(
+        q: Queue[F, Option[AggregateTrade]]
+    ): Pipe[F, WebSocketFrame.Data[_], WebSocketFrame] = { input =>
+      input.evalMapFilter[F, WebSocketFrame] {
+        case WebSocketFrame.Text(payload, _, _) =>
+          for {
+            decoded <- F.fromEither(decode[AggregateTrade](payload))
+            _       <- q.offer(Some(decoded))
+          } yield None
+        case _ =>
+          q.offer(None).map(_ => None) // stopping
+      }
+    }
+    Stream
+      .eval(for {
+        queue <- Queue.unbounded[F, Option[AggregateTrade]]
+        _ <- F.start(
+          client
+            .ws(
+              Url.parse(s"${config.wsScheme}://${config.host}:${config.wsPort}/ws/${symbol.toLowerCase}@aggTrade"),
+              webSocketFramePipe(queue)
+            )
+        )
+      } yield Stream.fromQueueNoneTerminated(queue))
+      .flatten
+  }
 }
 
 object FutureApi {
@@ -277,7 +313,7 @@ object FutureApi {
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[fapi.response.ExchangeInformation]](
-            url = config.generateFullInfoUrl,
+            url = config.fullInfoUrl,
             responseAs = asJson[fapi.response.ExchangeInformation],
             limiters = List.empty
           )

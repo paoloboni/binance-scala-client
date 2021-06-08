@@ -29,7 +29,7 @@ import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
 import log.effect.LogWriter
 import org.asynchttpclient.{AsyncHttpClientConfig, DefaultAsyncHttpClientConfig}
-import sttp.client3.asynchttpclient.cats.AsyncHttpClientCatsBackend
+import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 
 object BinanceClient {
 
@@ -51,7 +51,7 @@ object BinanceClient {
         .setMaxConnections(config.maxTotalConnections)
         .setRequestTimeout(config.responseHeaderTimeout.toMillis.toInt)
         .build()
-    AsyncHttpClientCatsBackend
+    AsyncHttpClientFs2Backend
       .resourceUsingConfig(conf)
       .evalMap { implicit c =>
         for {
