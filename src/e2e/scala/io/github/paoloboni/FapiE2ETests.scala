@@ -2,24 +2,24 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
+import eu.timepit.refined.refineMV
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi._
-import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.fapi.parameters._
+import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceClient, _}
+import org.scalatest.LoneElement
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
-import eu.timepit.refined.refineMV
 
 import java.time.Instant
+import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
-class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
+class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with LoneElement {
 
   val config: BinanceConfig = BinanceConfig(
-    scheme = "https",
     host = "testnet.binancefuture.com",
-    port = 443,
     infoUrl = "/fapi/v1/exchangeInfo",
     apiKey = sys.env("FAPI_API_KEY"),
     apiSecret = sys.env("FAPI_SECRET_KEY")
@@ -89,5 +89,12 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
         )
       )
       .asserting(_ shouldBe a[FutureOrderCreateResponse])
+  }
+
+  "aggregateTradeStreams" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.aggregateTradeStreams("btcusdt").take(1).compile.toList.timeout(30.seconds))
+      .asserting(_.loneElement shouldBe a[AggregateTrade])
   }
 }

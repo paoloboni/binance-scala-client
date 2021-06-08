@@ -23,11 +23,14 @@ package io.github.paoloboni
 
 import cats.effect.{IO, Resource}
 import org.asynchttpclient.DefaultAsyncHttpClientConfig
+import sttp.capabilities
+import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.SttpBackend
-import sttp.client3.asynchttpclient.cats.AsyncHttpClientCatsBackend
+import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 
 trait TestClient {
-  def clientResource: Resource[IO, SttpBackend[IO, Any]] = AsyncHttpClientCatsBackend.resourceUsingConfig[IO](
-    new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(5000).build()
-  )
+  def clientResource: Resource[IO, SttpBackend[IO, Any with Fs2Streams[IO] with capabilities.WebSockets]] =
+    AsyncHttpClientFs2Backend.resourceUsingConfig[IO](
+      new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(5000).build()
+    )
 }

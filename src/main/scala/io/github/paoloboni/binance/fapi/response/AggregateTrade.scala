@@ -19,38 +19,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common
+package io.github.paoloboni.binance.fapi.response
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.{numeric, refineMV}
-import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
-import io.lemonlabs.uri.Url
-import shapeless.{Witness => W}
-
-import scala.concurrent.duration._
-
-case class BinanceConfig(
-    scheme: String = "https",
-    host: String,
-    port: Int = 443,
-    infoUrl: String,
-    apiKey: String,
-    apiSecret: String,
-    wsScheme: String = "wss",
-    wsPort: Int = 443,
-    recvWindow: RecvWindow = refineMV(5000),
-    responseHeaderTimeout: Duration = 40.seconds,
-    maxTotalConnections: Int = 20,
-    rateLimiterBufferSize: Int = 1000
-) {
-  lazy val fullInfoUrl: Url = Url(
-    scheme = scheme,
-    host = host,
-    port = port,
-    path = infoUrl
-  )
-}
-
-object BinanceConfig {
-  type RecvWindow = Int Refined numeric.Interval.Closed[W.`0`.T, W.`60000`.T]
-}
+case class AggregateTrade(
+    e: String,
+    E: Long,
+    s: String,
+    p: BigDecimal,
+    q: BigDecimal,
+    f: Long,
+    l: Long,
+    T: Long,
+    m: Boolean
+)

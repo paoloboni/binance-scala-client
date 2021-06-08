@@ -22,10 +22,12 @@
 package io.github.paoloboni.binance
 
 import cats.Applicative
-import cats.effect.{Clock, IO}
+import cats.effect.{Clock, ExitCode, IO}
 import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
+import eu.timepit.refined.refineMV
+import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi._
@@ -33,11 +35,12 @@ import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
+import org.http4s.websocket.WebSocketFrame
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
+import scodec.bits.ByteVector
 import shapeless.tag
-import eu.timepit.refined.refineMV
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -693,6 +696,52 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     result shouldBe a[FutureOrderCreateResponse]
   }
 
+  "it should do something" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val wsPort = 9999
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e": "aggTrade",
+                              |  "E": 1623095242152,
+                              |  "a": 102141499,
+                              |  "s": "BTCUSDT",
+                              |  "p": "39792.73",
+                              |  "q": "10.543",
+                              |  "f": 183139249,
+                              |  "l": 183139250,
+                              |  "T": 1623095241998,
+                              |  "m": true
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.aggregateTradeStreams("btcusdt").compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.unsafeRunSync() should contain only AggregateTrade(
+        e = "aggTrade",
+        E = 1623095242152L,
+        s = "BTCUSDT",
+        p = 39792.73,
+        q = 10.543,
+        f = 183139249,
+        l = 183139250,
+        T = 1623095241998L,
+        m = true
+      )
+    }
+  }
+
   private def stubInfoEndpoint(server: WireMockServer) = {
     server.stubFor(
       get("/fapi/v1/exchangeInfo")
@@ -721,8 +770,22 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     )
   }
 
-  private def prepareConfiguration(server: WireMockServer, apiKey: String = "", apiSecret: String = "") =
-    BinanceConfig("http", "localhost", server.port(), "/fapi/v1/exchangeInfo", apiKey, apiSecret)
+  private def prepareConfiguration(
+      server: WireMockServer,
+      apiKey: String = "",
+      apiSecret: String = "",
+      wsPort: Int = 80
+  ) =
+    BinanceConfig(
+      scheme = "http",
+      host = "localhost",
+      port = server.port(),
+      infoUrl = "/fapi/v1/exchangeInfo",
+      apiKey = apiKey,
+      apiSecret = apiSecret,
+      wsScheme = "ws",
+      wsPort = wsPort
+    )
 
   private def stubTimer(fixedTime: Long) = new Clock[IO] {
     override def applicative: Applicative[IO]  = ???

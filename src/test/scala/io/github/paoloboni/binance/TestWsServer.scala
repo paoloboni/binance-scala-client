@@ -19,38 +19,29 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common
+package io.github.paoloboni.binance
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.{numeric, refineMV}
-import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
-import io.lemonlabs.uri.Url
-import shapeless.{Witness => W}
+import cats.effect._
+import fs2.{Pipe, Stream}
+import org.http4s._
+import org.http4s.dsl.Http4sDsl
+import org.http4s.implicits._
+import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.server.websocket._
+import org.http4s.websocket.WebSocketFrame
 
-import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.global
 
-case class BinanceConfig(
-    scheme: String = "https",
-    host: String,
-    port: Int = 443,
-    infoUrl: String,
-    apiKey: String,
-    apiSecret: String,
-    wsScheme: String = "wss",
-    wsPort: Int = 443,
-    recvWindow: RecvWindow = refineMV(5000),
-    responseHeaderTimeout: Duration = 40.seconds,
-    maxTotalConnections: Int = 20,
-    rateLimiterBufferSize: Int = 1000
-) {
-  lazy val fullInfoUrl: Url = Url(
-    scheme = scheme,
-    host = host,
-    port = port,
-    path = infoUrl
-  )
-}
+class TestWsServer[F[_]](toClient: Stream[F, WebSocketFrame])(port: Int)(implicit F: Async[F]) extends Http4sDsl[F] {
+  def routes: HttpRoutes[F] =
+    HttpRoutes.of[F] { case GET -> Root / "ws" / streamName =>
+      val fromClient: Pipe[F, WebSocketFrame, Unit] = _.evalMap(message => F.delay(println("received: " + message)))
+      WebSocketBuilder[F].build(toClient, fromClient)
+    }
 
-object BinanceConfig {
-  type RecvWindow = Int Refined numeric.Interval.Closed[W.`0`.T, W.`60000`.T]
+  def stream: Stream[F, ExitCode] =
+    BlazeServerBuilder[F](global)
+      .bindHttp(port)
+      .withHttpApp(routes.orNotFound)
+      .serve
 }
