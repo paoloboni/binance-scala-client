@@ -30,9 +30,10 @@ import io.circe.parser._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import io.github.paoloboni.binance.spot.parameters._
-import io.github.paoloboni.binance.spot.response.{SpotFill, SpotAccountInfoResponse, SpotOrderCreateResponse}
+import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotFill, SpotOrderCreateResponse}
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
+import io.lemonlabs.uri.Url
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -747,7 +748,12 @@ class SpotClientIntegrationTest
   }
 
   private def prepareConfiguration(server: WireMockServer, apiKey: String = "", apiSecret: String = "") =
-    BinanceConfig("http", "localhost", server.port(), "/api/v3/exchangeInfo", apiKey, apiSecret)
+    SpotConfig.Custom(
+      restBaseUrl = Url.parse(s"http://localhost:${server.port}"),
+      exchangeInfoUrl = Url.parse(s"http://localhost:${server.port}/api/v3/exchangeInfo"),
+      apiKey = apiKey,
+      apiSecret = apiSecret
+    )
 
   private def stubTimer(fixedTime: Long) = new Clock[IO] {
     override def applicative: Applicative[IO]  = ???

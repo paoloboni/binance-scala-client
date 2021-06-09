@@ -18,11 +18,10 @@ import scala.util.Random
 
 class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with LoneElement {
 
-  val config: BinanceConfig = BinanceConfig(
-    host = "testnet.binancefuture.com",
-    infoUrl = "/fapi/v1/exchangeInfo",
+  val config: FapiConfig = FapiConfig.Default(
     apiKey = sys.env("FAPI_API_KEY"),
-    apiSecret = sys.env("FAPI_SECRET_KEY")
+    apiSecret = sys.env("FAPI_SECRET_KEY"),
+    testnet = true
   )
 
   "getPrices" in {

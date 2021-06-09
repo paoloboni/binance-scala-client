@@ -35,6 +35,7 @@ import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient, WithClock}
+import io.lemonlabs.uri.Url
 import org.http4s.websocket.WebSocketFrame
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -696,7 +697,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
     result shouldBe a[FutureOrderCreateResponse]
   }
 
-  "it should do something" in new Env {
+  "it should stream aggregate trade information" in new Env {
     withWiremockServer { server =>
       stubInfoEndpoint(server)
 
@@ -728,7 +729,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         _ <- s.cancel
       } yield result
 
-      test.unsafeRunSync() should contain only AggregateTrade(
+      test.timeout(30.seconds).unsafeRunSync() should contain only AggregateTrade(
         e = "aggTrade",
         E = 1623095242152L,
         s = "BTCUSDT",
@@ -776,15 +777,12 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       apiSecret: String = "",
       wsPort: Int = 80
   ) =
-    BinanceConfig(
-      scheme = "http",
-      host = "localhost",
-      port = server.port(),
-      infoUrl = "/fapi/v1/exchangeInfo",
+    FapiConfig.Custom(
+      restBaseUrl = Url.parse(s"http://localhost:${server.port}"),
+      wsBaseUrl = Url.parse(s"ws://localhost:$wsPort"),
+      exchangeInfoUrl = Url.parse(s"http://localhost:${server.port}/fapi/v1/exchangeInfo"),
       apiKey = apiKey,
-      apiSecret = apiSecret,
-      wsScheme = "ws",
-      wsPort = wsPort
+      apiSecret = apiSecret
     )
 
   private def stubTimer(fixedTime: Long) = new Clock[IO] {

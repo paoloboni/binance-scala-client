@@ -38,7 +38,8 @@ import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
-import io.lemonlabs.uri.{QueryString, Url}
+import io.lemonlabs.uri.QueryString
+import io.lemonlabs.uri.typesafe.dsl._
 import log.effect.LogWriter
 import sttp.client3.ResponseAsByteArray
 import sttp.client3.circe.{asJson, _}
@@ -47,7 +48,7 @@ import sttp.ws.WebSocketFrame
 import java.time.Instant
 
 final case class FutureApi[F[_]: WithClock: LogWriter](
-    config: BinanceConfig,
+    config: FapiConfig,
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
@@ -63,13 +64,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     * @return the stream of Kline objects
     */
   def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
-    val url = Url(
-      scheme = config.scheme,
-      host = config.host,
-      port = config.port,
-      path = "/fapi/v1/klines",
-      query = query.toQueryString
-    )
+    val url = (config.restBaseUrl / "fapi/v1/klines").withQueryString(query.toQueryString)
 
     for {
       response <- Stream.eval(
@@ -102,12 +97,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     * @return A sequence of prices (one for each symbol)
     */
   def getPrices(): F[Seq[Price]] = {
-    val url = Url(
-      scheme = config.scheme,
-      host = config.host,
-      port = config.port,
-      path = "/fapi/v1/ticker/price"
-    )
+    val url = (config.restBaseUrl / "fapi/v1/ticker/price")
     for {
       pricesOrError <- client.get[CirceResponse[List[Price]]](
         url = url,
@@ -125,13 +115,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     * @return The price for the symbol
     */
   def getPrice(symbol: String): F[Price] = {
-    val url = Url(
-      scheme = config.scheme,
-      host = config.host,
-      port = config.port,
-      path = "/fapi/v1/ticker/price",
-      query = QueryString.fromPairs("symbol" -> symbol)
-    )
+    val url = (config.restBaseUrl / "fapi/v1/ticker/price").withQueryString(QueryString.fromPairs("symbol" -> symbol))
 
     client
       .get[CirceResponse[Price]](
@@ -152,12 +136,9 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
       val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
       val queryString = QueryString.fromPairs("dualSidePosition" -> dualSidePosition).addParams(timeParams)
       val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/fapi/v1/positionSide/dual"
-      ).withQueryString(queryString.addParam("signature" -> signature))
+      (config.restBaseUrl / "fapi/v1/positionSide/dual").withQueryString(
+        queryString.addParam("signature" -> signature)
+      )
     }
 
     for {
@@ -185,12 +166,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
       val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
       val queryString = changeLeverage.toQueryString.addParams(timeParams)
       val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/fapi/v1/leverage"
-      ).withQueryString(queryString.addParam("signature" -> signature))
+      (config.restBaseUrl / "fapi/v1/leverage").withQueryString(queryString.addParam("signature" -> signature))
     }
 
     for {
@@ -216,13 +192,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
       val query       = TimeParams(config.recvWindow, currentMillis).toQueryString
       val signature   = HMAC.sha256(config.apiSecret, query.toString())
       val queryString = query.addParam("signature", signature)
-      Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/fapi/v1/account",
-        query = queryString
-      )
+      (config.restBaseUrl / "fapi/v1/account").withQueryString(queryString)
     }
     for {
       currentTime <- clock.realTime
@@ -251,12 +221,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
         .addParams(timeParams)
         .addParam("newOrderRespType" -> FutureOrderCreateResponseType.RESULT.entryName)
       val signature = HMAC.sha256(config.apiSecret, queryString.toString())
-      Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/fapi/v1/order"
-      ).withQueryString(queryString.addParam("signature" -> signature))
+      (config.restBaseUrl / "fapi/v1/order").withQueryString(queryString.addParam("signature" -> signature))
     }
 
     for {
@@ -298,7 +263,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
         _ <- F.start(
           client
             .ws(
-              Url.parse(s"${config.wsScheme}://${config.host}:${config.wsPort}/ws/${symbol.toLowerCase}@aggTrade"),
+              config.wsBaseUrl / s"ws/${symbol.toLowerCase}@aggTrade",
               webSocketFramePipe(queue)
             )
         )
@@ -308,12 +273,14 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
 }
 
 object FutureApi {
-  implicit def factory[F[_]: WithClock: LogWriter](implicit F: Async[F]): BinanceApi.Factory[F, FutureApi[F]] =
-    (config: BinanceConfig, client: HttpClient[F]) =>
+  implicit def factory[F[_]: WithClock: LogWriter](implicit
+      F: Async[F]
+  ): BinanceApi.Factory[F, FutureApi[F], FapiConfig] =
+    (config: FapiConfig, client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[fapi.response.ExchangeInformation]](
-            url = config.fullInfoUrl,
+            url = config.exchangeInfoUrl,
             responseAs = asJson[fapi.response.ExchangeInformation],
             limiters = List.empty
           )
