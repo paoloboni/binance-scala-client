@@ -243,33 +243,8 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     * @param symbol the symbol
     * @return a stream of aggregate trade events
     */
-  def aggregateTradeStreams(symbol: String): Stream[F, AggregateTrade] = {
-    def webSocketFramePipe(
-        q: Queue[F, Option[AggregateTrade]]
-    ): Pipe[F, WebSocketFrame.Data[_], WebSocketFrame] = { input =>
-      input.evalMapFilter[F, WebSocketFrame] {
-        case WebSocketFrame.Text(payload, _, _) =>
-          for {
-            decoded <- F.fromEither(decode[AggregateTrade](payload))
-            _       <- q.offer(Some(decoded))
-          } yield None
-        case _ =>
-          q.offer(None).map(_ => None) // stopping
-      }
-    }
-    Stream
-      .eval(for {
-        queue <- Queue.unbounded[F, Option[AggregateTrade]]
-        _ <- F.start(
-          client
-            .ws(
-              config.wsBaseUrl / s"ws/${symbol.toLowerCase}@aggTrade",
-              webSocketFramePipe(queue)
-            )
-        )
-      } yield Stream.fromQueueNoneTerminated(queue))
-      .flatten
-  }
+  def aggregateTradeStreams(symbol: String): Stream[F, AggregateTrade] =
+    client.ws[AggregateTrade](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@aggTrade")
 }
 
 object FutureApi {
