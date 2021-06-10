@@ -260,14 +260,14 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     Stream
       .eval(for {
         queue <- Queue.unbounded[F, Option[AggregateTrade]]
-        stream <- F.start(
+        _ <- F.start(
           client
             .ws(
               config.wsBaseUrl / s"ws/${symbol.toLowerCase}@aggTrade",
               webSocketFramePipe(queue)
             )
         )
-      } yield Stream.fromQueueNoneTerminated(queue).onFinalize(stream.cancel))
+      } yield Stream.fromQueueNoneTerminated(queue))
       .flatten
   }
 }
