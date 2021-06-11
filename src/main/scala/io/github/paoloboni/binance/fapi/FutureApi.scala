@@ -22,11 +22,9 @@
 package io.github.paoloboni.binance.fapi
 
 import cats.effect.Async
-import cats.effect.std.Queue
 import cats.implicits._
-import fs2.{Pipe, Stream}
+import fs2.Stream
 import io.circe.generic.auto._
-import io.circe.parser._
 import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
@@ -43,7 +41,6 @@ import io.lemonlabs.uri.typesafe.dsl._
 import log.effect.LogWriter
 import sttp.client3.ResponseAsByteArray
 import sttp.client3.circe.{asJson, _}
-import sttp.ws.WebSocketFrame
 
 import java.time.Instant
 
@@ -54,6 +51,8 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     rateLimiters: List[RateLimiter[F]]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
+
+  type Config = FapiConfig
 
   private val clock = implicitly[WithClock[F]].clock
 
@@ -250,7 +249,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
 object FutureApi {
   implicit def factory[F[_]: WithClock: LogWriter](implicit
       F: Async[F]
-  ): BinanceApi.Factory[F, FutureApi[F], FapiConfig] =
+  ): BinanceApi.Factory[F, FutureApi[F]] =
     (config: FapiConfig, client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client

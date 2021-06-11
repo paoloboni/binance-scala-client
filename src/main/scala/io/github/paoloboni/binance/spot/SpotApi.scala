@@ -51,6 +51,8 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
 )(implicit F: Async[F])
     extends BinanceApi[F] {
 
+  type Config = SpotConfig
+
   private val clock = implicitly[WithClock[F]].clock
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
@@ -225,7 +227,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
 object SpotApi {
   implicit def factory[F[_]: WithClock: LogWriter](implicit
       F: Async[F]
-  ): BinanceApi.Factory[F, SpotApi[F], SpotConfig] =
+  ): BinanceApi.Factory[F, SpotApi[F]] =
     (config: SpotConfig, client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
