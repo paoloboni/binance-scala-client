@@ -729,7 +729,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         _ <- s.cancel
       } yield result
 
-      test.timeout(30.seconds).unsafeRunSync() should contain only AggregateTrade(
+      test.timeout(30.seconds).unsafeRunSync() should contain only AggregateTradeStream(
         e = "aggTrade",
         E = 1623095242152L,
         s = "BTCUSDT",
@@ -739,6 +739,76 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
         l = 183139250,
         T = 1623095241998L,
         m = true
+      )
+    }
+  }
+
+  "it should stream KLines" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val wsPort = 9999
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e": "kline",
+                              |  "E": 123456789,
+                              |  "s": "BTCUSDT",
+                              |  "k": {
+                              |    "t": 123400000,
+                              |    "T": 123460000,
+                              |    "s": "BTCUSDT",
+                              |    "i": "1m",
+                              |    "f": 100,
+                              |    "L": 200,
+                              |    "o": "0.0010",
+                              |    "c": "0.0020",
+                              |    "h": "0.0025",
+                              |    "l": "0.0015",
+                              |    "v": "1000",
+                              |    "n": 100,
+                              |    "x": false,
+                              |    "q": "1.0000",
+                              |    "V": "500",
+                              |    "Q": "0.500",
+                              |    "B": "123456"
+                              |  }
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only KLineStream(
+        e = "kline",
+        E = 123456789L,
+        s = "BTCUSDT",
+        k = KLineStreamPayload(
+          t = 123400000,
+          T = 123460000,
+          s = "BTCUSDT",
+          i = Interval.`1m`,
+          f = 100,
+          L = 200,
+          o = 0.0010,
+          c = 0.0020,
+          h = 0.0025,
+          l = 0.0015,
+          v = 1000,
+          n = 100,
+          x = false,
+          q = 1.0000,
+          V = 500,
+          Q = 0.500
+        )
       )
     }
   }

@@ -242,8 +242,17 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     * @param symbol the symbol
     * @return a stream of aggregate trade events
     */
-  def aggregateTradeStreams(symbol: String): Stream[F, AggregateTrade] =
-    client.ws[AggregateTrade](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@aggTrade")
+  def aggregateTradeStreams(symbol: String): Stream[F, AggregateTradeStream] =
+    client.ws[AggregateTradeStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@aggTrade")
+
+  /** The Kline/Candlestick Stream push updates to the current klines/candlestick every 250 milliseconds (if existing).
+    *
+    * @param symbol the symbol
+    * @param interval the interval
+    * @return a stream of klines
+    */
+  def kLineStreams(symbol: String, interval: Interval): Stream[F, KLineStream] =
+    client.ws[KLineStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@kline_${interval.entryName}")
 }
 
 object FutureApi {

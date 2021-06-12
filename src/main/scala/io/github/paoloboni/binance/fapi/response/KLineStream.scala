@@ -21,14 +21,29 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-case class AggregateTrade(
-    e: String,
-    E: Long,
-    s: String,
-    p: BigDecimal,
-    q: BigDecimal,
-    f: Long,
-    l: Long,
-    T: Long,
-    m: Boolean
+import io.github.paoloboni.binance.common.Interval
+
+case class KLineStreamPayload(
+    t: Long,       // Kline start time
+    T: Long,       // Kline close time
+    s: String,     // Symbol
+    i: Interval,   // Interval
+    f: Long,       // First trade ID
+    L: Long,       // Last trade ID
+    o: BigDecimal, // Open price
+    c: BigDecimal, // Close price
+    h: BigDecimal, // High price
+    l: BigDecimal, // Low price
+    v: BigDecimal, // Base asset volume
+    n: Int,        // Number of trades
+    x: Boolean,    // Is this kline closed?
+    q: BigDecimal, // Quote asset volume
+    V: BigDecimal, // Taker buy base asset volume
+    Q: BigDecimal  // Taker buy quote asset volume
+)
+case class KLineStream(
+    e: String, // Event type
+    E: Long,   // Event time
+    s: String, // Symbol
+    k: KLineStreamPayload
 )

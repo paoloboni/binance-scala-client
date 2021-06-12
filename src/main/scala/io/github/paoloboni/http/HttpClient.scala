@@ -94,10 +94,12 @@ sealed class HttpClient[F[_]: LogWriter](implicit
     ): Pipe[F, WebSocketFrame.Data[_], WebSocketFrame] = { input =>
       input.evalMapFilter[F, WebSocketFrame] {
         case WebSocketFrame.Text(payload, _, _) =>
-          for {
-            decoded <- F.fromEither(decode[DataFrame](payload))
-            _       <- q.offer(Some(decoded))
-          } yield None
+          (decode[DataFrame](payload) match {
+            case Left(ex) =>
+              LogWriter.error("Failed to decode frame: " + payload, ex) *> q.offer(None) // stopping
+            case Right(decoded) =>
+              q.offer(Some(decoded))
+          }) *> F.pure(None)
         case _ =>
           q.offer(None).map(_ => None) // stopping
       }
@@ -112,6 +114,9 @@ sealed class HttpClient[F[_]: LogWriter](implicit
             .get(uri"${url.toStringPunycode}")
             .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe(queue)))
             .send(client)
+            .flatMap { response =>
+              LogWriter.debug("response: " + response)
+            }
             .void
         )
       } yield Stream.fromQueueNoneTerminated(queue))

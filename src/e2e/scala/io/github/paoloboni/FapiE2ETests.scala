@@ -94,6 +94,14 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createFutureClient[IO](config)
       .use(_.aggregateTradeStreams("btcusdt").take(1).compile.toList.timeout(30.seconds))
-      .asserting(_.loneElement shouldBe a[AggregateTrade])
+      .asserting(_.loneElement shouldBe a[AggregateTradeStream])
+  }
+
+  "kLineStreams" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.kLineStreams("btcusdt", Interval.`1m`).take(1).compile.toList)
+      .timeout(30.seconds)
+      .asserting(_.loneElement shouldBe a[KLineStream])
   }
 }
