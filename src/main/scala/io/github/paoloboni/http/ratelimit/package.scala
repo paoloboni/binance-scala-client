@@ -28,7 +28,7 @@ import log.effect.LogWriter
 package object ratelimit {
   implicit class LimiterOps[F[_]: Applicative: LogWriter](limiter: RateLimiter[F]) {
     def await[A](
-        job: F[A],
+        job: => F[A],
         weight: Int = 1
     ): F[A] =
       List

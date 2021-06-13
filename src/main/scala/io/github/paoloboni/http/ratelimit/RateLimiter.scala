@@ -22,7 +22,7 @@
 package io.github.paoloboni.http.ratelimit
 
 import cats.Applicative
-import cats.effect.kernel.Temporal
+import cats.effect.kernel.{Async, Deferred}
 import cats.effect.std.Queue
 import cats.effect.syntax.spawn._
 import cats.implicits._
@@ -32,20 +32,23 @@ import io.github.paoloboni.binance.common.response.RateLimitType
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object RateLimiter {
-  def make[F[_]: Temporal](
+  def make[F[_]](
       perSecond: Double,
       bufferSize: Int,
       `type`: RateLimitType
-  ): F[RateLimiter[F]] = {
+  )(implicit F: Async[F]): F[RateLimiter[F]] = {
     require(perSecond > 0 && bufferSize > 0)
     val period: FiniteDuration = periodFrom(perSecond)
     for {
-      queue <- Queue.bounded[F, Unit](bufferSize)
-      _     <- Stream.awakeDelay(period).evalMap(_ => queue.take).repeat.compile.drain.start.void
-    } yield new RateLimiter[F] {
-      override def rateLimit[T](effect: => F[T]): F[T] =
-        queue.offer(()) *> effect
-      override val limitType: RateLimitType = `type`
+      queue <- Queue.bounded[F, F[Unit]](bufferSize)
+      _     <- Stream.awakeDelay(period).evalMap(_ => queue.take.flatten).repeat.compile.drain.start.void
+    } yield {
+      new RateLimiter[F] {
+        override def rateLimit[T](effect: => F[T]): F[T] = Deferred[F, T].flatMap { p =>
+          queue.offer(F.defer(effect.flatTap(p.complete).void)) *> p.get
+        }
+        override val limitType: RateLimitType = `type`
+      }
     }
   }
   private def periodFrom(perSecond: Double) =
