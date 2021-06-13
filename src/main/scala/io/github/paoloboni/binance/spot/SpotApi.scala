@@ -25,7 +25,6 @@ import cats.effect.Async
 import cats.implicits._
 import fs2.Stream
 import io.circe.generic.auto._
-import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
 import io.github.paoloboni.binance.common.response.CirceResponse
@@ -43,7 +42,7 @@ import sttp.client3.circe._
 
 import java.time.Instant
 
-final case class SpotApi[F[_]: WithClock: LogWriter](
+final case class SpotApi[F[_]: LogWriter](
     config: SpotConfig,
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
@@ -52,8 +51,6 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
     extends BinanceApi[F] {
 
   type Config = SpotConfig
-
-  private val clock = implicitly[WithClock[F]].clock
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
     * in case the result set doesn't fit in a single page.
@@ -119,7 +116,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
       (config.restBaseUrl / "api/v3/account").withQueryString(queryString)
     }
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       responseOrError <- client.get[CirceResponse[SpotAccountInfoResponse]](
         url = url(currentTime.toMillis),
         responseAs = asJson[SpotAccountInfoResponse],
@@ -150,7 +147,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
     }
 
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       responseOrError <- client
         .post[String, CirceResponse[SpotOrderCreateResponse]](
           url = url(currentTime.toMillis),
@@ -180,7 +177,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
     }
 
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       _ <- client
         .delete[String, CirceResponse[io.circe.Json]](
@@ -210,7 +207,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
     }
 
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       (url, requestBody) = urlAndBody(currentTime.toMillis)
       _ <- client
         .delete[String, Array[Byte]](
@@ -225,7 +222,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
 }
 
 object SpotApi {
-  implicit def factory[F[_]: WithClock: LogWriter](implicit
+  implicit def factory[F[_]: LogWriter](implicit
       F: Async[F]
   ): BinanceApi.Factory[F, SpotApi[F]] =
     (config: SpotConfig, client: HttpClient[F]) =>

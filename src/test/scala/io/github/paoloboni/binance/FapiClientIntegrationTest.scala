@@ -21,8 +21,8 @@
 
 package io.github.paoloboni.binance
 
-import cats.Applicative
-import cats.effect.{Clock, ExitCode, IO}
+import cats.effect.kernel.Async
+import cats.effect.{ExitCode, IO}
 import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
@@ -34,9 +34,10 @@ import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
-import io.github.paoloboni.{Env, TestClient, WithClock}
+import io.github.paoloboni.{Env, TestAsync, TestClient}
 import io.lemonlabs.uri.Url
 import org.http4s.websocket.WebSocketFrame
+import org.mockito.{Mockito, MockitoSugar}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
@@ -47,7 +48,13 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherValues with OptionValues with TestClient {
+class FapiClientIntegrationTest
+    extends AnyFreeSpec
+    with Matchers
+    with EitherValues
+    with OptionValues
+    with TestClient
+    with MockitoSugar {
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>
@@ -476,7 +483,8 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val result = BinanceClient
       .createFutureClient[IO](config)
@@ -566,7 +574,8 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val changePositionParams = true
 
@@ -609,7 +618,8 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(100))
 
@@ -678,7 +688,8 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val result = BinanceClient
       .createFutureClient[IO](config)
@@ -854,10 +865,4 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with EitherVal
       apiKey = apiKey,
       apiSecret = apiSecret
     )
-
-  private def stubTimer(fixedTime: Long) = new Clock[IO] {
-    override def applicative: Applicative[IO]  = ???
-    override def monotonic: IO[FiniteDuration] = fixedTime.millis.pure[IO]
-    override def realTime: IO[FiniteDuration]  = fixedTime.millis.pure[IO]
-  }
 }

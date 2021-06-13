@@ -25,7 +25,6 @@ import cats.effect.Async
 import cats.implicits._
 import fs2.Stream
 import io.circe.generic.auto._
-import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
 import io.github.paoloboni.binance.common.response.CirceResponse
@@ -44,7 +43,7 @@ import sttp.client3.circe.{asJson, _}
 
 import java.time.Instant
 
-final case class FutureApi[F[_]: WithClock: LogWriter](
+final case class FutureApi[F[_]: LogWriter](
     config: FapiConfig,
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
@@ -53,8 +52,6 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     extends BinanceApi[F] {
 
   type Config = FapiConfig
-
-  private val clock = implicitly[WithClock[F]].clock
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
     * in case the result set doesn't fit in a single page.
@@ -141,7 +138,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     }
 
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       _ <- client
         .post[String, Array[Byte]](
           url = url(currentTime.toMillis),
@@ -169,7 +166,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     }
 
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       responseOrError <- client
         .post[String, CirceResponse[ChangeInitialLeverageResponse]](
           url = url(currentTime.toMillis),
@@ -194,7 +191,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
       (config.restBaseUrl / "fapi/v1/account").withQueryString(queryString)
     }
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       balanceOrError <- client.get[CirceResponse[FutureAccountInfoResponse]](
         url = url(currentTime.toMillis),
         responseAs = asJson[FutureAccountInfoResponse],
@@ -224,7 +221,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
     }
 
     for {
-      currentTime <- clock.realTime
+      currentTime <- F.realTime
       responseOrError <- client
         .post[String, CirceResponse[FutureOrderCreateResponse]](
           url = url(currentTime.toMillis),
@@ -256,7 +253,7 @@ final case class FutureApi[F[_]: WithClock: LogWriter](
 }
 
 object FutureApi {
-  implicit def factory[F[_]: WithClock: LogWriter](implicit
+  implicit def factory[F[_]: LogWriter](implicit
       F: Async[F]
   ): BinanceApi.Factory[F, FutureApi[F]] =
     (config: FapiConfig, client: HttpClient[F]) =>

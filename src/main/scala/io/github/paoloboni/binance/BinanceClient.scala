@@ -23,7 +23,6 @@ package io.github.paoloboni.binance
 
 import cats.effect.{Async, Resource}
 import cats.implicits._
-import io.github.paoloboni.WithClock
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
@@ -33,17 +32,17 @@ import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 
 object BinanceClient {
 
-  def createSpotClient[F[_]: WithClock: LogWriter: Async](config: SpotConfig)(implicit
+  def createSpotClient[F[_]: LogWriter: Async](config: SpotConfig)(implicit
       apiFactory: BinanceApi.Factory[F, spot.SpotApi[F]]
   ): Resource[F, SpotApi[F]] =
     apply[F, spot.SpotApi[F]](config)
 
-  def createFutureClient[F[_]: WithClock: LogWriter: Async](config: FapiConfig)(implicit
+  def createFutureClient[F[_]: LogWriter: Async](config: FapiConfig)(implicit
       apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F]]
   ): Resource[F, fapi.FutureApi[F]] =
     apply[F, fapi.FutureApi[F]](config)
 
-  def apply[F[_]: WithClock: LogWriter: Async, API <: BinanceApi[F]](
+  def apply[F[_]: LogWriter: Async, API <: BinanceApi[F]](
       config: API#Config
   )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] = {
     val conf: AsyncHttpClientConfig =
