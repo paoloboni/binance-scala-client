@@ -3,7 +3,7 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
-import io.github.paoloboni.binance.common.{BinanceConfig, Interval, OrderSide}
+import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotOrderCreateResponse}
@@ -16,13 +16,10 @@ import scala.util.Random
 
 class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
 
-  val config: BinanceConfig = BinanceConfig(
-    scheme = "https",
-    host = "testnet.binance.vision",
-    port = 443,
-    infoUrl = "/api/v3/exchangeInfo",
+  val config: SpotConfig = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
-    apiSecret = sys.env("SPOT_SECRET_KEY")
+    apiSecret = sys.env("SPOT_SECRET_KEY"),
+    testnet = true
   )
 
   "getPrices" in {

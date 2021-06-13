@@ -18,11 +18,10 @@ import scala.util.Random
 
 class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with LoneElement {
 
-  val config: BinanceConfig = BinanceConfig(
-    host = "testnet.binancefuture.com",
-    infoUrl = "/fapi/v1/exchangeInfo",
+  val config: FapiConfig = FapiConfig.Default(
     apiKey = sys.env("FAPI_API_KEY"),
-    apiSecret = sys.env("FAPI_SECRET_KEY")
+    apiSecret = sys.env("FAPI_SECRET_KEY"),
+    testnet = true
   )
 
   "getPrices" in {
@@ -81,10 +80,10 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.createOrder(
           FutureOrderCreateParams.MARKET(
-            symbol = "XRPUSDT",
+            symbol = "LTCUSDT",
             side = side,
             positionSide = FuturePositionSide.BOTH,
-            quantity = 20
+            quantity = 10
           )
         )
       )
@@ -95,6 +94,14 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createFutureClient[IO](config)
       .use(_.aggregateTradeStreams("btcusdt").take(1).compile.toList.timeout(30.seconds))
-      .asserting(_.loneElement shouldBe a[AggregateTrade])
+      .asserting(_.loneElement shouldBe a[AggregateTradeStream])
+  }
+
+  "kLineStreams" in {
+    BinanceClient
+      .createFutureClient[IO](config)
+      .use(_.kLineStreams("btcusdt", Interval.`1m`).take(1).compile.toList)
+      .timeout(30.seconds)
+      .asserting(_.loneElement shouldBe a[KLineStream])
   }
 }

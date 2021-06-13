@@ -22,8 +22,11 @@
 package io.github.paoloboni.http
 
 import cats.effect.kernel.Async
+import cats.effect.std.Queue
 import cats.syntax.all._
-import fs2.Pipe
+import fs2.{Pipe, Stream}
+import io.circe.Decoder
+import io.circe.parser.decode
 import io.github.paoloboni.http.ratelimit._
 import io.lemonlabs.uri.Url
 import log.effect.LogWriter
@@ -83,16 +86,41 @@ sealed class HttpClient[F[_]: LogWriter](implicit
     sendRequest(httpRequest, limiters, weight)
   }
 
-  def ws(
-      url: Url,
-      webSocketFramePipe: Pipe[F, WebSocketFrame.Data[_], WebSocketFrame]
-  ): F[Unit] = {
-    LogWriter.debug("ws connecting to: " + url.toStringPunycode) *>
-      basicRequest
-        .get(uri"${url.toStringPunycode}")
-        .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe))
-        .send(client)
-        .void
+  def ws[DataFrame: Decoder](
+      url: Url
+  ): Stream[F, DataFrame] = {
+    def webSocketFramePipe(
+        q: Queue[F, Option[DataFrame]]
+    ): Pipe[F, WebSocketFrame.Data[_], WebSocketFrame] = { input =>
+      input.evalMapFilter[F, WebSocketFrame] {
+        case WebSocketFrame.Text(payload, _, _) =>
+          (decode[DataFrame](payload) match {
+            case Left(ex) =>
+              LogWriter.error("Failed to decode frame: " + payload, ex) *> q.offer(None) // stopping
+            case Right(decoded) =>
+              q.offer(Some(decoded))
+          }) *> F.pure(None)
+        case _ =>
+          q.offer(None).map(_ => None) // stopping
+      }
+    }
+
+    Stream
+      .eval(for {
+        _     <- LogWriter.debug("ws connecting to: " + url.toStringPunycode)
+        queue <- Queue.unbounded[F, Option[DataFrame]]
+        _ <- F.start(
+          basicRequest
+            .get(uri"${url.toStringPunycode}")
+            .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe(queue)))
+            .send(client)
+            .flatMap { response =>
+              LogWriter.debug("response: " + response)
+            }
+            .void
+        )
+      } yield Stream.fromQueueNoneTerminated(queue))
+      .flatten
   }
 
   private def sendRequest[Response](
