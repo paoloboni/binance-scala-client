@@ -30,7 +30,7 @@ lazy val refinedV           = "0.9.26"
 lazy val scalatestV         = "3.2.9"
 lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.1.1"
-lazy val http4sV            = "1.0.0-M21"
+lazy val http4sV            = "1.0.0-M23"
 lazy val http4sBlazeV       = "0.15.1"
 
 lazy val root = (project in file("."))
