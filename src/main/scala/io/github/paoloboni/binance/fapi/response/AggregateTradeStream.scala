@@ -19,18 +19,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni
+package io.github.paoloboni.binance.fapi.response
 
-import cats.effect.{IO, Resource}
-import org.asynchttpclient.DefaultAsyncHttpClientConfig
-import sttp.capabilities
-import sttp.capabilities.fs2.Fs2Streams
-import sttp.client3.SttpBackend
-import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
-
-trait TestClient {
-  def clientResource: Resource[IO, SttpBackend[IO, Any with Fs2Streams[IO] with capabilities.WebSockets]] =
-    AsyncHttpClientFs2Backend.resourceUsingConfig[IO](
-      new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(5000).build()
-    )
-}
+case class AggregateTradeStream(
+    e: String,
+    E: Long,
+    s: String,
+    p: BigDecimal,
+    q: BigDecimal,
+    f: Long,
+    l: Long,
+    T: Long,
+    m: Boolean
+)

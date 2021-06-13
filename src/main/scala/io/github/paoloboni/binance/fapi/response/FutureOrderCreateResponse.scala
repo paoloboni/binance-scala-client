@@ -21,4 +21,35 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-case class FutureOrderCreateResponse(orderId: Long)
+import io.github.paoloboni.binance.fapi.FuturePositionSide
+import io.github.paoloboni.binance.common.OrderSide
+import io.github.paoloboni.binance.fapi.FutureOrderStatus
+import io.github.paoloboni.binance.fapi.FutureTimeInForce
+import io.github.paoloboni.binance.fapi.parameters.FutureWorkingType
+import io.github.paoloboni.binance.fapi.FutureOrderType
+
+case class FutureOrderCreateResponse(
+    clientOrderId: String,
+    cumQty: BigDecimal,
+    cumQuote: BigDecimal,
+    executedQty: BigDecimal,
+    orderId: Long,
+    avgPrice: BigDecimal,
+    origQty: BigDecimal,
+    price: BigDecimal,
+    reduceOnly: Boolean,
+    side: OrderSide,
+    positionSide: FuturePositionSide,
+    status: FutureOrderStatus,
+    stopPrice: BigDecimal,
+    closePosition: Boolean,
+    symbol: String,
+    timeInForce: FutureTimeInForce,
+    `type`: FutureOrderType,
+    origType: FutureOrderType,
+    activatePrice: Option[BigDecimal],
+    priceRate: Option[BigDecimal],
+    updateTime: Long,
+    workingType: FutureWorkingType,
+    priceProtect: Boolean
+)

@@ -37,7 +37,9 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Kline/Candlestick data](https://binance-docs.github.io/apidocs/#kline-candlestick-data): Kline/candlestick bars for a symbol
 * [Symbol price ticker](https://binance-docs.github.io/apidocs/#symbol-price-ticker): Latest price for a symbol or symbols
 * [Account information](https://binance-docs.github.io/apidocs/#account-information-user_data): Get current account information
-* [New order (trade)](https://binance-docs.github.io/apidocs/#new-order-trade): Send in a new order
+* [New order (trade)](https://binance-docs.github.io/apidocs/futures/en/#new-order-trade): Send in a new order
+* [Change position mode (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-position-mode-trade): Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
+* [Change initial leverage (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-initial-leverage-trade): Change user's initial leverage of specific symbol market
 
 ## Example
 

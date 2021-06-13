@@ -24,7 +24,7 @@ package io.github.paoloboni.binance.spot
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait SpotTimeInForce extends EnumEntry
-object SpotTimeInForce extends Enum[SpotTimeInForce] {
+object SpotTimeInForce extends Enum[SpotTimeInForce] with CirceEnum[SpotTimeInForce] {
   val values = findValues
 
   case object GTC extends SpotTimeInForce // Good-Til-Canceled

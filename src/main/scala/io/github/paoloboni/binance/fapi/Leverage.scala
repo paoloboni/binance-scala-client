@@ -19,19 +19,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.spot
+package io.github.paoloboni.binance
 
 import enumeratum.{CirceEnum, Enum, EnumEntry}
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined._
 
-sealed trait SpotOrderStatus extends EnumEntry
-object SpotOrderStatus extends Enum[SpotOrderStatus] {
-  val values = findValues
-
-  case object NEW              extends SpotOrderStatus
-  case object PARTIALLY_FILLED extends SpotOrderStatus
-  case object FILLED           extends SpotOrderStatus
-  case object CANCELED         extends SpotOrderStatus
-  case object PENDING_CANCEL   extends SpotOrderStatus
-  case object REJECTED         extends SpotOrderStatus
-  case object EXPIRED          extends SpotOrderStatus
+package object fapi {
+  type Leverage = Int Refined numeric.Interval.Closed[W.`0`.T, W.`125`.T]
 }
