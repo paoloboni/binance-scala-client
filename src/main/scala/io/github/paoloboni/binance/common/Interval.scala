@@ -27,7 +27,7 @@ import scala.collection.immutable
 import scala.concurrent.duration.{Duration, DurationInt}
 
 sealed abstract class Interval(val duration: Duration) extends EnumEntry
-object Interval extends Enum[Interval] {
+object Interval extends Enum[Interval] with CirceEnum[Interval] {
   val values: immutable.IndexedSeq[Interval] = findValues
 
   case object `1m`  extends Interval(1.minute)

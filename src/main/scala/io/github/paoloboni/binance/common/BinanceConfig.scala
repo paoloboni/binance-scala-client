@@ -26,29 +26,99 @@ import eu.timepit.refined.{numeric, refineMV}
 import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
 import io.lemonlabs.uri.Url
 import shapeless.{Witness => W}
+import io.lemonlabs.uri.typesafe.dsl._
 
 import scala.concurrent.duration._
 
-case class BinanceConfig(
-    scheme: String,
-    host: String,
-    port: Int,
-    infoUrl: String,
-    apiKey: String,
-    apiSecret: String,
-    recvWindow: RecvWindow = refineMV(5000),
-    responseHeaderTimeout: Duration = 40.seconds,
-    maxTotalConnections: Int = 20,
-    rateLimiterBufferSize: Int = 1000
-) {
-  def generateFullInfoUrl = Url(
-    scheme = scheme,
-    host = host,
-    port = port,
-    path = infoUrl
-  )
+sealed trait BinanceConfig {
+  def responseHeaderTimeout: Duration
+  def maxTotalConnections: Int
+  def rateLimiterBufferSize: Int
 }
 
 object BinanceConfig {
   type RecvWindow = Int Refined numeric.Interval.Closed[W.`0`.T, W.`60000`.T]
+}
+
+sealed trait FapiConfig extends BinanceConfig {
+  def restBaseUrl: Url
+  def wsBaseUrl: Url
+  def exchangeInfoUrl: Url
+  def apiKey: String
+  def apiSecret: String
+  def recvWindow: RecvWindow
+  def responseHeaderTimeout: Duration
+  def maxTotalConnections: Int
+  def rateLimiterBufferSize: Int
+  def testnet: Boolean
+}
+object FapiConfig {
+  final case class Default(
+      apiKey: String,
+      apiSecret: String,
+      recvWindow: RecvWindow = refineMV(5000),
+      responseHeaderTimeout: Duration = 40.seconds,
+      maxTotalConnections: Int = 20,
+      rateLimiterBufferSize: Int = 1000,
+      testnet: Boolean = false
+  ) extends FapiConfig {
+    lazy val restBaseUrl: Url =
+      if (testnet) Url.parse("https://testnet.binancefuture.com")
+      else Url.parse("https://fapi.binance.com")
+    lazy val wsBaseUrl: Url =
+      if (testnet) Url.parse("wss://stream.binancefuture.com")
+      else Url.parse("wss://fstream.binance.com")
+    lazy val exchangeInfoUrl: Url = restBaseUrl / "fapi/v1/exchangeInfo"
+  }
+  final case class Custom(
+      restBaseUrl: Url,
+      wsBaseUrl: Url,
+      exchangeInfoUrl: Url,
+      apiKey: String,
+      apiSecret: String,
+      recvWindow: RecvWindow = refineMV(5000),
+      responseHeaderTimeout: Duration = 40.seconds,
+      maxTotalConnections: Int = 20,
+      rateLimiterBufferSize: Int = 1000,
+      testnet: Boolean = false
+  ) extends FapiConfig
+}
+
+sealed trait SpotConfig extends BinanceConfig {
+  def restBaseUrl: Url
+  def exchangeInfoUrl: Url
+  def apiKey: String
+  def apiSecret: String
+  def recvWindow: RecvWindow
+  def responseHeaderTimeout: Duration
+  def maxTotalConnections: Int
+  def rateLimiterBufferSize: Int
+  def testnet: Boolean
+}
+object SpotConfig {
+  final case class Default(
+      apiKey: String,
+      apiSecret: String,
+      recvWindow: RecvWindow = refineMV(5000),
+      responseHeaderTimeout: Duration = 40.seconds,
+      maxTotalConnections: Int = 20,
+      rateLimiterBufferSize: Int = 1000,
+      testnet: Boolean = false
+  ) extends SpotConfig {
+    lazy val restBaseUrl: Url =
+      if (testnet) Url.parse("https://testnet.binance.vision")
+      else Url.parse("https://api.binance.com")
+    lazy val exchangeInfoUrl: Url = restBaseUrl / "api/v3/exchangeInfo"
+  }
+  final case class Custom(
+      restBaseUrl: Url,
+      exchangeInfoUrl: Url,
+      apiKey: String,
+      apiSecret: String,
+      recvWindow: RecvWindow = refineMV(5000),
+      responseHeaderTimeout: Duration = 40.seconds,
+      maxTotalConnections: Int = 20,
+      rateLimiterBufferSize: Int = 1000,
+      testnet: Boolean = false
+  ) extends SpotConfig
 }

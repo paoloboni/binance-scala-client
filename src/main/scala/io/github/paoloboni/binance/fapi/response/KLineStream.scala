@@ -19,18 +19,31 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni
+package io.github.paoloboni.binance.fapi.response
 
-import cats.effect.{IO, Resource}
-import org.asynchttpclient.DefaultAsyncHttpClientConfig
-import sttp.capabilities
-import sttp.capabilities.fs2.Fs2Streams
-import sttp.client3.SttpBackend
-import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
+import io.github.paoloboni.binance.common.Interval
 
-trait TestClient {
-  def clientResource: Resource[IO, SttpBackend[IO, Any with Fs2Streams[IO] with capabilities.WebSockets]] =
-    AsyncHttpClientFs2Backend.resourceUsingConfig[IO](
-      new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(5000).build()
-    )
-}
+case class KLineStreamPayload(
+    t: Long,       // Kline start time
+    T: Long,       // Kline close time
+    s: String,     // Symbol
+    i: Interval,   // Interval
+    f: Long,       // First trade ID
+    L: Long,       // Last trade ID
+    o: BigDecimal, // Open price
+    c: BigDecimal, // Close price
+    h: BigDecimal, // High price
+    l: BigDecimal, // Low price
+    v: BigDecimal, // Base asset volume
+    n: Int,        // Number of trades
+    x: Boolean,    // Is this kline closed?
+    q: BigDecimal, // Quote asset volume
+    V: BigDecimal, // Taker buy base asset volume
+    Q: BigDecimal  // Taker buy quote asset volume
+)
+case class KLineStream(
+    e: String, // Event type
+    E: Long,   // Event time
+    s: String, // Symbol
+    k: KLineStreamPayload
+)

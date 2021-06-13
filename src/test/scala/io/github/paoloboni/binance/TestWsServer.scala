@@ -19,18 +19,29 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni
+package io.github.paoloboni.binance
 
-import cats.effect.{IO, Resource}
-import org.asynchttpclient.DefaultAsyncHttpClientConfig
-import sttp.capabilities
-import sttp.capabilities.fs2.Fs2Streams
-import sttp.client3.SttpBackend
-import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
+import cats.effect._
+import fs2.{Pipe, Stream}
+import org.http4s._
+import org.http4s.dsl.Http4sDsl
+import org.http4s.implicits._
+import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.server.websocket._
+import org.http4s.websocket.WebSocketFrame
 
-trait TestClient {
-  def clientResource: Resource[IO, SttpBackend[IO, Any with Fs2Streams[IO] with capabilities.WebSockets]] =
-    AsyncHttpClientFs2Backend.resourceUsingConfig[IO](
-      new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(5000).build()
-    )
+import scala.concurrent.ExecutionContext.global
+
+class TestWsServer[F[_]](toClient: Stream[F, WebSocketFrame])(port: Int)(implicit F: Async[F]) extends Http4sDsl[F] {
+  def routes: HttpRoutes[F] =
+    HttpRoutes.of[F] { case GET -> Root / "ws" / streamName =>
+      val fromClient: Pipe[F, WebSocketFrame, Unit] = _.evalMap(message => F.delay(println("received: " + message)))
+      WebSocketBuilder[F].build(toClient, fromClient)
+    }
+
+  def stream: Stream[F, ExitCode] =
+    BlazeServerBuilder[F](global)
+      .bindHttp(port)
+      .withHttpApp(routes.orNotFound)
+      .serve
 }
