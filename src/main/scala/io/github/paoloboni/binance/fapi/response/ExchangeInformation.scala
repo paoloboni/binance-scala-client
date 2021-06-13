@@ -21,14 +21,14 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import cats.effect.kernel.Temporal
+import cats.effect.Async
 import cats.implicits._
+import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.common.response.RateLimit
+import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.http.ratelimit.RateLimiter
-import enumeratum.{CirceEnum, Enum, EnumEntry}
 
 sealed trait Filter
 
@@ -95,7 +95,7 @@ case class ExchangeInformation(
     assets: List[AssetInfo],
     symbols: List[Symbol]
 ) {
-  def createRateLimiters[F[_]: Temporal](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =
+  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =
     rateLimits
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))

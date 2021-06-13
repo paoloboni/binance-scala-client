@@ -21,12 +21,12 @@
 
 package io.github.paoloboni.binance.spot.response
 
-import cats.effect.kernel.Temporal
+import cats.effect.kernel.Async
 import cats.implicits._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import io.github.paoloboni.binance.spot.SpotOrderType
 import io.github.paoloboni.binance.common.response.RateLimit
+import io.github.paoloboni.binance.spot.SpotOrderType
 import io.github.paoloboni.http.ratelimit.RateLimiter
 
 sealed trait Filter
@@ -78,7 +78,7 @@ case class ExchangeInformation(
     exchangeFilters: List[Filter],
     symbols: List[Symbol]
 ) {
-  def createRateLimiters[F[_]: Temporal](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =
+  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): F[List[RateLimiter[F]]] =
     rateLimits
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))
