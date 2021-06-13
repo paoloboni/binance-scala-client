@@ -80,10 +80,10 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .use(
         _.createOrder(
           FutureOrderCreateParams.MARKET(
-            symbol = "XRPUSDT",
+            symbol = "LTCUSDT",
             side = side,
             positionSide = FuturePositionSide.BOTH,
-            quantity = 20
+            quantity = 10
           )
         )
       )
