@@ -16,6 +16,23 @@ lazy val e2eSettings =
       EndToEndTest / scalaSource := baseDirectory.value / "src" / "e2e" / "scala"
     )
 
+lazy val circeV             = "0.14.1"
+lazy val fs2V               = "3.0.4"
+lazy val catsCoreV          = "2.6.1"
+lazy val catsEffectV        = "3.1.1"
+lazy val logEffectV         = "0.16.1"
+lazy val slf4jV             = "1.7.30"
+lazy val sttpV              = "3.3.6"
+lazy val scalaUriV          = "3.2.0"
+lazy val enumeratumV        = "1.6.1"
+lazy val shapelessV         = "2.3.7"
+lazy val refinedV           = "0.9.25"
+lazy val scalatestV         = "3.2.9"
+lazy val wiremockV          = "2.27.2"
+lazy val catsEffectTestingV = "1.1.1"
+lazy val http4sV            = "1.0.0-M21"
+lazy val http4sBlazeV       = "0.15.0"
+
 lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
@@ -25,34 +42,34 @@ lazy val root = (project in file("."))
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
-      "io.circe"                      %% "circe-core"                    % "0.13.0",
-      "io.circe"                      %% "circe-generic"                 % "0.13.0",
-      "io.circe"                      %% "circe-generic-extras"          % "0.13.0",
-      "io.circe"                      %% "circe-refined"                 % "0.13.0",
-      "co.fs2"                        %% "fs2-core"                      % "3.0.4",
-      "org.typelevel"                 %% "cats-core"                     % "2.6.1",
-      "org.typelevel"                 %% "cats-effect"                   % "3.1.1",
-      "io.laserdisc"                  %% "log-effect-core"               % "0.16.1",
-      "io.laserdisc"                  %% "log-effect-fs2"                % "0.16.1",
-      "org.slf4j"                      % "slf4j-api"                     % "1.7.30",
-      "com.softwaremill.sttp.client3" %% "core"                          % "3.3.6",
-      "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % "3.3.6",
-      "com.softwaremill.sttp.client3" %% "circe"                         % "3.3.6",
-      "io.lemonlabs"                  %% "scala-uri"                     % "3.2.0",
-      "com.beachape"                  %% "enumeratum"                    % "1.6.1",
-      "com.beachape"                  %% "enumeratum-circe"              % "1.6.1",
-      "com.chuusai"                   %% "shapeless"                     % "2.3.7",
-      "eu.timepit"                    %% "refined"                       % "0.9.25",
-      "org.slf4j"                      % "slf4j-simple"                  % "1.7.30"    % "test",
-      "org.scalatest"                 %% "scalatest"                     % "3.2.9"     % "test",
-      "io.circe"                      %% "circe-parser"                  % "0.13.0"    % "test",
-      "com.github.tomakehurst"         % "wiremock"                      % "2.27.2"    % "test",
-      "org.typelevel"                 %% "cats-effect-testing-scalatest" % "1.1.1"     % "test",
-      "org.http4s"                    %% "http4s-core"                   % "1.0.0-M21" % "test",
-      "org.http4s"                    %% "http4s-dsl"                    % "1.0.0-M21" % "test",
-      "org.http4s"                    %% "blaze-http"                    % "0.15.0"    % "test",
-      "org.http4s"                    %% "http4s-blaze-server"           % "1.0.0-M21" % "test",
-      "org.http4s"                    %% "http4s-circe"                  % "1.0.0-M21" % "test"
+      "io.circe"                      %% "circe-core"                    % circeV,
+      "io.circe"                      %% "circe-generic"                 % circeV,
+      "io.circe"                      %% "circe-generic-extras"          % circeV,
+      "io.circe"                      %% "circe-refined"                 % circeV,
+      "co.fs2"                        %% "fs2-core"                      % fs2V,
+      "org.typelevel"                 %% "cats-core"                     % catsCoreV,
+      "org.typelevel"                 %% "cats-effect"                   % catsEffectV,
+      "io.laserdisc"                  %% "log-effect-core"               % logEffectV,
+      "io.laserdisc"                  %% "log-effect-fs2"                % logEffectV,
+      "org.slf4j"                      % "slf4j-api"                     % slf4jV,
+      "com.softwaremill.sttp.client3" %% "core"                          % sttpV,
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % sttpV,
+      "com.softwaremill.sttp.client3" %% "circe"                         % sttpV,
+      "io.lemonlabs"                  %% "scala-uri"                     % scalaUriV,
+      "com.beachape"                  %% "enumeratum"                    % enumeratumV,
+      "com.beachape"                  %% "enumeratum-circe"              % enumeratumV,
+      "com.chuusai"                   %% "shapeless"                     % shapelessV,
+      "eu.timepit"                    %% "refined"                       % refinedV,
+      "io.circe"                      %% "circe-parser"                  % circeV             % "test",
+      "org.slf4j"                      % "slf4j-simple"                  % slf4jV             % "test",
+      "org.scalatest"                 %% "scalatest"                     % scalatestV         % "test",
+      "com.github.tomakehurst"         % "wiremock"                      % wiremockV          % "test",
+      "org.typelevel"                 %% "cats-effect-testing-scalatest" % catsEffectTestingV % "test",
+      "org.http4s"                    %% "http4s-core"                   % http4sV            % "test",
+      "org.http4s"                    %% "http4s-dsl"                    % http4sV            % "test",
+      "org.http4s"                    %% "http4s-blaze-server"           % http4sV            % "test",
+      "org.http4s"                    %% "http4s-circe"                  % http4sV            % "test",
+      "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test"
     )
   )
   .enablePlugins(AutomateHeaderPlugin)
