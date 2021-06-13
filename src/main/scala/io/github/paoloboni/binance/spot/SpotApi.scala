@@ -36,7 +36,7 @@ import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
-import io.lemonlabs.uri.Url
+import io.lemonlabs.uri.typesafe.dsl._
 import log.effect.LogWriter
 import sttp.client3.ResponseAsByteArray
 import sttp.client3.circe._
@@ -44,12 +44,14 @@ import sttp.client3.circe._
 import java.time.Instant
 
 final case class SpotApi[F[_]: WithClock: LogWriter](
-    config: BinanceConfig,
+    config: SpotConfig,
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
+
+  type Config = SpotConfig
 
   private val clock = implicitly[WithClock[F]].clock
 
@@ -60,13 +62,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
     * @return the stream of Kline objects
     */
   def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
-    val url = Url(
-      scheme = config.scheme,
-      host = config.host,
-      port = config.port,
-      path = "/api/v3/klines",
-      query = query.toQueryString
-    )
+    val url = (config.restBaseUrl / "api/v3/klines").withQueryString(query.toQueryString)
 
     for {
       response <- Stream.eval(
@@ -99,12 +95,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
     * @return A sequence of prices (one for each symbol)
     */
   def getPrices(): F[Seq[Price]] = {
-    val url = Url(
-      scheme = config.scheme,
-      host = config.host,
-      port = config.port,
-      path = "/api/v3/ticker/price"
-    )
+    val url = config.restBaseUrl / "api/v3/ticker/price"
     for {
       pricesOrError <- client.get[CirceResponse[List[Price]]](
         url = url,
@@ -125,13 +116,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
       val query       = TimeParams(config.recvWindow, currentMillis).toQueryString
       val signature   = HMAC.sha256(config.apiSecret, query.toString())
       val queryString = query.addParam("signature", signature)
-      Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/account",
-        query = queryString
-      )
+      (config.restBaseUrl / "api/v3/account").withQueryString(queryString)
     }
     for {
       currentTime <- clock.realTime
@@ -161,13 +146,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
         .addParam("newOrderRespType" -> SpotOrderCreateResponseType.FULL.entryName)
       val signature   = HMAC.sha256(config.apiSecret, query.toString())
       val queryString = query.addParam("signature" -> signature)
-      Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/order",
-        query = queryString
-      )
+      (config.restBaseUrl / "api/v3/order").withQueryString(queryString)
     }
 
     for {
@@ -196,12 +175,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
       val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
       val queryString = orderCancel.toQueryString.addParams(timeParams)
       val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      val url = Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/order"
-      )
+      val url         = config.restBaseUrl / "api/v3/order"
       (url, queryString.addParam("signature" -> signature))
     }
 
@@ -231,12 +205,7 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
       val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
       val queryString = orderCancel.toQueryString.addParams(timeParams)
       val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      val url = Url(
-        scheme = config.scheme,
-        host = config.host,
-        port = config.port,
-        path = "/api/v3/openOrders"
-      )
+      val url         = config.restBaseUrl / "api/v3/openOrders"
       (url, queryString.addParam("signature" -> signature))
     }
 
@@ -256,12 +225,14 @@ final case class SpotApi[F[_]: WithClock: LogWriter](
 }
 
 object SpotApi {
-  implicit def factory[F[_]: WithClock: LogWriter](implicit F: Async[F]): BinanceApi.Factory[F, SpotApi[F]] =
-    (config: BinanceConfig, client: HttpClient[F]) =>
+  implicit def factory[F[_]: WithClock: LogWriter](implicit
+      F: Async[F]
+  ): BinanceApi.Factory[F, SpotApi[F]] =
+    (config: SpotConfig, client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[spot.response.ExchangeInformation]](
-            url = config.fullInfoUrl,
+            url = config.exchangeInfoUrl,
             responseAs = asJson[spot.response.ExchangeInformation],
             limiters = List.empty
           )
