@@ -52,7 +52,6 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 This is a sample app to monitor the exchange prices (fetch every 5 seconds).
 
 ```scala
-import cats.effect.kernel.Clock
 import cats.effect.{ExitCode, IO, IOApp}
 import fs2.Stream
 import io.github.paoloboni.binance.BinanceClient
@@ -70,8 +69,7 @@ object PriceMonitor extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
-    implicit val log: LogWriter[IO]       = consoleLog[IO]
-    implicit val withClock: WithClock[IO] = WithClock.create(Clock[IO])
+    implicit val log: LogWriter[IO] = consoleLog[IO]
 
     BinanceClient
       .createSpotClient[IO](config)
