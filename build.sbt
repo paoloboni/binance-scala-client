@@ -32,6 +32,7 @@ lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.1.1"
 lazy val http4sV            = "1.0.0-M23"
 lazy val http4sBlazeV       = "0.15.1"
+lazy val mockitoScalaV      = "1.16.37"
 
 lazy val root = (project in file("."))
   .configs(EndToEndTest)
@@ -69,7 +70,8 @@ lazy val root = (project in file("."))
       "org.http4s"                    %% "http4s-dsl"                    % http4sV            % "test",
       "org.http4s"                    %% "http4s-blaze-server"           % http4sV            % "test",
       "org.http4s"                    %% "http4s-circe"                  % http4sV            % "test",
-      "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test"
+      "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test",
+      "org.mockito"                   %% "mockito-scala"                 % mockitoScalaV      % "test"
     )
   )
   .enablePlugins(AutomateHeaderPlugin)

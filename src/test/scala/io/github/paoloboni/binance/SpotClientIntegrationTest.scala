@@ -21,19 +21,19 @@
 
 package io.github.paoloboni.binance
 
-import cats.Applicative
-import cats.effect.{Clock, IO}
+import cats.effect.{Async, IO}
 import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotFill, SpotOrderCreateResponse}
+import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import io.github.paoloboni.integration._
-import io.github.paoloboni.{Env, TestClient, WithClock}
+import io.github.paoloboni.{Env, TestAsync, TestClient}
 import io.lemonlabs.uri.Url
+import org.mockito.{Mockito, MockitoSugar}
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -50,7 +50,8 @@ class SpotClientIntegrationTest
     with EitherValues
     with OptionValues
     with TestClient
-    with TypeCheckedTripleEquals {
+    with TypeCheckedTripleEquals
+    with MockitoSugar {
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>
@@ -425,7 +426,8 @@ class SpotClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val result = BinanceClient
       .createSpotClient[IO](config)
@@ -497,7 +499,8 @@ class SpotClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val result = BinanceClient
       .createSpotClient[IO](config)
@@ -574,7 +577,8 @@ class SpotClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val result = BinanceClient
       .createSpotClient[IO](config)
@@ -704,7 +708,8 @@ class SpotClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val withClock: WithClock[IO] = WithClock.create(stubTimer(fixedTime))
+    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
+    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
 
     val result = BinanceClient
       .createSpotClient[IO](config)
@@ -754,10 +759,4 @@ class SpotClientIntegrationTest
       apiKey = apiKey,
       apiSecret = apiSecret
     )
-
-  private def stubTimer(fixedTime: Long) = new Clock[IO] {
-    override def applicative: Applicative[IO]  = ???
-    override def monotonic: IO[FiniteDuration] = fixedTime.millis.pure[IO]
-    override def realTime: IO[FiniteDuration]  = fixedTime.millis.pure[IO]
-  }
 }
