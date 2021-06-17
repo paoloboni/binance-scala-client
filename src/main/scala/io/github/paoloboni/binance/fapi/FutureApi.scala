@@ -27,7 +27,7 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
-import io.github.paoloboni.binance.common.response.CirceResponse
+import io.github.paoloboni.binance.common.response.{CirceResponse, KLineStream}
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}

@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import eu.timepit.refined.refineMV
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.response.KLineStream
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._

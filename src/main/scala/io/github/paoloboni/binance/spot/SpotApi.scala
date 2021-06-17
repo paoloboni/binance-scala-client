@@ -27,7 +27,7 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
-import io.github.paoloboni.binance.common.response.CirceResponse
+import io.github.paoloboni.binance.common.response.{CirceResponse, KLineStream}
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
@@ -219,6 +219,15 @@ final case class SpotApi[F[_]: LogWriter](
         )
     } yield ()
   }
+
+  /** The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
+    *
+    * @param symbol the symbol
+    * @param interval the interval
+    * @return a stream of klines
+    */
+  def kLineStreams(symbol: String, interval: Interval): Stream[F, KLineStream] =
+    client.ws[KLineStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@kline_${interval.entryName}")
 }
 
 object SpotApi {

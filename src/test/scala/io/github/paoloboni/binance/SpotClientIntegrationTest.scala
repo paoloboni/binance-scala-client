@@ -21,23 +21,27 @@
 
 package io.github.paoloboni.binance
 
-import cats.effect.{Async, IO}
+import cats.effect.{Async, ExitCode, IO}
 import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
+import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.response.{KLineStream, KLineStreamPayload}
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotFill, SpotOrderCreateResponse}
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
 import io.lemonlabs.uri.Url
+import org.http4s.websocket.WebSocketFrame
 import org.mockito.{Mockito, MockitoSugar}
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
+import scodec.bits.ByteVector
 import shapeless.tag
 
 import java.time.Instant
@@ -52,6 +56,8 @@ class SpotClientIntegrationTest
     with TestClient
     with TypeCheckedTripleEquals
     with MockitoSugar {
+
+  private val wsPort = 9998
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>
@@ -726,6 +732,74 @@ class SpotClientIntegrationTest
 
   }
 
+  "it should stream KLines" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e": "kline",
+                              |  "E": 123456789,
+                              |  "s": "BTCUSDT",
+                              |  "k": {
+                              |    "t": 123400000,
+                              |    "T": 123460000,
+                              |    "s": "BTCUSDT",
+                              |    "i": "1m",
+                              |    "f": 100,
+                              |    "L": 200,
+                              |    "o": "0.0010",
+                              |    "c": "0.0020",
+                              |    "h": "0.0025",
+                              |    "l": "0.0015",
+                              |    "v": "1000",
+                              |    "n": 100,
+                              |    "x": false,
+                              |    "q": "1.0000",
+                              |    "V": "500",
+                              |    "Q": "0.500",
+                              |    "B": "123456"
+                              |  }
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only KLineStream(
+        e = "kline",
+        E = 123456789L,
+        s = "BTCUSDT",
+        k = KLineStreamPayload(
+          t = 123400000,
+          T = 123460000,
+          s = "BTCUSDT",
+          i = Interval.`1m`,
+          f = 100,
+          L = 200,
+          o = 0.0010,
+          c = 0.0020,
+          h = 0.0025,
+          l = 0.0015,
+          v = 1000,
+          n = 100,
+          x = false,
+          q = 1.0000,
+          V = 500,
+          Q = 0.500
+        )
+      )
+    }
+  }
+
   private def stubInfoEndpoint(server: WireMockServer) = {
     server.stubFor(
       get("/api/v3/exchangeInfo")
@@ -752,9 +826,15 @@ class SpotClientIntegrationTest
     )
   }
 
-  private def prepareConfiguration(server: WireMockServer, apiKey: String = "", apiSecret: String = "") =
+  private def prepareConfiguration(
+      server: WireMockServer,
+      apiKey: String = "",
+      apiSecret: String = "",
+      wsPort: Int = 80
+  ) =
     SpotConfig.Custom(
       restBaseUrl = Url.parse(s"http://localhost:${server.port}"),
+      wsBaseUrl = Url.parse(s"ws://localhost:$wsPort"),
       exchangeInfoUrl = Url.parse(s"http://localhost:${server.port}/api/v3/exchangeInfo"),
       apiKey = apiKey,
       apiSecret = apiSecret
