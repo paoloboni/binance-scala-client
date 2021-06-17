@@ -86,6 +86,7 @@ object FapiConfig {
 
 sealed trait SpotConfig extends BinanceConfig {
   def restBaseUrl: Url
+  def wsBaseUrl: Url
   def exchangeInfoUrl: Url
   def apiKey: String
   def apiSecret: String
@@ -108,10 +109,14 @@ object SpotConfig {
     lazy val restBaseUrl: Url =
       if (testnet) Url.parse("https://testnet.binance.vision")
       else Url.parse("https://api.binance.com")
+    lazy val wsBaseUrl: Url =
+      if (testnet) Url.parse("wss://testnet.binance.vision")
+      else Url.parse("wss://stream.binance.com:9443")
     lazy val exchangeInfoUrl: Url = restBaseUrl / "api/v3/exchangeInfo"
   }
   final case class Custom(
       restBaseUrl: Url,
+      wsBaseUrl: Url,
       exchangeInfoUrl: Url,
       apiKey: String,
       apiSecret: String,

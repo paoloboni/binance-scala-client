@@ -3,18 +3,21 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
+import io.github.paoloboni.binance.common.response.KLineStream
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotOrderCreateResponse}
 import io.github.paoloboni.binance.{BinanceClient, _}
+import org.scalatest.LoneElement
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
+import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
-class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env {
+class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with LoneElement {
 
   val config: SpotConfig = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
@@ -110,5 +113,13 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
         } yield "OK"
       )
       .asserting(_ shouldBe "OK")
+  }
+
+  "kLineStreams" in {
+    BinanceClient
+      .createSpotClient[IO](config)
+      .use(_.kLineStreams("btcusdt", Interval.`1m`).take(1).compile.toList)
+      .timeout(30.seconds)
+      .asserting(_.loneElement shouldBe a[KLineStream])
   }
 }

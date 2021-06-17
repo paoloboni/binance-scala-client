@@ -30,6 +30,7 @@ import eu.timepit.refined.refineMV
 import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.response.{KLineStream, KLineStreamPayload}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
@@ -55,6 +56,8 @@ class FapiClientIntegrationTest
     with OptionValues
     with TestClient
     with MockitoSugar {
+
+  private val wsPort = 9999
 
   "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
     withWiremockServer { server =>
@@ -712,8 +715,6 @@ class FapiClientIntegrationTest
     withWiremockServer { server =>
       stubInfoEndpoint(server)
 
-      val wsPort = 9999
-
       val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
 
       val toClient: Stream[IO, WebSocketFrame] = Stream(
@@ -757,8 +758,6 @@ class FapiClientIntegrationTest
   "it should stream KLines" in new Env {
     withWiremockServer { server =>
       stubInfoEndpoint(server)
-
-      val wsPort = 9999
 
       val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
 

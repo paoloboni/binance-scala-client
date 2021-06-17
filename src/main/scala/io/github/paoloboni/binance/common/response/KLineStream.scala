@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.response
+package io.github.paoloboni.binance.common.response
 
 import io.github.paoloboni.binance.common.Interval
 
