@@ -28,7 +28,7 @@ import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
 import io.github.paoloboni.binance.common.response.DiffDepthStream.decoder
-import io.github.paoloboni.binance.common.response.{CirceResponse, DiffDepthStream, KLineStream}
+import io.github.paoloboni.binance.common.response.{BookTicker, CirceResponse, DiffDepthStream, KLineStream}
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
@@ -237,6 +237,13 @@ final case class SpotApi[F[_]: LogWriter](
     */
   def diffDepthStream(symbol: String): Stream[F, DiffDepthStream] =
     client.ws[DiffDepthStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@depth")
+
+  /** Pushes any update to the best bid or ask's price or quantity in real-time for all symbols.
+    *
+    * @return a stream of best bid or ask's price or quantity for all symbols
+    */
+  def allBookTickersStream(): Stream[F, BookTicker] =
+    client.ws[BookTicker](config.wsBaseUrl / s"ws/!bookTicker")
 }
 
 object SpotApi {
