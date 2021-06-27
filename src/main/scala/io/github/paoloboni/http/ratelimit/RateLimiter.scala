@@ -37,19 +37,21 @@ object RateLimiter {
       bufferSize: Int,
       `type`: RateLimitType
   )(implicit F: Async[F]): F[RateLimiter[F]] = {
-    require(perSecond > 0 && bufferSize > 0)
-    val period: FiniteDuration = periodFrom(perSecond)
-    for {
-      queue <- Queue.bounded[F, F[Unit]](bufferSize)
-      _     <- Stream.awakeDelay(period).evalMap(_ => queue.take.flatten).repeat.compile.drain.start.void
-    } yield {
-      new RateLimiter[F] {
-        override def rateLimit[T](effect: => F[T]): F[T] = Deferred[F, T].flatMap { p =>
-          queue.offer(F.defer(effect.flatTap(p.complete).void)) *> p.get
+    F.unlessA(perSecond > 0 && bufferSize > 0)(
+      F.raiseError(new IllegalArgumentException("perSecond and buffer size must be strictly positive"))
+    ) *>
+      (for {
+        queue <- Queue.bounded[F, F[Unit]](bufferSize)
+        period = periodFrom(perSecond)
+        _ <- Stream.awakeDelay(period).evalMap(_ => queue.take.flatten).repeat.compile.drain.start.void
+      } yield {
+        new RateLimiter[F] {
+          override def rateLimit[T](effect: => F[T]): F[T] = Deferred[F, T].flatMap { p =>
+            queue.offer(F.defer(effect.flatTap(p.complete).void)) *> p.get
+          }
+          override val limitType: RateLimitType = `type`
         }
-        override val limitType: RateLimitType = `type`
-      }
-    }
+      })
   }
   private def periodFrom(perSecond: Double) =
     (1.second.toNanos.toDouble / perSecond).toInt.nanos
