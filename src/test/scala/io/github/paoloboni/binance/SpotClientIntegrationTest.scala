@@ -28,7 +28,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.{DiffDepthStream, KLineStream, KLineStreamPayload}
+import io.github.paoloboni.binance.common.response.{BookTicker, DiffDepthStream, KLineStream, KLineStreamPayload}
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotFill, SpotOrderCreateResponse}
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
@@ -843,8 +843,45 @@ class SpotClientIntegrationTest
         s = "BNBBTC",
         U = 157L,
         u = 160L,
-        b = Seq(DiffDepthStream.Bid(BigDecimal("0.0024"), BigDecimal(10))),
-        a = Seq(DiffDepthStream.Ask(BigDecimal("0.0026"), BigDecimal(100)))
+        b = Seq(DiffDepthStream.Bid(0.0024, 10)),
+        a = Seq(DiffDepthStream.Ask(0.0026, 100))
+      )
+    }
+  }
+
+  "it should stream Book Tickers" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "u":400900217,
+                              |  "s":"BNBUSDT",
+                              |  "b":"25.35190000",
+                              |  "B":"31.21000000",
+                              |  "a":"25.36520000",
+                              |  "A":"40.66000000"
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(_.allBookTickersStream().compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only BookTicker(
+        u = 400900217L,
+        s = "BNBUSDT",
+        b = 25.35190000,
+        B = 31.21000000,
+        a = 25.36520000,
+        A = 40.66000000
       )
     }
   }
