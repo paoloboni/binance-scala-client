@@ -19,17 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common
+package io.github.paoloboni.binance.common.response
 
-import io.circe
-import sttp.client3.ResponseException
+import io.circe.Decoder
 
-import scala.util.Try
+final case class Ask(price: BigDecimal, quantity: BigDecimal)
 
-package object response {
-  type CirceResponse[T] = Either[ResponseException[String, circe.Error], T]
-
-  object IsBigDecimal {
-    def unapply(arg: String): Option[BigDecimal] = Try(BigDecimal(arg)).toOption
-  }
+object Ask {
+  implicit val decoder: Decoder[Ask] =
+    Decoder.decodeList[String].emap {
+      case List(IsBigDecimal(price), IsBigDecimal(quantity)) =>
+        Right(Ask(price, quantity))
+      case other => Left("Invalid Ask: " + other)
+    }
 }

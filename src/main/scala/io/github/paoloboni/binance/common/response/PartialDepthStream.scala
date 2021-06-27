@@ -19,17 +19,25 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common
+package io.github.paoloboni.binance.common.response
 
-import io.circe
-import sttp.client3.ResponseException
+import enumeratum._
 
-import scala.util.Try
+import scala.collection.immutable
 
-package object response {
-  type CirceResponse[T] = Either[ResponseException[String, circe.Error], T]
+final case class PartialDepthStream(
+    lastUpdateId: Long, // Last update ID
+    bids: Seq[Bid],     // Bids to be updated
+    asks: Seq[Ask]      // Asks to be updated
+)
 
-  object IsBigDecimal {
-    def unapply(arg: String): Option[BigDecimal] = Try(BigDecimal(arg)).toOption
+object PartialDepthStream {
+  sealed trait Level extends EnumEntry
+  object Level extends Enum[Level] {
+    override val values: immutable.IndexedSeq[Level] = findValues
+
+    case object `5`  extends Level
+    case object `10` extends Level
+    case object `20` extends Level
   }
 }
