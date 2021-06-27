@@ -13,7 +13,6 @@ on:
       - 'src/**'
       - 'project/**'
       - 'build.sbt'
-      - '.github/workflows/ci.yml'
 jobs:
   test:
     strategy:
@@ -43,11 +42,6 @@ jobs:
       - name: Build and test
         run: sbt ++${{ matrix.scala }} scalafmtCheck test:scalafmtCheck scalafmtSbtCheck headerCheck test:headerCheck test
         shell: bash
-      - uses: Embraser01/update-git-branch-action@v1.0.0
-        name: Update staging
-        if: github.ref == 'refs/heads/master'
-        with:
-          branch: staging
   e2e:
     if: github.actor == 'paoloboni'
     needs: test
