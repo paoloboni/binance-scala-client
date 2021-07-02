@@ -20,7 +20,7 @@ lazy val circeV             = "0.14.1"
 lazy val fs2V               = "3.0.4"
 lazy val catsCoreV          = "2.6.1"
 lazy val catsEffectV        = "3.1.1"
-lazy val logEffectV         = "0.16.1"
+lazy val log4CatsV          = "2.1.1"
 lazy val slf4jV             = "1.7.31"
 lazy val sttpV              = "3.3.7"
 lazy val scalaUriV          = "3.5.0"
@@ -50,8 +50,8 @@ lazy val root = (project in file("."))
       "co.fs2"                        %% "fs2-core"                      % fs2V,
       "org.typelevel"                 %% "cats-core"                     % catsCoreV,
       "org.typelevel"                 %% "cats-effect"                   % catsEffectV,
-      "io.laserdisc"                  %% "log-effect-core"               % logEffectV,
-      "io.laserdisc"                  %% "log-effect-fs2"                % logEffectV,
+      "org.typelevel"                 %% "log4cats-core"                 % log4CatsV,
+      "org.typelevel"                 %% "log4cats-slf4j"                % log4CatsV,
       "org.slf4j"                      % "slf4j-api"                     % slf4jV,
       "com.softwaremill.sttp.client3" %% "core"                          % sttpV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % sttpV,

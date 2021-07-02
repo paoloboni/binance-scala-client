@@ -23,16 +23,16 @@ package io.github.paoloboni.http
 
 import cats.Applicative
 import cats.implicits._
-import log.effect.LogWriter
+import org.typelevel.log4cats.Logger
 
 package object ratelimit {
-  implicit class LimiterOps[F[_]: Applicative: LogWriter](limiter: RateLimiter[F]) {
+  implicit class LimiterOps[F[_]: Applicative: Logger](limiter: RateLimiter[F]) {
     def await[A](
         job: => F[A],
         weight: Int = 1
     ): F[A] =
       List
-        .fill(weight - 1)(LogWriter.debug("Waiting"))
+        .fill(weight - 1)(Logger[F].debug("Waiting"))
         .traverse(limiter.rateLimit(_)) *> limiter.rateLimit(job)
   }
 }

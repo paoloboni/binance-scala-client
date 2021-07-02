@@ -42,13 +42,13 @@ import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.lemonlabs.uri.typesafe.dsl._
-import log.effect.LogWriter
+import org.typelevel.log4cats.Logger
 import sttp.client3.ResponseAsByteArray
 import sttp.client3.circe._
 
 import java.time.Instant
 
-final case class SpotApi[F[_]: LogWriter](
+final case class SpotApi[F[_]: Logger](
     config: SpotConfig,
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
@@ -261,7 +261,7 @@ final case class SpotApi[F[_]: LogWriter](
 }
 
 object SpotApi {
-  implicit def factory[F[_]: LogWriter](implicit
+  implicit def factory[F[_]: Logger](implicit
       F: Async[F]
   ): BinanceApi.Factory[F, SpotApi[F]] =
     (config: SpotConfig, client: HttpClient[F]) =>

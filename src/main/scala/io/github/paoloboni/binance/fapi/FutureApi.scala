@@ -37,13 +37,13 @@ import io.github.paoloboni.http.QueryStringConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.lemonlabs.uri.QueryString
 import io.lemonlabs.uri.typesafe.dsl._
-import log.effect.LogWriter
+import org.typelevel.log4cats.Logger
 import sttp.client3.ResponseAsByteArray
 import sttp.client3.circe.{asJson, _}
 
 import java.time.Instant
 
-final case class FutureApi[F[_]: LogWriter](
+final case class FutureApi[F[_]: Logger](
     config: FapiConfig,
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
@@ -253,7 +253,7 @@ final case class FutureApi[F[_]: LogWriter](
 }
 
 object FutureApi {
-  implicit def factory[F[_]: LogWriter](implicit
+  implicit def factory[F[_]: Logger](implicit
       F: Async[F]
   ): BinanceApi.Factory[F, FutureApi[F]] =
     (config: FapiConfig, client: HttpClient[F]) =>
