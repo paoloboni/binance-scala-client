@@ -70,7 +70,12 @@ lazy val root = (project in file("."))
       "org.http4s"                    %% "http4s-circe"                  % http4sV            % "test",
       "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test",
       "org.mockito"                   %% "mockito-scala"                 % mockitoScalaV      % "test"
-    )
+    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 12)) =>
+        Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4")
+      case _ =>
+        Seq.empty
+    })
   )
   .enablePlugins(AutomateHeaderPlugin)
 
