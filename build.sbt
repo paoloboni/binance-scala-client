@@ -20,10 +20,9 @@ lazy val circeV             = "0.14.1"
 lazy val fs2V               = "3.0.4"
 lazy val catsCoreV          = "2.6.1"
 lazy val catsEffectV        = "3.1.1"
-lazy val logEffectV         = "0.16.1"
+lazy val log4CatsV          = "2.1.1"
 lazy val slf4jV             = "1.7.31"
 lazy val sttpV              = "3.3.7"
-lazy val scalaUriV          = "3.5.0"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
 lazy val refinedV           = "0.9.26"
@@ -50,13 +49,12 @@ lazy val root = (project in file("."))
       "co.fs2"                        %% "fs2-core"                      % fs2V,
       "org.typelevel"                 %% "cats-core"                     % catsCoreV,
       "org.typelevel"                 %% "cats-effect"                   % catsEffectV,
-      "io.laserdisc"                  %% "log-effect-core"               % logEffectV,
-      "io.laserdisc"                  %% "log-effect-fs2"                % logEffectV,
+      "org.typelevel"                 %% "log4cats-core"                 % log4CatsV,
+      "org.typelevel"                 %% "log4cats-slf4j"                % log4CatsV,
       "org.slf4j"                      % "slf4j-api"                     % slf4jV,
       "com.softwaremill.sttp.client3" %% "core"                          % sttpV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % sttpV,
       "com.softwaremill.sttp.client3" %% "circe"                         % sttpV,
-      "io.lemonlabs"                  %% "scala-uri"                     % scalaUriV,
       "com.beachape"                  %% "enumeratum"                    % enumeratumV,
       "com.beachape"                  %% "enumeratum-circe"              % enumeratumV,
       "com.chuusai"                   %% "shapeless"                     % shapelessV,
@@ -72,7 +70,12 @@ lazy val root = (project in file("."))
       "org.http4s"                    %% "http4s-circe"                  % http4sV            % "test",
       "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test",
       "org.mockito"                   %% "mockito-scala"                 % mockitoScalaV      % "test"
-    )
+    ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, 12)) =>
+        Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4")
+      case _ =>
+        Seq.empty
+    })
   )
   .enablePlugins(AutomateHeaderPlugin)
 

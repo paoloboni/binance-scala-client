@@ -28,20 +28,20 @@ import fs2.{Pipe, Stream}
 import io.circe.Decoder
 import io.circe.parser.decode
 import io.github.paoloboni.http.ratelimit._
-import io.lemonlabs.uri.Url
-import log.effect.LogWriter
+import org.typelevel.log4cats.Logger
 import sttp.capabilities
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.{BodySerializer, SttpBackend, _}
+import sttp.model.Uri
 import sttp.ws.WebSocketFrame
 
-sealed class HttpClient[F[_]: LogWriter](implicit
+sealed class HttpClient[F[_]: Logger](implicit
     F: Async[F],
     client: SttpBackend[F, Any with Fs2Streams[F] with capabilities.WebSockets]
 ) {
 
   def get[Response](
-      url: Url,
+      uri: Uri,
       responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
@@ -49,13 +49,13 @@ sealed class HttpClient[F[_]: LogWriter](implicit
   ): F[Response] = {
     val httpRequest = basicRequest
       .headers(headers)
-      .get(uri"${url.toStringPunycode}")
+      .get(uri)
       .response(responseAs)
     sendRequest(httpRequest, limiters, weight)
   }
 
   def post[Request: BodySerializer, Response](
-      url: Url,
+      uri: Uri,
       requestBody: Option[Request],
       responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
@@ -64,30 +64,28 @@ sealed class HttpClient[F[_]: LogWriter](implicit
   ): F[Response] = {
     val preparedRequest = basicRequest
       .headers(headers)
-      .post(uri"${url.toStringPunycode}")
+      .post(uri)
       .response(responseAs)
     val httpRequest = requestBody.fold(preparedRequest)(preparedRequest.body(_))
     sendRequest(httpRequest, limiters, weight)
   }
 
-  def delete[Request: BodySerializer, Response](
-      url: Url,
-      requestBody: Option[Request],
+  def delete[Response](
+      uri: Uri,
       responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
   ): F[Response] = {
-    val preparedRequest = basicRequest
+    val httpRequest = basicRequest
       .headers(headers)
-      .delete(uri"${url.toStringPunycode}")
+      .delete(uri)
       .response(responseAs)
-    val httpRequest = requestBody.fold(preparedRequest)(preparedRequest.body(_))
     sendRequest(httpRequest, limiters, weight)
   }
 
   def ws[DataFrame: Decoder](
-      url: Url
+      uri: Uri
   ): Stream[F, DataFrame] = {
     def webSocketFramePipe(
         q: Queue[F, Option[DataFrame]]
@@ -96,7 +94,7 @@ sealed class HttpClient[F[_]: LogWriter](implicit
         case WebSocketFrame.Text(payload, _, _) =>
           (decode[DataFrame](payload) match {
             case Left(ex) =>
-              LogWriter.error("Failed to decode frame: " + payload, ex) *> q.offer(None) // stopping
+              Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(None) // stopping
             case Right(decoded) =>
               q.offer(Some(decoded))
           }) *> F.pure(None)
@@ -107,15 +105,15 @@ sealed class HttpClient[F[_]: LogWriter](implicit
 
     Stream
       .eval(for {
-        _     <- LogWriter.debug("ws connecting to: " + url.toStringPunycode)
+        _     <- Logger[F].debug("ws connecting to: " + uri.toString())
         queue <- Queue.unbounded[F, Option[DataFrame]]
         _ <- F.start(
           basicRequest
-            .get(uri"${url.toStringPunycode}")
+            .get(uri)
             .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe(queue)))
             .send(client)
             .flatMap { response =>
-              LogWriter.debug("response: " + response)
+              Logger[F].debug("response: " + response)
             }
             .void
         )
@@ -129,7 +127,7 @@ sealed class HttpClient[F[_]: LogWriter](implicit
       weight: Int
   ): F[Response] = {
     val processRequest = F.defer(for {
-      _           <- LogWriter.debug(s"${request.method} ${request.uri}")
+      _           <- Logger[F].debug(s"${request.method} ${request.uri}")
       rawResponse <- request.send(client)
     } yield rawResponse.body)
     limiters.foldLeft(processRequest) { case (response, limiter) =>
@@ -139,7 +137,7 @@ sealed class HttpClient[F[_]: LogWriter](implicit
 }
 
 object HttpClient {
-  def make[F[_]: Async: LogWriter](implicit
+  def make[F[_]: Async: Logger](implicit
       client: SttpBackend[F, Any with Fs2Streams[F] with capabilities.WebSockets]
   ): F[HttpClient[F]] =
     new HttpClient[F]().pure[F]

@@ -36,7 +36,6 @@ import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
-import io.lemonlabs.uri.Url
 import org.http4s.websocket.WebSocketFrame
 import org.mockito.{Mockito, MockitoSugar}
 import org.scalatest.freespec.AnyFreeSpec
@@ -44,6 +43,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import scodec.bits.ByteVector
 import shapeless.tag
+import sttp.client3.UriContext
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -858,9 +858,9 @@ class FapiClientIntegrationTest
       wsPort: Int = 80
   ) =
     FapiConfig.Custom(
-      restBaseUrl = Url.parse(s"http://localhost:${server.port}"),
-      wsBaseUrl = Url.parse(s"ws://localhost:$wsPort"),
-      exchangeInfoUrl = Url.parse(s"http://localhost:${server.port}/fapi/v1/exchangeInfo"),
+      restBaseUrl = uri"http://localhost:${server.port}",
+      wsBaseUrl = uri"ws://localhost:$wsPort",
+      exchangeInfoUrl = uri"http://localhost:${server.port}/fapi/v1/exchangeInfo",
       apiKey = apiKey,
       apiSecret = apiSecret
     )

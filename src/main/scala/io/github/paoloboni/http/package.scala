@@ -21,16 +21,10 @@
 
 package io.github.paoloboni
 
-import cats.effect.IO
-import cats.effect.kernel.Temporal
-import cats.effect.unsafe.IORuntime
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
+import sttp.model.Uri
 
-trait Env {
-  implicit val runtime: IORuntime     = cats.effect.unsafe.IORuntime.global
-  implicit val temporal: Temporal[IO] = IO.asyncForIO
-  implicit val log: Logger[IO]        = Slf4jLogger.getLogger[IO]
+package object http {
+  implicit class UriOps(val uri: Uri) extends AnyVal {
+    def queryString: String = uri.toString().span(_ != '?')._2.tail
+  }
 }
-
-object Env extends Env

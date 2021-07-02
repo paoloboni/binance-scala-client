@@ -27,11 +27,10 @@ import io.circe.Json
 import io.github.paoloboni.binance.common.response.CirceResponse
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestClient}
-import io.lemonlabs.uri.Url
 import org.scalatest.EitherValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.client3.HttpError
+import sttp.client3.{HttpError, UriContext}
 import sttp.client3.circe._
 
 class HttpClientTest extends AnyFreeSpec with Matchers with EitherValues with Env with TestClient {
@@ -43,7 +42,7 @@ class HttpClientTest extends AnyFreeSpec with Matchers with EitherValues with En
       .use { implicit c =>
         for {
           httpClient <- HttpClient.make[IO]
-          url = Url.parse(s"http://localhost:${server.port().toString}/test")
+          url = uri"http://localhost:${server.port().toString}/test"
           responseOrError <- httpClient.get[CirceResponse[Json]](url, asJson[Json], limiters = List.empty)
           response        <- IO.fromEither(responseOrError)
         } yield response
