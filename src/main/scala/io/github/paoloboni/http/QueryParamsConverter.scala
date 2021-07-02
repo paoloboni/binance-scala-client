@@ -23,9 +23,9 @@ package io.github.paoloboni.http
 
 import enumeratum.{Enum, EnumEntry}
 import eu.timepit.refined.api.{Refined, Validate}
-import io.lemonlabs.uri.QueryString
 import shapeless.labelled.FieldType
 import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, Inl, Inr, LabelledGeneric, Lazy, Witness}
+import sttp.model.QueryParams
 
 import java.time.Instant
 
@@ -58,50 +58,50 @@ object StringConverter {
     (t: Refined[T, P]) => StringConverter[T].to(t.value)
 }
 
-trait QueryStringConverter[T] {
-  def to(t: T): QueryString
+trait QueryParamsConverter[T] {
+  def to(t: T): QueryParams
 }
 
-object QueryStringConverter {
-  def apply[T: QueryStringConverter]: QueryStringConverter[T] = implicitly
+object QueryParamsConverter {
+  def apply[T: QueryParamsConverter]: QueryParamsConverter[T] = implicitly
 
-  implicit val deriveHNil: QueryStringConverter[HNil] = (t: HNil) => QueryString.empty
+  implicit val deriveHNil: QueryParamsConverter[HNil] = (t: HNil) => QueryParams()
 
   implicit def deriveHCons[K <: Symbol, H, T <: HList](implicit
       witness: Witness.Aux[K],
       scv: Lazy[StringConverter[H]],
-      sct: QueryStringConverter[T]
-  ): QueryStringConverter[FieldType[K, H] :: T] = new QueryStringConverter[FieldType[K, H] :: T] {
+      sct: QueryParamsConverter[T]
+  ): QueryParamsConverter[FieldType[K, H] :: T] = new QueryParamsConverter[FieldType[K, H] :: T] {
 
     private val fieldName = witness.value.name
 
-    override def to(hList: FieldType[K, H] :: T): QueryString = hList match {
+    override def to(hList: FieldType[K, H] :: T): QueryParams = hList match {
       case h :: t =>
         val qt = sct.to(t)
         scv.value.to(h) match {
           case "" => qt
-          case _  => qt.addParam(fieldName, scv.value.to(h))
+          case _  => qt.param(fieldName, scv.value.to(h))
         }
     }
   }
 
-  implicit val deriveCNil: QueryStringConverter[CNil] = (t: CNil) => t.impossible
+  implicit val deriveCNil: QueryParamsConverter[CNil] = (t: CNil) => t.impossible
 
   implicit def deriveCoproduct[K <: Symbol, H, T <: Coproduct](implicit
       witness: Witness.Aux[K],
-      hInstance: Lazy[QueryStringConverter[H]],
-      tInstance: QueryStringConverter[T]
-  ): QueryStringConverter[FieldType[K, H] :+: T] = {
-    case Inl(head) => hInstance.value.to(head).addParam("type" -> witness.value.name)
+      hInstance: Lazy[QueryParamsConverter[H]],
+      tInstance: QueryParamsConverter[T]
+  ): QueryParamsConverter[FieldType[K, H] :+: T] = {
+    case Inl(head) => hInstance.value.to(head).param("type", witness.value.name)
     case Inr(tail) => tInstance.to(tail)
   }
 
   implicit def deriveClass[A, Repr](implicit
       gen: LabelledGeneric.Aux[A, Repr],
-      conv: Lazy[QueryStringConverter[Repr]]
-  ): QueryStringConverter[A] = (a: A) => conv.map(_.to(gen.to(a))).value
+      conv: Lazy[QueryParamsConverter[Repr]]
+  ): QueryParamsConverter[A] = (a: A) => conv.map(_.to(gen.to(a))).value
 
   implicit class Ops[T](val t: T) extends AnyVal {
-    def toQueryString(implicit converter: QueryStringConverter[T]): QueryString = converter.to(t)
+    def toQueryParams(implicit converter: QueryParamsConverter[T]): QueryParams = converter.to(t)
   }
 }

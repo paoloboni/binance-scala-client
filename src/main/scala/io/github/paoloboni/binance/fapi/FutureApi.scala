@@ -32,16 +32,16 @@ import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
 import io.github.paoloboni.encryption.HMAC
-import io.github.paoloboni.http.HttpClient
-import io.github.paoloboni.http.QueryStringConverter.Ops
+import io.github.paoloboni.http.{HttpClient, UriOps}
+import io.github.paoloboni.http.QueryParamsConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
-import io.lemonlabs.uri.QueryString
-import io.lemonlabs.uri.typesafe.dsl._
 import org.typelevel.log4cats.Logger
-import sttp.client3.ResponseAsByteArray
 import sttp.client3.circe.{asJson, _}
+import sttp.client3.{ResponseAsByteArray, UriContext}
+import sttp.model.QueryParams
 
 import java.time.Instant
+import scala.util.Try
 
 final case class FutureApi[F[_]: Logger](
     config: FapiConfig,
@@ -60,12 +60,13 @@ final case class FutureApi[F[_]: Logger](
     * @return the stream of Kline objects
     */
   def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
-    val url = (config.restBaseUrl / "fapi/v1/klines").withQueryString(query.toQueryString)
+    val params: QueryParams = query.toQueryParams
 
     for {
+      uri <- Stream.eval(F.fromEither(Try(uri"${config.restBaseUrl}/fapi/v1/klines").map(_.addParams(params)).toEither))
       response <- Stream.eval(
         client.get[CirceResponse[List[KLine]]](
-          url = url,
+          uri = uri,
           responseAs = asJson[List[KLine]],
           limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
         )
@@ -92,35 +93,38 @@ final case class FutureApi[F[_]: Logger](
     *
     * @return A sequence of prices (one for each symbol)
     */
-  def getPrices(): F[Seq[Price]] = {
-    val url = (config.restBaseUrl / "fapi/v1/ticker/price")
+  def getPrices(): F[Seq[Price]] =
     for {
+      uri <- F.fromEither(Try(uri"${config.restBaseUrl}/fapi/v1/ticker/price").toEither)
       pricesOrError <- client.get[CirceResponse[List[Price]]](
-        url = url,
+        uri = uri,
         responseAs = asJson[List[Price]],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         weight = 2
       )
       prices <- F.fromEither(pricesOrError)
     } yield prices
-  }
 
   /** Returns the latest price for a symbol.
     *
     * @param symbol The symbol
     * @return The price for the symbol
     */
-  def getPrice(symbol: String): F[Price] = {
-    val url = (config.restBaseUrl / "fapi/v1/ticker/price").withQueryString(QueryString.fromPairs("symbol" -> symbol))
-
-    client
-      .get[CirceResponse[Price]](
-        url = url,
-        responseAs = asJson[Price],
-        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+  def getPrice(symbol: String): F[Price] =
+    for {
+      uri <- F.fromEither(
+        Try(uri"${config.restBaseUrl}/fapi/v1/ticker/price")
+          .map(_.addParams(QueryParams.fromMap(Map("symbol" -> symbol))))
+          .toEither
       )
-      .flatMap(F.fromEither)
-  }
+      res <- client
+        .get[CirceResponse[Price]](
+          uri = uri,
+          responseAs = asJson[Price],
+          limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+        )
+      price <- F.fromEither(res)
+    } yield price
 
   /** Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
     *
@@ -129,19 +133,22 @@ final case class FutureApi[F[_]: Logger](
     */
   def changePositionMode(dualSidePosition: Boolean): F[Unit] = {
     def url(currentMillis: Long) = {
-      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = QueryString.fromPairs("dualSidePosition" -> dualSidePosition).addParams(timeParams)
-      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      (config.restBaseUrl / "fapi/v1/positionSide/dual").withQueryString(
-        queryString.addParam("signature" -> signature)
-      )
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query      = timeParams.param("dualSidePosition", dualSidePosition.toString)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/fapi/v1/positionSide/dual")
+          .map(_.addParams(query))
+          .toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
     }
 
     for {
       currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
       _ <- client
         .post[String, Array[Byte]](
-          url = url(currentTime.toMillis),
+          uri = uri,
           responseAs = ResponseAsByteArray,
           requestBody = None,
           limiters = rateLimiters,
@@ -159,17 +166,22 @@ final case class FutureApi[F[_]: Logger](
   def changeInitialLeverage(changeLeverage: ChangeInitialLeverageParams): F[ChangeInitialLeverageResponse] = {
 
     def url(currentMillis: Long) = {
-      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = changeLeverage.toQueryString.addParams(timeParams)
-      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      (config.restBaseUrl / "fapi/v1/leverage").withQueryString(queryString.addParam("signature" -> signature))
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query      = changeLeverage.toQueryParams.param(timeParams.toMap)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/fapi/v1/leverage")
+          .map(_.addParams(query))
+          .toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
     }
 
     for {
       currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
       responseOrError <- client
         .post[String, CirceResponse[ChangeInitialLeverageResponse]](
-          url = url(currentTime.toMillis),
+          uri = uri,
           responseAs = asJson[ChangeInitialLeverageResponse],
           requestBody = None,
           limiters = rateLimiters,
@@ -185,15 +197,20 @@ final case class FutureApi[F[_]: Logger](
     */
   def getBalance(): F[FutureAccountInfoResponse] = {
     def url(currentMillis: Long) = {
-      val query       = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val signature   = HMAC.sha256(config.apiSecret, query.toString())
-      val queryString = query.addParam("signature", signature)
-      (config.restBaseUrl / "fapi/v1/account").withQueryString(queryString)
+      val query = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/fapi/v1/account")
+          .map(_.addParams(query))
+          .toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
+
     }
     for {
       currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
       balanceOrError <- client.get[CirceResponse[FutureAccountInfoResponse]](
-        url = url(currentTime.toMillis),
+        uri = uri,
         responseAs = asJson[FutureAccountInfoResponse],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
@@ -212,19 +229,24 @@ final case class FutureApi[F[_]: Logger](
   def createOrder(orderCreate: FutureOrderCreateParams): F[FutureOrderCreateResponse] = {
 
     def url(currentMillis: Long) = {
-      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = orderCreate.toQueryString
-        .addParams(timeParams)
-        .addParam("newOrderRespType" -> FutureOrderCreateResponseType.RESULT.entryName)
-      val signature = HMAC.sha256(config.apiSecret, queryString.toString())
-      (config.restBaseUrl / "fapi/v1/order").withQueryString(queryString.addParam("signature" -> signature))
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query = orderCreate.toQueryParams
+        .param(timeParams.toMap)
+        .param("newOrderRespType", FutureOrderCreateResponseType.RESULT.entryName)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/fapi/v1/order")
+          .map(_.addParams(query))
+          .toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
     }
 
     for {
       currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
       responseOrError <- client
         .post[String, CirceResponse[FutureOrderCreateResponse]](
-          url = url(currentTime.toMillis),
+          uri = uri,
           responseAs = asJson[FutureOrderCreateResponse],
           requestBody = None,
           limiters = rateLimiters,
@@ -240,7 +262,10 @@ final case class FutureApi[F[_]: Logger](
     * @return a stream of aggregate trade events
     */
   def aggregateTradeStreams(symbol: String): Stream[F, AggregateTradeStream] =
-    client.ws[AggregateTradeStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@aggTrade")
+    for {
+      uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@aggTrade").toEither))
+      stream <- client.ws[AggregateTradeStream](uri)
+    } yield stream
 
   /** The Kline/Candlestick Stream push updates to the current klines/candlestick every 250 milliseconds (if existing).
     *
@@ -249,7 +274,12 @@ final case class FutureApi[F[_]: Logger](
     * @return a stream of klines
     */
   def kLineStreams(symbol: String, interval: Interval): Stream[F, KLineStream] =
-    client.ws[KLineStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@kline_${interval.entryName}")
+    for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@kline_${interval.entryName}").toEither)
+      )
+      stream <- client.ws[KLineStream](uri)
+    } yield stream
 }
 
 object FutureApi {
@@ -260,7 +290,7 @@ object FutureApi {
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[fapi.response.ExchangeInformation]](
-            url = config.exchangeInfoUrl,
+            uri = config.exchangeInfoUrl,
             responseAs = asJson[fapi.response.ExchangeInformation],
             limiters = List.empty
           )

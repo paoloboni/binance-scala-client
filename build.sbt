@@ -23,7 +23,6 @@ lazy val catsEffectV        = "3.1.1"
 lazy val log4CatsV          = "2.1.1"
 lazy val slf4jV             = "1.7.31"
 lazy val sttpV              = "3.3.7"
-lazy val scalaUriV          = "3.5.0"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
 lazy val refinedV           = "0.9.26"
@@ -56,7 +55,6 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.client3" %% "core"                          % sttpV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % sttpV,
       "com.softwaremill.sttp.client3" %% "circe"                         % sttpV,
-      "io.lemonlabs"                  %% "scala-uri"                     % scalaUriV,
       "com.beachape"                  %% "enumeratum"                    % enumeratumV,
       "com.beachape"                  %% "enumeratum-circe"              % enumeratumV,
       "com.chuusai"                   %% "shapeless"                     % shapelessV,

@@ -28,11 +28,11 @@ import fs2.{Pipe, Stream}
 import io.circe.Decoder
 import io.circe.parser.decode
 import io.github.paoloboni.http.ratelimit._
-import io.lemonlabs.uri.Url
 import org.typelevel.log4cats.Logger
 import sttp.capabilities
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.{BodySerializer, SttpBackend, _}
+import sttp.model.Uri
 import sttp.ws.WebSocketFrame
 
 sealed class HttpClient[F[_]: Logger](implicit
@@ -41,7 +41,7 @@ sealed class HttpClient[F[_]: Logger](implicit
 ) {
 
   def get[Response](
-      url: Url,
+      uri: Uri,
       responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
@@ -49,13 +49,13 @@ sealed class HttpClient[F[_]: Logger](implicit
   ): F[Response] = {
     val httpRequest = basicRequest
       .headers(headers)
-      .get(uri"${url.toStringPunycode}")
+      .get(uri)
       .response(responseAs)
     sendRequest(httpRequest, limiters, weight)
   }
 
   def post[Request: BodySerializer, Response](
-      url: Url,
+      uri: Uri,
       requestBody: Option[Request],
       responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
@@ -64,30 +64,28 @@ sealed class HttpClient[F[_]: Logger](implicit
   ): F[Response] = {
     val preparedRequest = basicRequest
       .headers(headers)
-      .post(uri"${url.toStringPunycode}")
+      .post(uri)
       .response(responseAs)
     val httpRequest = requestBody.fold(preparedRequest)(preparedRequest.body(_))
     sendRequest(httpRequest, limiters, weight)
   }
 
-  def delete[Request: BodySerializer, Response](
-      url: Url,
-      requestBody: Option[Request],
+  def delete[Response](
+      uri: Uri,
       responseAs: ResponseAs[Response, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
   ): F[Response] = {
-    val preparedRequest = basicRequest
+    val httpRequest = basicRequest
       .headers(headers)
-      .delete(uri"${url.toStringPunycode}")
+      .delete(uri)
       .response(responseAs)
-    val httpRequest = requestBody.fold(preparedRequest)(preparedRequest.body(_))
     sendRequest(httpRequest, limiters, weight)
   }
 
   def ws[DataFrame: Decoder](
-      url: Url
+      uri: Uri
   ): Stream[F, DataFrame] = {
     def webSocketFramePipe(
         q: Queue[F, Option[DataFrame]]
@@ -107,11 +105,11 @@ sealed class HttpClient[F[_]: Logger](implicit
 
     Stream
       .eval(for {
-        _     <- Logger[F].debug("ws connecting to: " + url.toStringPunycode)
+        _     <- Logger[F].debug("ws connecting to: " + uri.toString())
         queue <- Queue.unbounded[F, Option[DataFrame]]
         _ <- F.start(
           basicRequest
-            .get(uri"${url.toStringPunycode}")
+            .get(uri)
             .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe(queue)))
             .send(client)
             .flatMap { response =>

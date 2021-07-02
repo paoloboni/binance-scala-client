@@ -27,26 +27,20 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
-import io.github.paoloboni.binance.common.response.{
-  BookTicker,
-  CirceResponse,
-  DiffDepthStream,
-  KLineStream,
-  PartialDepthStream
-}
+import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
-import io.github.paoloboni.http.HttpClient
-import io.github.paoloboni.http.QueryStringConverter.Ops
+import io.github.paoloboni.http.QueryParamsConverter.Ops
 import io.github.paoloboni.http.ratelimit.RateLimiter
-import io.lemonlabs.uri.typesafe.dsl._
+import io.github.paoloboni.http.{HttpClient, UriOps}
 import org.typelevel.log4cats.Logger
-import sttp.client3.ResponseAsByteArray
-import sttp.client3.circe._
+import sttp.client3.UriContext
+import sttp.client3.circe.{asJson, _}
 
 import java.time.Instant
+import scala.util.Try
 
 final case class SpotApi[F[_]: Logger](
     config: SpotConfig,
@@ -64,13 +58,14 @@ final case class SpotApi[F[_]: Logger](
     * @param query an `KLines` object containing the query parameters
     * @return the stream of Kline objects
     */
-  def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
-    val url = (config.restBaseUrl / "api/v3/klines").withQueryString(query.toQueryString)
-
+  def getKLines(query: common.parameters.KLines): Stream[F, KLine] =
     for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.restBaseUrl}/api/v3/klines").map(_.addParams(query.toQueryParams)).toEither)
+      )
       response <- Stream.eval(
         client.get[CirceResponse[List[KLine]]](
-          url = url,
+          uri = uri,
           responseAs = asJson[List[KLine]],
           limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
         )
@@ -91,17 +86,16 @@ final case class SpotApi[F[_]: Logger](
         case list => Stream.emits(list)
       }
     } yield klines
-  }
 
   /** Returns a snapshot of the prices at the time the query is executed.
     *
     * @return A sequence of prices (one for each symbol)
     */
   def getPrices(): F[Seq[Price]] = {
-    val url = config.restBaseUrl / "api/v3/ticker/price"
     for {
+      uri <- F.fromEither(Try(uri"${config.restBaseUrl}/api/v3/ticker/price").toEither)
       pricesOrError <- client.get[CirceResponse[List[Price]]](
-        url = url,
+        uri = uri,
         responseAs = asJson[List[Price]],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         weight = 2
@@ -116,15 +110,17 @@ final case class SpotApi[F[_]: Logger](
     */
   def getBalance(): F[SpotAccountInfoResponse] = {
     def url(currentMillis: Long) = {
-      val query       = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val signature   = HMAC.sha256(config.apiSecret, query.toString())
-      val queryString = query.addParam("signature", signature)
-      (config.restBaseUrl / "api/v3/account").withQueryString(queryString)
+      val query = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/api/v3/account").map(_.addParams(query)).toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
     }
     for {
       currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
       responseOrError <- client.get[CirceResponse[SpotAccountInfoResponse]](
-        url = url(currentTime.toMillis),
+        uri = uri,
         responseAs = asJson[SpotAccountInfoResponse],
         limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
         headers = Map("X-MBX-APIKEY" -> config.apiKey),
@@ -143,20 +139,22 @@ final case class SpotApi[F[_]: Logger](
   def createOrder(orderCreate: SpotOrderCreateParams): F[SpotOrderCreateResponse] = {
 
     def url(currentMillis: Long) = {
-      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val query = orderCreate.toQueryString
-        .addParams(timeParams)
-        .addParam("newOrderRespType" -> SpotOrderCreateResponseType.FULL.entryName)
-      val signature   = HMAC.sha256(config.apiSecret, query.toString())
-      val queryString = query.addParam("signature" -> signature)
-      (config.restBaseUrl / "api/v3/order").withQueryString(queryString)
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query = orderCreate.toQueryParams
+        .param(timeParams.toMap)
+        .param("newOrderRespType", SpotOrderCreateResponseType.FULL.entryName)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/api/v3/order").map(_.addParams(query)).toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
     }
 
     for {
       currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
       responseOrError <- client
         .post[String, CirceResponse[SpotOrderCreateResponse]](
-          url = url(currentTime.toMillis),
+          uri = uri,
           responseAs = asJson[SpotOrderCreateResponse],
           requestBody = None,
           limiters = rateLimiters,
@@ -174,25 +172,26 @@ final case class SpotApi[F[_]: Logger](
     */
   def cancelOrder(orderCancel: SpotOrderCancelParams): F[Unit] = {
 
-    def urlAndBody(currentMillis: Long) = {
-      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = orderCancel.toQueryString.addParams(timeParams)
-      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      val url         = config.restBaseUrl / "api/v3/order"
-      (url, queryString.addParam("signature" -> signature))
+    def url(currentMillis: Long) = {
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query      = orderCancel.toQueryParams.param(timeParams.toMap)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/api/v3/order").map(_.addParams(query)).toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
     }
 
     for {
       currentTime <- F.realTime
-      (url, requestBody) = urlAndBody(currentTime.toMillis)
-      _ <- client
-        .delete[String, CirceResponse[io.circe.Json]](
-          url = url,
+      uri         <- F.fromEither(url(currentTime.toMillis))
+      res <- client
+        .delete[CirceResponse[io.circe.Json]](
+          uri = uri,
           responseAs = asJson[io.circe.Json],
-          requestBody = Some(requestBody.toString()),
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
+      _ <- F.fromEither(res)
     } yield ()
   }
 
@@ -204,25 +203,28 @@ final case class SpotApi[F[_]: Logger](
     */
   def cancelAllOrders(orderCancel: SpotOrderCancelAllParams): F[Unit] = {
 
-    def urlAndBody(currentMillis: Long) = {
-      val timeParams  = TimeParams(config.recvWindow, currentMillis).toQueryString
-      val queryString = orderCancel.toQueryString.addParams(timeParams)
-      val signature   = HMAC.sha256(config.apiSecret, queryString.toString())
-      val url         = config.restBaseUrl / "api/v3/openOrders"
-      (url, queryString.addParam("signature" -> signature))
+    def url(currentMillis: Long) = {
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query      = orderCancel.toQueryParams.param(timeParams.toMap)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/api/v3/openOrders")
+          .map(_.addParams(query))
+          .toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
     }
 
     for {
       currentTime <- F.realTime
-      (url, requestBody) = urlAndBody(currentTime.toMillis)
-      _ <- client
-        .delete[String, Array[Byte]](
-          url = url,
-          responseAs = ResponseAsByteArray,
-          requestBody = Some(requestBody.toString()),
+      uri         <- F.fromEither(url(currentTime.toMillis))
+      res <- client
+        .delete[CirceResponse[io.circe.Json]](
+          uri = uri,
+          responseAs = asJson[io.circe.Json],
           limiters = rateLimiters,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
+      _ <- F.fromEither(res)
     } yield ()
   }
 
@@ -233,7 +235,12 @@ final case class SpotApi[F[_]: Logger](
     * @return a stream of klines
     */
   def kLineStreams(symbol: String, interval: Interval): Stream[F, KLineStream] =
-    client.ws[KLineStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@kline_${interval.entryName}")
+    for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@kline_${interval.entryName}").toEither)
+      )
+      stream <- client.ws[KLineStream](uri)
+    } yield stream
 
   /** Order book price and quantity depth updates used to locally manage an order book.
     *
@@ -241,7 +248,10 @@ final case class SpotApi[F[_]: Logger](
     * @return a stream of order book price and quantity depth updates
     */
   def diffDepthStream(symbol: String): Stream[F, DiffDepthStream] =
-    client.ws[DiffDepthStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@depth")
+    for {
+      uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@depth").toEither))
+      stream <- client.ws[DiffDepthStream](uri)
+    } yield stream
 
   /** Top bids and asks
     *
@@ -250,14 +260,22 @@ final case class SpotApi[F[_]: Logger](
     * @return a stream of top bids and asks
     */
   def partialBookDepthStream(symbol: String, level: PartialDepthStream.Level): Stream[F, PartialDepthStream] =
-    client.ws[PartialDepthStream](config.wsBaseUrl / s"ws/${symbol.toLowerCase}@depth${level.entryName}")
+    for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@depth${level.entryName}").toEither)
+      )
+      stream <- client.ws[PartialDepthStream](uri)
+    } yield stream
 
   /** Pushes any update to the best bid or ask's price or quantity in real-time for all symbols.
     *
     * @return a stream of best bid or ask's price or quantity for all symbols
     */
   def allBookTickersStream(): Stream[F, BookTicker] =
-    client.ws[BookTicker](config.wsBaseUrl / s"ws/!bookTicker")
+    for {
+      uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/ws/!bookTicker").toEither))
+      stream <- client.ws[BookTicker](uri)
+    } yield stream
 }
 
 object SpotApi {
@@ -268,7 +286,7 @@ object SpotApi {
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[spot.response.ExchangeInformation]](
-            url = config.exchangeInfoUrl,
+            uri = config.exchangeInfoUrl,
             responseAs = asJson[spot.response.ExchangeInformation],
             limiters = List.empty
           )

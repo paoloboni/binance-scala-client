@@ -24,9 +24,9 @@ package io.github.paoloboni.binance.common
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.{numeric, refineMV}
 import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
-import io.lemonlabs.uri.Url
 import shapeless.{Witness => W}
-import io.lemonlabs.uri.typesafe.dsl._
+import sttp.client3.UriContext
+import sttp.model.Uri
 
 import scala.concurrent.duration._
 
@@ -41,9 +41,9 @@ object BinanceConfig {
 }
 
 sealed trait FapiConfig extends BinanceConfig {
-  def restBaseUrl: Url
-  def wsBaseUrl: Url
-  def exchangeInfoUrl: Url
+  def restBaseUrl: Uri
+  def wsBaseUrl: Uri
+  def exchangeInfoUrl: Uri
   def apiKey: String
   def apiSecret: String
   def recvWindow: RecvWindow
@@ -62,18 +62,18 @@ object FapiConfig {
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
   ) extends FapiConfig {
-    lazy val restBaseUrl: Url =
-      if (testnet) Url.parse("https://testnet.binancefuture.com")
-      else Url.parse("https://fapi.binance.com")
-    lazy val wsBaseUrl: Url =
-      if (testnet) Url.parse("wss://stream.binancefuture.com")
-      else Url.parse("wss://fstream.binance.com")
-    lazy val exchangeInfoUrl: Url = restBaseUrl / "fapi/v1/exchangeInfo"
+    lazy val restBaseUrl: Uri =
+      if (testnet) uri"https://testnet.binancefuture.com"
+      else uri"https://fapi.binance.com"
+    lazy val wsBaseUrl: Uri =
+      if (testnet) uri"wss://stream.binancefuture.com"
+      else uri"wss://fstream.binance.com"
+    lazy val exchangeInfoUrl: Uri = uri"$restBaseUrl/fapi/v1/exchangeInfo"
   }
   final case class Custom(
-      restBaseUrl: Url,
-      wsBaseUrl: Url,
-      exchangeInfoUrl: Url,
+      restBaseUrl: Uri,
+      wsBaseUrl: Uri,
+      exchangeInfoUrl: Uri,
       apiKey: String,
       apiSecret: String,
       recvWindow: RecvWindow = refineMV(5000),
@@ -85,9 +85,9 @@ object FapiConfig {
 }
 
 sealed trait SpotConfig extends BinanceConfig {
-  def restBaseUrl: Url
-  def wsBaseUrl: Url
-  def exchangeInfoUrl: Url
+  def restBaseUrl: Uri
+  def wsBaseUrl: Uri
+  def exchangeInfoUrl: Uri
   def apiKey: String
   def apiSecret: String
   def recvWindow: RecvWindow
@@ -106,18 +106,18 @@ object SpotConfig {
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
   ) extends SpotConfig {
-    lazy val restBaseUrl: Url =
-      if (testnet) Url.parse("https://testnet.binance.vision")
-      else Url.parse("https://api.binance.com")
-    lazy val wsBaseUrl: Url =
-      if (testnet) Url.parse("wss://testnet.binance.vision")
-      else Url.parse("wss://stream.binance.com:9443")
-    lazy val exchangeInfoUrl: Url = restBaseUrl / "api/v3/exchangeInfo"
+    lazy val restBaseUrl: Uri =
+      if (testnet) uri"https://testnet.binance.vision"
+      else uri"https://api.binance.com"
+    lazy val wsBaseUrl: Uri =
+      if (testnet) uri"wss://testnet.binance.vision"
+      else uri"wss://stream.binance.com:9443"
+    lazy val exchangeInfoUrl: Uri = uri"$restBaseUrl/api/v3/exchangeInfo"
   }
   final case class Custom(
-      restBaseUrl: Url,
-      wsBaseUrl: Url,
-      exchangeInfoUrl: Url,
+      restBaseUrl: Uri,
+      wsBaseUrl: Uri,
+      exchangeInfoUrl: Uri,
       apiKey: String,
       apiSecret: String,
       recvWindow: RecvWindow = refineMV(5000),
