@@ -21,13 +21,13 @@
 
 package io.github.paoloboni.http
 
-import io.github.paoloboni.http.QueryStringConverter.Ops
-import io.lemonlabs.uri.QueryString
+import io.github.paoloboni.http.QueryParamsConverter.Ops
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
+import sttp.client3.UriContext
 
-class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeCheckedTripleEquals {
+class QueryParamsConverterTest extends AnyFreeSpec with Matchers with TypeCheckedTripleEquals {
 
   "it should convert a query string to an object" in {
 
@@ -35,9 +35,9 @@ class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeChecke
 
     val obj = TestClass(1, 0.1, 5000, 1499827319559L)
 
-    val queryString = QueryString.parse("quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559")
+    val params = uri"http://whatever.com?quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559".paramsMap
 
-    obj.toQueryString.paramMap should ===(queryString.paramMap)
+    obj.toQueryParams.toMap should ===(params)
   }
 
   "it should convert sum types" in {
@@ -49,10 +49,10 @@ class QueryStringConverterTest extends AnyFreeSpec with Matchers with TypeChecke
     val obj1: Test = Test1(1, 0.1)
     val obj2: Test = Test2(5000, 1499827319559L)
 
-    val q1 = QueryString.parse("quantity=1&price=0.1&type=Test1")
-    val q2 = QueryString.parse("recvWindow=5000&timestamp=1499827319559&type=Test2")
+    val q1 = uri"http://whatever.com?quantity=1&price=0.1&type=Test1".paramsMap
+    val q2 = uri"http://whatever.com?recvWindow=5000&timestamp=1499827319559&type=Test2".paramsMap
 
-    obj1.toQueryString.paramMap should ===(q1.paramMap)
-    obj2.toQueryString.paramMap should ===(q2.paramMap)
+    obj1.toQueryParams.toMap should ===(q1)
+    obj2.toQueryParams.toMap should ===(q2)
   }
 }

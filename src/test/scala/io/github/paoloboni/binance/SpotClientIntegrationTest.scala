@@ -34,7 +34,6 @@ import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotF
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
-import io.lemonlabs.uri.Url
 import org.http4s.websocket.WebSocketFrame
 import org.mockito.{Mockito, MockitoSugar}
 import org.scalactic.TypeCheckedTripleEquals
@@ -43,6 +42,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues}
 import scodec.bits.ByteVector
 import shapeless.tag
+import sttp.client3.UriContext
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -555,9 +555,9 @@ class SpotClientIntegrationTest
     server.stubFor(
       delete(urlPathMatching("/api/v3/order"))
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withRequestBody(containing("recvWindow=5000"))
-        .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=31419491a08b991dab525300c890f2488e039199eb55c1e6a5c5367b9fedc5b0"))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("31419491a08b991dab525300c890f2488e039199eb55c1e6a5c5367b9fedc5b0"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -613,9 +613,9 @@ class SpotClientIntegrationTest
     server.stubFor(
       delete(urlPathMatching("/api/v3/openOrders"))
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withRequestBody(containing("recvWindow=5000"))
-        .withRequestBody(containing(s"timestamp=${fixedTime.toString}"))
-        .withRequestBody(containing("signature=5634d2bdfb9b723e6df85c1551c13acb90b0836c218bc8a08c597eba3f1563e7"))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("5634d2bdfb9b723e6df85c1551c13acb90b0836c218bc8a08c597eba3f1563e7"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -960,9 +960,9 @@ class SpotClientIntegrationTest
       wsPort: Int = 80
   ) =
     SpotConfig.Custom(
-      restBaseUrl = Url.parse(s"http://localhost:${server.port}"),
-      wsBaseUrl = Url.parse(s"ws://localhost:$wsPort"),
-      exchangeInfoUrl = Url.parse(s"http://localhost:${server.port}/api/v3/exchangeInfo"),
+      restBaseUrl = uri"http://localhost:${server.port}",
+      wsBaseUrl = uri"ws://localhost:$wsPort",
+      exchangeInfoUrl = uri"http://localhost:${server.port}/api/v3/exchangeInfo",
       apiKey = apiKey,
       apiSecret = apiSecret
     )
