@@ -62,8 +62,8 @@ import cats.effect.{ExitCode, IO, IOApp}
 import fs2.Stream
 import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.SpotConfig
-import log.effect.LogWriter
-import log.effect.fs2.SyncLogWriter.consoleLog
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration.DurationInt
 
@@ -75,7 +75,7 @@ object PriceMonitor extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
-    implicit val log: LogWriter[IO] = consoleLog[IO]
+    implicit def log: Logger[IO] = Slf4jLogger.getLogger[IO]
 
     BinanceClient
       .createSpotClient[IO](config)
@@ -90,7 +90,7 @@ object PriceMonitor extends IOApp {
       }
       .redeem(
         { t =>
-          log.error("Something went wrong", t)
+          log.error(t)("Something went wrong")
           ExitCode(1)
         },
         _ => ExitCode.Success
