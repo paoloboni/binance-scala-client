@@ -17,12 +17,12 @@ lazy val e2eSettings =
     )
 
 lazy val circeV             = "0.14.1"
-lazy val fs2V               = "3.0.4"
+lazy val fs2V               = "3.0.5"
 lazy val catsCoreV          = "2.6.1"
 lazy val catsEffectV        = "3.1.1"
 lazy val log4CatsV          = "2.1.1"
 lazy val slf4jV             = "1.7.31"
-lazy val sttpV              = "3.3.7"
+lazy val sttpV              = "3.3.9"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
 lazy val refinedV           = "0.9.26"
