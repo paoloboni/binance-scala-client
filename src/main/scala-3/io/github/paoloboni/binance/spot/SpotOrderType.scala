@@ -19,16 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.spot
 
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi._
-import enumeratum.{CirceEnum, Enum, EnumEntry}
-
-sealed trait FutureWorkingType extends EnumEntry
-object FutureWorkingType extends Enum[FutureWorkingType] with CirceEnum[FutureWorkingType] {
-  val values = findValues
-
-  case object MARK_PRICE     extends FutureWorkingType
-  case object CONTRACT_PRICE extends FutureWorkingType
-}
+enum SpotOrderType:
+  case LIMIT, MARKET, STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, TAKE_PROFIT_LIMIT, LIMIT_MAKER

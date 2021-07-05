@@ -21,47 +21,50 @@
 
 package io.github.paoloboni.binance.common
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.{numeric, refineMV}
-import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
-import shapeless.{Witness => W}
+import io.github.paoloboni.binance.BinanceApi
+import io.github.paoloboni.binance.fapi.FutureApi
+import io.github.paoloboni.binance.spot.SpotApi
 import sttp.client3.UriContext
 import sttp.model.Uri
 
 import scala.concurrent.duration._
 
-sealed trait BinanceConfig {
+sealed trait BinanceConfig[F[_]] {
+  type API <: BinanceApi[F]
   def responseHeaderTimeout: Duration
   def maxTotalConnections: Int
   def rateLimiterBufferSize: Int
 }
 
 object BinanceConfig {
-  type RecvWindow = Int Refined numeric.Interval.Closed[W.`0`.T, W.`60000`.T]
+  type Aux[F[_], API0] = BinanceConfig[F] { type API = API0 }
 }
 
-sealed trait FapiConfig extends BinanceConfig {
+sealed trait FapiConfig[F[_]] extends BinanceConfig[F] {
+
+  override type API = FutureApi[F]
+
   def restBaseUrl: Uri
   def wsBaseUrl: Uri
   def exchangeInfoUrl: Uri
   def apiKey: String
   def apiSecret: String
-  def recvWindow: RecvWindow
+  def recvWindow: Int
   def responseHeaderTimeout: Duration
   def maxTotalConnections: Int
   def rateLimiterBufferSize: Int
   def testnet: Boolean
 }
 object FapiConfig {
-  final case class Default(
+  final case class Default[F[_]](
       apiKey: String,
       apiSecret: String,
-      recvWindow: RecvWindow = refineMV(5000),
+      recvWindow: Int = 5000,
       responseHeaderTimeout: Duration = 40.seconds,
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends FapiConfig {
+  ) extends FapiConfig[F] {
     lazy val restBaseUrl: Uri =
       if (testnet) uri"https://testnet.binancefuture.com"
       else uri"https://fapi.binance.com"
@@ -70,42 +73,45 @@ object FapiConfig {
       else uri"wss://fstream.binance.com"
     lazy val exchangeInfoUrl: Uri = uri"$restBaseUrl/fapi/v1/exchangeInfo"
   }
-  final case class Custom(
+  final case class Custom[F[_]](
       restBaseUrl: Uri,
       wsBaseUrl: Uri,
       exchangeInfoUrl: Uri,
       apiKey: String,
       apiSecret: String,
-      recvWindow: RecvWindow = refineMV(5000),
+      recvWindow: Int = 5000,
       responseHeaderTimeout: Duration = 40.seconds,
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends FapiConfig
+  ) extends FapiConfig[F]
 }
 
-sealed trait SpotConfig extends BinanceConfig {
+sealed trait SpotConfig[F[_]] extends BinanceConfig[F] {
+
+  override type API = SpotApi[F]
+
   def restBaseUrl: Uri
   def wsBaseUrl: Uri
   def exchangeInfoUrl: Uri
   def apiKey: String
   def apiSecret: String
-  def recvWindow: RecvWindow
+  def recvWindow: Int
   def responseHeaderTimeout: Duration
   def maxTotalConnections: Int
   def rateLimiterBufferSize: Int
   def testnet: Boolean
 }
 object SpotConfig {
-  final case class Default(
+  final case class Default[F[_]](
       apiKey: String,
       apiSecret: String,
-      recvWindow: RecvWindow = refineMV(5000),
+      recvWindow: Int = 5000,
       responseHeaderTimeout: Duration = 40.seconds,
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends SpotConfig {
+  ) extends SpotConfig[F] {
     lazy val restBaseUrl: Uri =
       if (testnet) uri"https://testnet.binance.vision"
       else uri"https://api.binance.com"
@@ -114,16 +120,16 @@ object SpotConfig {
       else uri"wss://stream.binance.com:9443"
     lazy val exchangeInfoUrl: Uri = uri"$restBaseUrl/api/v3/exchangeInfo"
   }
-  final case class Custom(
+  final case class Custom[F[_]](
       restBaseUrl: Uri,
       wsBaseUrl: Uri,
       exchangeInfoUrl: Uri,
       apiKey: String,
       apiSecret: String,
-      recvWindow: RecvWindow = refineMV(5000),
+      recvWindow: Int = 5000,
       responseHeaderTimeout: Duration = 40.seconds,
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends SpotConfig
+  ) extends SpotConfig[F]
 }

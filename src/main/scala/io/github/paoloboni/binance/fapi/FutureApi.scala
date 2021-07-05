@@ -33,7 +33,7 @@ import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
 import io.github.paoloboni.encryption.HMAC
 import io.github.paoloboni.http.{HttpClient, UriOps}
-import io.github.paoloboni.http.QueryParamsConverter.Ops
+import io.github.paoloboni.http.QueryParamsConverter._
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import org.typelevel.log4cats.Logger
 import sttp.client3.circe.{asJson, _}
@@ -44,14 +44,12 @@ import java.time.Instant
 import scala.util.Try
 
 final case class FutureApi[F[_]: Logger](
-    config: FapiConfig,
+    config: FapiConfig[F],
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
-
-  type Config = FapiConfig
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
     * in case the result set doesn't fit in a single page.
@@ -232,7 +230,7 @@ final case class FutureApi[F[_]: Logger](
       val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
       val query = orderCreate.toQueryParams
         .param(timeParams.toMap)
-        .param("newOrderRespType", FutureOrderCreateResponseType.RESULT.entryName)
+        .param("newOrderRespType", FutureOrderCreateResponseType.RESULT.toString)
       for {
         uri <- Try(uri"${config.restBaseUrl}/fapi/v1/order")
           .map(_.addParams(query))
@@ -276,7 +274,7 @@ final case class FutureApi[F[_]: Logger](
   def kLineStreams(symbol: String, interval: Interval): Stream[F, KLineStream] =
     for {
       uri <- Stream.eval(
-        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@kline_${interval.entryName}").toEither)
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@kline_${interval.toString}").toEither)
       )
       stream <- client.ws[KLineStream](uri)
     } yield stream
@@ -285,8 +283,8 @@ final case class FutureApi[F[_]: Logger](
 object FutureApi {
   implicit def factory[F[_]: Logger](implicit
       F: Async[F]
-  ): BinanceApi.Factory[F, FutureApi[F]] =
-    (config: FapiConfig, client: HttpClient[F]) =>
+  ): BinanceApi.Factory[F, FutureApi[F], FapiConfig[F]] =
+    (config: FapiConfig[F], client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[fapi.response.ExchangeInformation]](

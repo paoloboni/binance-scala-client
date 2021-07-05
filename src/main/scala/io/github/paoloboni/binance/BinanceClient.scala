@@ -32,19 +32,19 @@ import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 
 object BinanceClient {
 
-  def createSpotClient[F[_]: Logger: Async](config: SpotConfig)(implicit
-      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F]]
+  def createSpotClient[F[_]: Logger: Async](config: SpotConfig[F])(implicit
+      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig[F]]
   ): Resource[F, SpotApi[F]] =
-    apply[F, spot.SpotApi[F]](config)
+    apply[F, spot.SpotApi[F], SpotConfig[F]](config)
 
-  def createFutureClient[F[_]: Logger: Async](config: FapiConfig)(implicit
-      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F]]
+  def createFutureClient[F[_]: Logger: Async](config: FapiConfig[F])(implicit
+      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig[F]]
   ): Resource[F, fapi.FutureApi[F]] =
-    apply[F, fapi.FutureApi[F]](config)
+    apply[F, fapi.FutureApi[F], FapiConfig[F]](config)
 
-  def apply[F[_]: Logger: Async, API <: BinanceApi[F]](
-      config: API#Config
-  )(implicit apiFactory: BinanceApi.Factory[F, API]): Resource[F, API] = {
+  def apply[F[_]: Logger: Async, API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]](
+      config: Config
+  )(implicit apiFactory: BinanceApi.Factory[F, API, Config]): Resource[F, API] = {
     val conf: AsyncHttpClientConfig =
       new DefaultAsyncHttpClientConfig.Builder()
         .setMaxConnections(config.maxTotalConnections)
@@ -55,7 +55,7 @@ object BinanceClient {
       .evalMap { implicit c =>
         for {
           client  <- HttpClient.make[F]
-          spotApi <- BinanceApi.Factory[F, API].apply(config, client)
+          spotApi <- BinanceApi.Factory[F, API, Config].apply(config, client)
         } yield spotApi
       }
   }

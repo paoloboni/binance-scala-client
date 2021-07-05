@@ -35,27 +35,21 @@ import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTim
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
 import org.http4s.websocket.WebSocketFrame
-import org.mockito.{Mockito, MockitoSugar}
+import org.mockito.Mockito
+import org.mockito.Mockito.doReturn
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{EitherValues, OptionValues}
+import org.scalatest.EitherValues._
+import org.scalatest.OptionValues._
 import scodec.bits.ByteVector
-import shapeless.tag
 import sttp.client3.UriContext
 
 import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class SpotClientIntegrationTest
-    extends AnyFreeSpec
-    with Matchers
-    with EitherValues
-    with OptionValues
-    with TestClient
-    with TypeCheckedTripleEquals
-    with MockitoSugar {
+class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClient with TypeCheckedTripleEquals {
 
   private val wsPort = 9998
 
@@ -74,7 +68,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo(from.toString),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -98,7 +92,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806520000"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -123,7 +117,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548836400000"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -197,7 +191,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo(from.toString),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -219,7 +213,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806459999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -241,7 +235,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806519999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -264,7 +258,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806579999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -286,7 +280,7 @@ class SpotClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806639999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -442,8 +436,8 @@ class SpotClientIntegrationTest
 
     result shouldBe SpotAccountInfoResponse(
       balances = List(
-        BinanceBalance(tag[AssetTag][String]("BTC"), BigDecimal("4723846.89208129"), BigDecimal("0.00000000")),
-        BinanceBalance(tag[AssetTag][String]("LTC"), BigDecimal("4763368.68006011"), BigDecimal("0.00000001"))
+        BinanceBalance("BTC", BigDecimal("4723846.89208129"), BigDecimal("0.00000000")),
+        BinanceBalance("LTC", BigDecimal("4763368.68006011"), BigDecimal("0.00000001"))
       ),
       makerCommission = 15,
       takerCommission = 15,
@@ -523,7 +517,7 @@ class SpotClientIntegrationTest
 
     result should ===(
       SpotOrderCreateResponse(
-        orderId = tag[OrderIdTag](28L),
+        orderId = 28L,
         symbol = "BTCUSDT",
         orderListId = -1,
         clientOrderId = "6gCrw2kRUAF9CvJDGP16IP",
@@ -537,7 +531,7 @@ class SpotClientIntegrationTest
         `type` = SpotOrderType.MARKET,
         side = OrderSide.SELL,
         fills = List(
-          SpotFill(price = 4000, qty = 1, commission = 4, commissionAsset = tag[AssetTag][String]("USDT"))
+          SpotFill(price = 4000, qty = 1, commission = 4, commissionAsset = "USDT")
         )
       )
     )
@@ -915,7 +909,7 @@ class SpotClientIntegrationTest
         s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
         result <- BinanceClient
           .createSpotClient[IO](config)
-          .use(_.partialBookDepthStream("btcusdt", PartialDepthStream.Level.`5`).compile.toList)
+          .use(_.partialBookDepthStream("btcusdt", Level.`5`).compile.toList)
         _ <- s.cancel
       } yield result
 
@@ -959,7 +953,7 @@ class SpotClientIntegrationTest
       apiSecret: String = "",
       wsPort: Int = 80
   ) =
-    SpotConfig.Custom(
+    SpotConfig.Custom[IO](
       restBaseUrl = uri"http://localhost:${server.port}",
       wsBaseUrl = uri"ws://localhost:$wsPort",
       exchangeInfoUrl = uri"http://localhost:${server.port}/api/v3/exchangeInfo",

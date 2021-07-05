@@ -32,7 +32,7 @@ import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
 import io.github.paoloboni.encryption.HMAC
-import io.github.paoloboni.http.QueryParamsConverter.Ops
+import io.github.paoloboni.http.QueryParamsConverter._
 import io.github.paoloboni.http.ratelimit.RateLimiter
 import io.github.paoloboni.http.{HttpClient, UriOps}
 import org.typelevel.log4cats.Logger
@@ -43,14 +43,12 @@ import java.time.Instant
 import scala.util.Try
 
 final case class SpotApi[F[_]: Logger](
-    config: SpotConfig,
+    config: SpotConfig[F],
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: List[RateLimiter[F]]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
-
-  type Config = SpotConfig
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
     * in case the result set doesn't fit in a single page.
@@ -142,7 +140,7 @@ final case class SpotApi[F[_]: Logger](
       val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
       val query = orderCreate.toQueryParams
         .param(timeParams.toMap)
-        .param("newOrderRespType", SpotOrderCreateResponseType.FULL.entryName)
+        .param("newOrderRespType", SpotOrderCreateResponseType.FULL.toString)
       for {
         uri <- Try(uri"${config.restBaseUrl}/api/v3/order").map(_.addParams(query)).toEither
         signature = HMAC.sha256(config.apiSecret, uri.queryString)
@@ -237,7 +235,7 @@ final case class SpotApi[F[_]: Logger](
   def kLineStreams(symbol: String, interval: Interval): Stream[F, KLineStream] =
     for {
       uri <- Stream.eval(
-        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@kline_${interval.entryName}").toEither)
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@kline_${interval.toString}").toEither)
       )
       stream <- client.ws[KLineStream](uri)
     } yield stream
@@ -259,10 +257,10 @@ final case class SpotApi[F[_]: Logger](
     * @param level the level
     * @return a stream of top bids and asks
     */
-  def partialBookDepthStream(symbol: String, level: PartialDepthStream.Level): Stream[F, PartialDepthStream] =
+  def partialBookDepthStream(symbol: String, level: Level): Stream[F, PartialDepthStream] =
     for {
       uri <- Stream.eval(
-        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@depth${level.entryName}").toEither)
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@depth${level.toString}").toEither)
       )
       stream <- client.ws[PartialDepthStream](uri)
     } yield stream
@@ -281,8 +279,8 @@ final case class SpotApi[F[_]: Logger](
 object SpotApi {
   implicit def factory[F[_]: Logger](implicit
       F: Async[F]
-  ): BinanceApi.Factory[F, SpotApi[F]] =
-    (config: SpotConfig, client: HttpClient[F]) =>
+  ): BinanceApi.Factory[F, SpotApi[F], SpotConfig[F]] =
+    (config: SpotConfig[F], client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[spot.response.ExchangeInformation]](

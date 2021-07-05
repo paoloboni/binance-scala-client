@@ -2,7 +2,6 @@ package io.github.paoloboni
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import eu.timepit.refined.refineMV
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response.KLineStream
 import io.github.paoloboni.binance.fapi._
@@ -69,9 +68,9 @@ class FapiE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     BinanceClient
       .createFutureClient[IO](config)
       .use(
-        _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(1)))
+        _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 1))
       )
-      .asserting(x => (x.leverage.value, x.symbol) shouldBe (1, "BTCUSDT"))
+      .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
   }
 
   "createOrder" in {

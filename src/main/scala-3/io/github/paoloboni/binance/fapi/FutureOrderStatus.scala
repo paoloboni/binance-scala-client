@@ -19,12 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance
+package io.github.paoloboni.binance.fapi
 
-import enumeratum.{CirceEnum, Enum, EnumEntry}
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined._
-
-package object fapi {
-  type Leverage = Int Refined numeric.Interval.Closed[W.`0`.T, W.`125`.T]
-}
+enum FutureOrderStatus:
+  case NEW, PARTIALLY_FILLED, FILLED, CANCELED, REJECTED, EXPIRED

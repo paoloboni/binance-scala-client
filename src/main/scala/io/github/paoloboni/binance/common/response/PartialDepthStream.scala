@@ -21,23 +21,8 @@
 
 package io.github.paoloboni.binance.common.response
 
-import enumeratum._
-
-import scala.collection.immutable
-
 final case class PartialDepthStream(
     lastUpdateId: Long, // Last update ID
     bids: Seq[Bid],     // Bids to be updated
     asks: Seq[Ask]      // Asks to be updated
 )
-
-object PartialDepthStream {
-  sealed trait Level extends EnumEntry
-  object Level extends Enum[Level] {
-    override val values: immutable.IndexedSeq[Level] = findValues
-
-    case object `5`  extends Level
-    case object `10` extends Level
-    case object `20` extends Level
-  }
-}
