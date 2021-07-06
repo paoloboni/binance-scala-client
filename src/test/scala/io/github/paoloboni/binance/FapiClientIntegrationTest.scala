@@ -36,12 +36,9 @@ import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
 import org.http4s.websocket.WebSocketFrame
-import org.mockito.Mockito
-import org.mockito.Mockito.doReturn
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.EitherValues._
-import org.scalatest.OptionValues._
 import scodec.bits.ByteVector
 import sttp.client3.UriContext
 
@@ -480,8 +477,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createFutureClient[IO](config)
@@ -571,8 +567,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val changePositionParams = true
 
@@ -615,8 +610,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 100)
 
@@ -690,8 +684,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createFutureClient[IO](config)

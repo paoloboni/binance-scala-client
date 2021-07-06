@@ -35,13 +35,10 @@ import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTim
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
 import org.http4s.websocket.WebSocketFrame
-import org.mockito.Mockito
-import org.mockito.Mockito.doReturn
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.EitherValues._
-import org.scalatest.OptionValues._
 import scodec.bits.ByteVector
 import sttp.client3.UriContext
 
@@ -426,8 +423,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createSpotClient[IO](config)
@@ -499,8 +495,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createSpotClient[IO](config)
@@ -577,8 +572,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createSpotClient[IO](config)
@@ -708,8 +702,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createSpotClient[IO](config)

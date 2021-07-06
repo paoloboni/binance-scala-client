@@ -37,7 +37,7 @@ lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
   .settings(
-    scalaVersion := scala300,
+    scalaVersion := scala213,
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Xmax-inlines", "300")
@@ -66,8 +66,7 @@ lazy val root = (project in file("."))
       "org.http4s"                    %% "http4s-dsl"                    % http4sV            % "test",
       "org.http4s"                    %% "http4s-blaze-server"           % http4sV            % "test",
       "org.http4s"                    %% "http4s-circe"                  % http4sV            % "test",
-      "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test",
-      "org.mockito"                    % "mockito-core"                  % mockitoV
+      "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test"
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, minor)) =>
         Seq(

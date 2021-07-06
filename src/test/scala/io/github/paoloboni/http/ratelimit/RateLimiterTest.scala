@@ -25,10 +25,6 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{Async, IO}
 import io.github.paoloboni.binance.common.response.RateLimitType
 import io.github.paoloboni.{Env, TestAsync}
-import org.mockito.Mockito
-import org.mockito.Mockito.doReturn
-import org.mockito.ArgumentMatchers.any
-import org.mockito.invocation.InvocationOnMock
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -46,17 +42,13 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
     val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
     var time        = initialTime
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(IO.delay(time)).when(async).monotonic
-    Mockito
-      .doAnswer((invocation: InvocationOnMock) => {
+    implicit val async: Async[IO] = new TestAsync(
+      onMonotonic = time,
+      onSleep = sleepFor =>
         IO.delay {
-          val sleepFor = invocation.getArgument[FiniteDuration](0)
           time = time + sleepFor
         }
-      })
-      .when(async)
-      .sleep(any)
+    )
 
     (for {
       rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
@@ -77,17 +69,13 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
     val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
     var time        = initialTime
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(IO.delay(time)).when(async).monotonic
-    Mockito
-      .doAnswer((invocation: InvocationOnMock) => {
+    implicit val async: Async[IO] = new TestAsync(
+      onMonotonic = time,
+      onSleep = sleepFor =>
         IO.delay {
-          val sleepFor = invocation.getArgument[FiniteDuration](0)
           time = time + sleepFor
         }
-      })
-      .when(async)
-      .sleep(any)
+    )
 
     (for {
       rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
@@ -106,17 +94,13 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
     val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
     var time        = initialTime
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(IO.delay(time)).when(async).monotonic
-    Mockito
-      .doAnswer((invocation: InvocationOnMock) => {
+    implicit val async: Async[IO] = new TestAsync(
+      onMonotonic = time,
+      onSleep = sleepFor =>
         IO.delay {
-          val sleepFor = invocation.getArgument[FiniteDuration](0)
           time = time + sleepFor
         }
-      })
-      .when(async)
-      .sleep(any)
+    )
 
     (for {
       rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)

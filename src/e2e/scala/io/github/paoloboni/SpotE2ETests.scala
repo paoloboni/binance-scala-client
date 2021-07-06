@@ -19,7 +19,7 @@ import scala.util.Random
 
 class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with LoneElement {
 
-  val config: SpotConfig = SpotConfig.Default(
+  val config: SpotConfig[IO] = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
     apiSecret = sys.env("SPOT_SECRET_KEY"),
     testnet = true
