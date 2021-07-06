@@ -61,12 +61,14 @@ object QueryParamsConverter:
   def apply[T: QueryParamsConverter]: QueryParamsConverter[T] = summon
 
   inline given derived[T](using m: Mirror.Of[T]): QueryParamsConverter[T] = inline m match {
-    case s: Mirror.SumOf[T]     => new QueryParamsConverter[T] {
-      override def to(t: T): QueryParams = ???
-    }
-    case p: Mirror.ProductOf[T] => new QueryParamsConverter[T] {
-      override def to(t: T): QueryParams = ???
-    }
+    case s: Mirror.SumOf[T] =>
+      new QueryParamsConverter[T] {
+        override def to(t: T): QueryParams = ???
+      }
+    case p: Mirror.ProductOf[T] =>
+      new QueryParamsConverter[T] {
+        override def to(t: T): QueryParams = ???
+      }
   }
 
-  extension [T] (t: T) def toQueryParams(using converter: QueryParamsConverter[T]): QueryParams = converter.to(t)
+  extension [T](t: T) def toQueryParams(using converter: QueryParamsConverter[T]): QueryParams = converter.to(t)

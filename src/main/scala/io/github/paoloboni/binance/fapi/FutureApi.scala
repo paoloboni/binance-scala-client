@@ -51,11 +51,13 @@ final case class FutureApi[F[_]: Logger](
 )(implicit F: Async[F])
     extends BinanceApi[F] {
 
-  /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint
-    * in case the result set doesn't fit in a single page.
+  /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint in case the result set doesn't
+    * fit in a single page.
     *
-    * @param query an `KLines` object containing the query parameters
-    * @return the stream of Kline objects
+    * @param query
+    *   an `KLines` object containing the query parameters
+    * @return
+    *   the stream of Kline objects
     */
   def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
     val params: QueryParams = query.toQueryParams
@@ -89,7 +91,8 @@ final case class FutureApi[F[_]: Logger](
 
   /** Returns a snapshot of the prices at the time the query is executed.
     *
-    * @return A sequence of prices (one for each symbol)
+    * @return
+    *   A sequence of prices (one for each symbol)
     */
   def getPrices(): F[Seq[Price]] =
     for {
@@ -105,8 +108,10 @@ final case class FutureApi[F[_]: Logger](
 
   /** Returns the latest price for a symbol.
     *
-    * @param symbol The symbol
-    * @return The price for the symbol
+    * @param symbol
+    *   The symbol
+    * @return
+    *   The price for the symbol
     */
   def getPrice(symbol: String): F[Price] =
     for {
@@ -126,8 +131,10 @@ final case class FutureApi[F[_]: Logger](
 
   /** Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
     *
-    * @param dualSidePosition "true": Hedge Mode; "false": One-way Mode
-    * @return Unit
+    * @param dualSidePosition
+    *   "true": Hedge Mode; "false": One-way Mode
+    * @return
+    *   Unit
     */
   def changePositionMode(dualSidePosition: Boolean): F[Unit] = {
     def url(currentMillis: Long) = {
@@ -158,8 +165,10 @@ final case class FutureApi[F[_]: Logger](
 
   /** Change user's initial leverage of specific symbol market.
     *
-    * @param changeLeverage request parameters
-    * @return the new leverage
+    * @param changeLeverage
+    *   request parameters
+    * @return
+    *   the new leverage
     */
   def changeInitialLeverage(changeLeverage: ChangeInitialLeverageParams): F[ChangeInitialLeverageResponse] = {
 
@@ -191,7 +200,8 @@ final case class FutureApi[F[_]: Logger](
 
   /** Returns the current balance, at the time the query is executed.
     *
-    * @return The balance (free and locked) for each asset
+    * @return
+    *   The balance (free and locked) for each asset
     */
   def getBalance(): F[FutureAccountInfoResponse] = {
     def url(currentMillis: Long) = {
@@ -220,9 +230,11 @@ final case class FutureApi[F[_]: Logger](
 
   /** Creates an order.
     *
-    * @param orderCreate the parameters required to define the order
+    * @param orderCreate
+    *   the parameters required to define the order
     *
-    * @return The id of the order created
+    * @return
+    *   The id of the order created
     */
   def createOrder(orderCreate: FutureOrderCreateParams): F[FutureOrderCreateResponse] = {
 
@@ -254,10 +266,13 @@ final case class FutureApi[F[_]: Logger](
     } yield response
   }
 
-  /** The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100 milliseconds.
+  /** The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100
+    * milliseconds.
     *
-    * @param symbol the symbol
-    * @return a stream of aggregate trade events
+    * @param symbol
+    *   the symbol
+    * @return
+    *   a stream of aggregate trade events
     */
   def aggregateTradeStreams(symbol: String): Stream[F, AggregateTradeStream] =
     for {
@@ -267,9 +282,12 @@ final case class FutureApi[F[_]: Logger](
 
   /** The Kline/Candlestick Stream push updates to the current klines/candlestick every 250 milliseconds (if existing).
     *
-    * @param symbol the symbol
-    * @param interval the interval
-    * @return a stream of klines
+    * @param symbol
+    *   the symbol
+    * @param interval
+    *   the interval
+    * @return
+    *   a stream of klines
     */
   def kLineStreams(symbol: String, interval: Interval): Stream[F, KLineStream] =
     for {

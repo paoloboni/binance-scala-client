@@ -37,7 +37,7 @@ lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
   .settings(
-    scalaVersion := scala213,
+    scalaVersion := scala300,
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Xmax-inlines", "300")
