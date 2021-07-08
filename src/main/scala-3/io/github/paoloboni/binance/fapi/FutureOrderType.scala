@@ -21,5 +21,11 @@
 
 package io.github.paoloboni.binance.fapi
 
+import io.circe.Decoder
+import io.github.paoloboni.binance.common.EnumDecoder
+
 enum FutureOrderType:
   case LIMIT, MARKET, STOP, STOP_MARKET, TAKE_PROFIT, TAKE_PROFIT_MARKET, TRAILING_STOP_MARKET
+
+object FutureOrderType:
+  given decoder: Decoder[FutureOrderType] = EnumDecoder.derived

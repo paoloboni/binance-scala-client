@@ -21,5 +21,11 @@
 
 package io.github.paoloboni.binance.fapi.parameters
 
+import io.circe.Decoder
+import io.github.paoloboni.binance.common.EnumDecoder
+
 enum FutureWorkingType:
   case MARK_PRICE, CONTRACT_PRICE
+
+object FutureWorkingType:
+  given decoder: Decoder[FutureWorkingType] = EnumDecoder.derived

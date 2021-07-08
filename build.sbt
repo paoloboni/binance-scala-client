@@ -40,7 +40,7 @@ lazy val root = (project in file("."))
     scalaVersion := scala213,
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((3, _)) => Seq("-Xmax-inlines", "300")
+      case Some((3, _)) => Seq("-Xmax-inlines", "64")
       case _            => Seq.empty
     }),
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,

@@ -23,36 +23,8 @@ package io.github.paoloboni.http
 
 import sttp.model.QueryParams
 
-import java.time.Instant
 import scala.deriving._
 import scala.compiletime._
-
-trait StringConverter[T]:
-  def to(t: T): String
-
-object StringConverter:
-  def apply[T: StringConverter]: StringConverter[T] = summon
-
-  given optionConverter[T](using converter: StringConverter[T]): StringConverter[Option[T]] with
-    def to(obj: Option[T]): String = obj.map(converter.to).getOrElse("")
-
-  given StringConverter[String] with
-    def to(obj: String): String = obj
-
-  given StringConverter[Int] with
-    def to(obj: Int): String = obj.toString
-
-  given StringConverter[Long] with
-    def to(obj: Long): String = obj.toString
-
-  given StringConverter[Boolean] with
-    def to(obj: Boolean): String = obj.toString
-
-  given StringConverter[BigDecimal] with
-    def to(obj: BigDecimal): String = obj.bigDecimal.toPlainString
-
-  given StringConverter[Instant] with
-    def to(t: Instant): String = t.toEpochMilli.toString
 
 trait QueryParamsConverter[T]:
   def to(t: T): QueryParams
@@ -60,15 +32,40 @@ trait QueryParamsConverter[T]:
 object QueryParamsConverter:
   def apply[T: QueryParamsConverter]: QueryParamsConverter[T] = summon
 
+  inline private def label[A]: String = constValue[A].asInstanceOf[String]
+
+  inline def processElems[NamesAndElems <: Tuple](n: Int)(x: Any): QueryParams =
+    inline erasedValue[NamesAndElems] match {
+      case _: (Tuple2[name, elem] *: elems1) =>
+        val e: elem = x.asInstanceOf[Product].productElement(n).asInstanceOf[elem]
+        summonInline[StringConverter[elem]].to(e) match {
+          case ""        => processElems[elems1](n + 1)(x)
+          case converted => processElems[elems1](n + 1)(x).param(label[name], converted)
+        }
+      case _ => QueryParams()
+    }
+
+  inline def processCases[NamesAndAlts <: Tuple](x: Any): QueryParams =
+    inline erasedValue[NamesAndAlts] match {
+      case _: (Tuple2[name, alt] *: alts1) =>
+        x match {
+          case a: alt => summonInline[QueryParamsConverter[alt]].to(a).param("type", label[name])
+          case _      => processCases[alts1](x)
+        }
+      case _ => throw MatchError("failed to process case")
+    }
+
+  inline def deriveSum[T](s: Mirror.SumOf[T]): QueryParamsConverter[T] = new QueryParamsConverter[T] {
+    override def to(t: T): QueryParams = processCases[Tuple.Zip[s.MirroredElemLabels, s.MirroredElemTypes]](t)
+  }
+
+  inline def derivedProduct[T](p: Mirror.ProductOf[T]): QueryParamsConverter[T] = new QueryParamsConverter[T] {
+    override def to(t: T): QueryParams = processElems[Tuple.Zip[p.MirroredElemLabels, p.MirroredElemTypes]](0)(t)
+  }
+
   inline given derived[T](using m: Mirror.Of[T]): QueryParamsConverter[T] = inline m match {
-    case s: Mirror.SumOf[T] =>
-      new QueryParamsConverter[T] {
-        override def to(t: T): QueryParams = ???
-      }
-    case p: Mirror.ProductOf[T] =>
-      new QueryParamsConverter[T] {
-        override def to(t: T): QueryParams = ???
-      }
+    case s: Mirror.SumOf[T]     => deriveSum[T](s)
+    case p: Mirror.ProductOf[T] => derivedProduct[T](p)
   }
 
   extension [T](t: T) def toQueryParams(using converter: QueryParamsConverter[T]): QueryParams = converter.to(t)

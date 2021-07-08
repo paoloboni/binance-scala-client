@@ -23,6 +23,9 @@ package io.github.paoloboni.binance.common
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
+import io.circe.Decoder
+import io.github.paoloboni.binance.common.EnumDecoder
+
 enum Interval(val duration: Duration):
   case `1m` extends Interval(1.minute)
   case `3m` extends Interval(3.minutes)
@@ -38,3 +41,6 @@ enum Interval(val duration: Duration):
   case `1d` extends Interval(1.day)
   case `3d` extends Interval(3.days)
   case `1w` extends Interval(7.days)
+
+object Interval:
+  given decoder: Decoder[Interval] = EnumDecoder.derived

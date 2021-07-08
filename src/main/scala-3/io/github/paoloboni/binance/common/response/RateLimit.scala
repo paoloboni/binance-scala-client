@@ -21,8 +21,17 @@
 
 package io.github.paoloboni.binance.common.response
 
+import io.circe.Decoder
+import io.github.paoloboni.binance.common.EnumDecoder
+
 enum RateLimitType:
   case REQUEST_WEIGHT, ORDERS, RAW_REQUESTS, NONE
 
+object RateLimitType:
+  given decoder: Decoder[RateLimitType] = EnumDecoder.derived
+
 enum RateLimitInterval:
   case SECOND, MINUTE, DAY
+
+object RateLimitInterval:
+  given decoder: Decoder[RateLimitInterval] = EnumDecoder.derived

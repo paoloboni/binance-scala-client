@@ -32,11 +32,11 @@ import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
 import io.github.paoloboni.encryption.HMAC
-import io.github.paoloboni.http.{HttpClient, UriOps}
 import io.github.paoloboni.http.QueryParamsConverter._
 import io.github.paoloboni.http.ratelimit.RateLimiter
+import io.github.paoloboni.http.{HttpClient, UriOps}
 import org.typelevel.log4cats.Logger
-import sttp.client3.circe.{asJson, _}
+import sttp.client3.circe.{asJson, circeBodySerializer}
 import sttp.client3.{ResponseAsByteArray, UriContext}
 import sttp.model.QueryParams
 
@@ -237,10 +237,11 @@ final case class FutureApi[F[_]: Logger](
     *   The id of the order created
     */
   def createOrder(orderCreate: FutureOrderCreateParams): F[FutureOrderCreateResponse] = {
+    val params = orderCreate.toQueryParams
 
     def url(currentMillis: Long) = {
       val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
-      val query = orderCreate.toQueryParams
+      val query = params
         .param(timeParams.toMap)
         .param("newOrderRespType", FutureOrderCreateResponseType.RESULT.toString)
       for {

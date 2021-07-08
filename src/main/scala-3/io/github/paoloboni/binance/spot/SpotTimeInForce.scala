@@ -21,5 +21,11 @@
 
 package io.github.paoloboni.binance.spot
 
+import io.circe.Decoder
+import io.github.paoloboni.binance.common.EnumDecoder
+
 enum SpotTimeInForce:
   case GTC, IOC, FOK
+
+object SpotTimeInForce:
+  given decoder: Decoder[SpotTimeInForce] = EnumDecoder.derived

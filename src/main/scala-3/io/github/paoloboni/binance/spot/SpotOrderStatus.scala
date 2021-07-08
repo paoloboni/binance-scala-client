@@ -21,5 +21,11 @@
 
 package io.github.paoloboni.binance.spot
 
+import io.circe.Decoder
+import io.github.paoloboni.binance.common.EnumDecoder
+
 enum SpotOrderStatus:
   case NEW, PARTIALLY_FILLED, FILLED, CANCELED, PENDING_CANCEL, REJECTED, EXPIRED
+
+object SpotOrderStatus:
+  given decoder: Decoder[SpotOrderStatus] = EnumDecoder.derived
