@@ -43,6 +43,7 @@ jobs:
       - name: Build and test
         run: sbt ++${{ matrix.scala }} scalafmtCheck test:scalafmtCheck scalafmtSbtCheck headerCheck test:headerCheck test
         shell: bash
+        timeout-minutes: 5
   e2e:
     if: github.actor == 'paoloboni'
     needs: test

@@ -50,7 +50,7 @@ object StringConverter {
 
   implicit val instantConverter: StringConverter[Instant] = (t: Instant) => t.toEpochMilli.toString
 
-  implicit def enumEntryConverter[T <: EnumEntry](implicit enum: Enum[T]): StringConverter[T] = (obj: T) => obj.toString
+  implicit def enumEntryConverter[T <: EnumEntry](implicit e: Enum[T]): StringConverter[T] = (obj: T) => obj.toString
 }
 
 trait QueryParamsConverter[T] {
