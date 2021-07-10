@@ -51,25 +51,3 @@ object StringConverter:
 
   given StringConverter[Instant] with
     def to(t: Instant): String = t.toEpochMilli.toString
-
-  inline private def label[A]: String = constValue[A].asInstanceOf[String]
-
-  inline def processCases[NamesAndAlts <: Tuple](x: Any): String =
-    inline erasedValue[NamesAndAlts] match {
-      case _: (Tuple2[name, alt] *: alts1) =>
-        x match {
-          case a: alt => label[name]
-          case _      => processCases[alts1](x)
-        }
-      case _ => throw MatchError("failed to process case")
-    }
-
-  inline def derivedSum[T](s: Mirror.SumOf[T]): StringConverter[T] = new StringConverter[T] {
-    override def to(t: T): String = processCases[Tuple.Zip[s.MirroredElemLabels, s.MirroredElemTypes]](t)
-  }
-
-  // only supports Enums
-  inline given derived[T](using m: Mirror.Of[T]): StringConverter[T] = inline m match {
-    case s: Mirror.SumOf[T] => derivedSum[T](s)
-    case _                  => throw MatchError("only enums are supported")
-  }

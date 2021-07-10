@@ -21,10 +21,12 @@
 
 package io.github.paoloboni.http
 
+import io.github.paoloboni.http
 import sttp.model.QueryParams
 
 import scala.deriving._
 import scala.compiletime._
+import io.github.paoloboni.http.StringConverter
 
 trait QueryParamsConverter[T]:
   def to(t: T): QueryParams
@@ -34,16 +36,13 @@ object QueryParamsConverter:
 
   inline private def label[A]: String = constValue[A].asInstanceOf[String]
 
-  inline def processElems[NamesAndElems <: Tuple](n: Int)(x: Any): QueryParams =
-    inline erasedValue[NamesAndElems] match {
-      case _: (Tuple2[name, elem] *: elems1) =>
-        val e: elem = x.asInstanceOf[Product].productElement(n).asInstanceOf[elem]
-        summonInline[StringConverter[elem]].to(e) match {
-          case ""        => processElems[elems1](n + 1)(x)
-          case converted => processElems[elems1](n + 1)(x).param(label[name], converted)
-        }
-      case _ => QueryParams()
-    }
+  inline private def summonStringConverter[T]: StringConverter[T] = summonFrom {
+    case converter: StringConverter[T] => converter
+    case _ =>
+      new StringConverter[T] {
+        override def to(t: T): String = t.toString
+      }
+  }
 
   inline def processCases[NamesAndAlts <: Tuple](x: Any): QueryParams =
     inline erasedValue[NamesAndAlts] match {
@@ -59,13 +58,30 @@ object QueryParamsConverter:
     override def to(t: T): QueryParams = processCases[Tuple.Zip[s.MirroredElemLabels, s.MirroredElemTypes]](t)
   }
 
-  inline def derivedProduct[T](p: Mirror.ProductOf[T]): QueryParamsConverter[T] = new QueryParamsConverter[T] {
-    override def to(t: T): QueryParams = processElems[Tuple.Zip[p.MirroredElemLabels, p.MirroredElemTypes]](0)(t)
-  }
+  inline def summonStringConverters[A <: Tuple]: List[StringConverter[_]] =
+    inline erasedValue[A] match
+      case _: EmptyTuple => Nil
+      case _: (t *: ts)  => summonStringConverter[t] :: summonStringConverters[ts]
 
-  inline given derived[T](using m: Mirror.Of[T]): QueryParamsConverter[T] = inline m match {
-    case s: Mirror.SumOf[T]     => deriveSum[T](s)
-    case p: Mirror.ProductOf[T] => derivedProduct[T](p)
+  inline given derived[T](using m: Mirror.Of[T]): QueryParamsConverter[T] = {
+    inline m match {
+      case s: Mirror.SumOf[T] => deriveSum[T](s)
+      case p: Mirror.ProductOf[T] =>
+        val converters = summonStringConverters[m.MirroredElemTypes]
+        new QueryParamsConverter[T] {
+          override def to(t: T): QueryParams = {
+            val pElem = t.asInstanceOf[Product]
+            (pElem.productElementNames.toList zip pElem.productIterator.toList zip converters)
+              .map { case ((label, elem), converter) =>
+                label -> converter.asInstanceOf[StringConverter[Any]].to(elem)
+              }
+              .foldRight(QueryParams()) {
+                case ((label, value), params) if value != "" => params.param(label, value)
+                case ((label, value), params)                => params
+              }
+          }
+        }
+    }
   }
 
   extension [T](t: T) def toQueryParams(using converter: QueryParamsConverter[T]): QueryParams = converter.to(t)
