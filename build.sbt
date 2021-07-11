@@ -2,8 +2,8 @@ name := "binance-scala-client"
 
 lazy val scala212               = "2.12.14"
 lazy val scala213               = "2.13.6"
-lazy val scala300               = "3.0.0"
-lazy val supportedScalaVersions = List(scala212, scala213, scala300)
+lazy val scala3                 = "3.0.0"
+lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalafmtOnCompile := false
 ThisBuild / organization := "io.github.paoloboni"
@@ -37,7 +37,7 @@ lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
   .settings(
-    scalaVersion := scala300,
+    scalaVersion := scala3,
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Xmax-inlines", "64")

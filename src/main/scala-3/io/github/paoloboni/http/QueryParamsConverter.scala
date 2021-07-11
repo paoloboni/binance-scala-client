@@ -44,18 +44,13 @@ object QueryParamsConverter:
       }
   }
 
-  inline def processCases[NamesAndAlts <: Tuple](x: Any): QueryParams =
-    inline erasedValue[NamesAndAlts] match {
-      case _: (Tuple2[name, alt] *: alts1) =>
-        x match {
-          case a: alt => summonInline[QueryParamsConverter[alt]].to(a).param("type", label[name])
-          case _      => processCases[alts1](x)
-        }
-      case _ => throw MatchError("failed to process case")
-    }
-
-  inline def deriveSum[T](s: Mirror.SumOf[T]): QueryParamsConverter[T] = new QueryParamsConverter[T] {
-    override def to(t: T): QueryParams = processCases[Tuple.Zip[s.MirroredElemLabels, s.MirroredElemTypes]](t)
+  inline def processCases[T](
+      s: Mirror.SumOf[T]
+  )(labels: List[String], queryParamsConverters: List[QueryParamsConverter[_]])(x: T): QueryParams = {
+    val ord                  = s.ordinal(x)
+    val queryParamsConverter = queryParamsConverters(ord)
+    val params               = queryParamsConverter.asInstanceOf[QueryParamsConverter[T]].to(x)
+    params.param("type", labels(ord))
   }
 
   inline def summonStringConverters[A <: Tuple]: List[StringConverter[_]] =
@@ -63,24 +58,40 @@ object QueryParamsConverter:
       case _: EmptyTuple => Nil
       case _: (t *: ts)  => summonStringConverter[t] :: summonStringConverters[ts]
 
+  inline def summonQueryParamsConverters[A <: Tuple]: List[QueryParamsConverter[_]] =
+    inline erasedValue[A] match
+      case _: EmptyTuple => Nil
+      case _: (t *: ts)  => summonInline[QueryParamsConverter[t]] :: summonQueryParamsConverters[ts]
+
+  inline def summonAllLabels[A <: Tuple]: List[String] =
+    inline erasedValue[A] match
+      case _: EmptyTuple => Nil
+      case _: (t *: ts)  => label[t] :: summonAllLabels[ts]
+
+  inline def processElems[T](stringConverters: List[StringConverter[_]])(t: T): QueryParams = {
+    val pElem = t.asInstanceOf[Product]
+    (pElem.productElementNames.toList zip pElem.productIterator.toList zip stringConverters)
+      .map { case ((label, elem), converter) =>
+        label -> converter.asInstanceOf[StringConverter[Any]].to(elem)
+      }
+      .foldRight(QueryParams()) {
+        case ((label, value), params) if value != "" => params.param(label, value)
+        case ((label, value), params)                => params
+      }
+  }
+
   inline given derived[T](using m: Mirror.Of[T]): QueryParamsConverter[T] = {
-    inline m match {
-      case s: Mirror.SumOf[T] => deriveSum[T](s)
-      case p: Mirror.ProductOf[T] =>
-        val converters = summonStringConverters[m.MirroredElemTypes]
-        new QueryParamsConverter[T] {
-          override def to(t: T): QueryParams = {
-            val pElem = t.asInstanceOf[Product]
-            (pElem.productElementNames.toList zip pElem.productIterator.toList zip converters)
-              .map { case ((label, elem), converter) =>
-                label -> converter.asInstanceOf[StringConverter[Any]].to(elem)
-              }
-              .foldRight(QueryParams()) {
-                case ((label, value), params) if value != "" => params.param(label, value)
-                case ((label, value), params)                => params
-              }
-          }
+    lazy val stringConverters = summonStringConverters[m.MirroredElemTypes]
+    lazy val labels           = summonAllLabels[m.MirroredElemLabels]
+    new QueryParamsConverter[T] {
+      override def to(t: T): QueryParams = {
+        inline m match {
+          case s: Mirror.SumOf[T] =>
+            val queryParamsConverters = summonQueryParamsConverters[m.MirroredElemTypes]
+            processCases[T](s)(labels, queryParamsConverters)(t)
+          case p: Mirror.ProductOf[T] => processElems(stringConverters)(t)
         }
+      }
     }
   }
 
