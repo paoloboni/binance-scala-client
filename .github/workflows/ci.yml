@@ -48,6 +48,12 @@ jobs:
     if: github.actor == 'paoloboni'
     needs: test
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scala:
+          - 2.13.6
+          - 3.0.0
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -68,5 +74,5 @@ jobs:
           FAPI_SECRET_KEY: ${{ secrets.FAPI_SECRET_KEY }}
           SPOT_API_KEY: ${{ secrets.SPOT_API_KEY }}
           SPOT_SECRET_KEY: ${{ secrets.SPOT_SECRET_KEY }}
-        run: sbt e2e:test
+        run: sbt ++${{ matrix.scala }} e2e:test
         shell: bash
