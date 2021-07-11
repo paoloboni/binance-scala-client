@@ -72,7 +72,7 @@ lazy val root = (project in file("."))
       "org.mockito"                   %% "mockito-scala"                 % mockitoScalaV      % "test"
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, 12)) =>
-        Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4")
+        Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0")
       case _ =>
         Seq.empty
     })
