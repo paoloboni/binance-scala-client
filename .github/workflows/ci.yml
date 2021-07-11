@@ -6,13 +6,13 @@ on:
     paths:
       - 'src/**'
       - 'project/**'
-      - 'build.sbt'
+      - '**/*.sbt'
   push:
     branches: [master]
     paths:
       - 'src/**'
       - 'project/**'
-      - 'build.sbt'
+      - '**/*.sbt'
 jobs:
   test:
     strategy:
