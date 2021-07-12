@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.fapi
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum FutureTimeInForce:
+enum FutureTimeInForce derives EnumDecoder:
   case GTC, IOC, FOK, GTX
-
-object FutureTimeInForce:
-  given decoder: Decoder[FutureTimeInForce] = EnumDecoder.derived

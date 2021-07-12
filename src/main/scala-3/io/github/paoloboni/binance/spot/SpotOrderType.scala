@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.spot
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum SpotOrderType:
+enum SpotOrderType derives EnumDecoder:
   case LIMIT, MARKET, STOP_LOSS, STOP_LOSS_LIMIT, TAKE_PROFIT, TAKE_PROFIT_LIMIT, LIMIT_MAKER
-
-object SpotOrderType:
-  given decoder: Decoder[SpotOrderType] = EnumDecoder.derived

@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.fapi.parameters
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum FutureOrderCreateResponseType:
+enum FutureOrderCreateResponseType derives EnumDecoder:
   case ACK, RESULT
-
-object FutureOrderCreateResponseType:
-  given decoder: Decoder[FutureOrderCreateResponseType] = EnumDecoder.derived

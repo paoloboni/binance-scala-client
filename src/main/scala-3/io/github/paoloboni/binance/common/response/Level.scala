@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.common.response
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum Level:
+enum Level derives EnumDecoder:
   case `5`, `10`, `20`
-
-object Level:
-  given decoder: Decoder[Level] = EnumDecoder.derived

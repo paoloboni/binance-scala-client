@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.fapi.response
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum ContractType:
+enum ContractType derives EnumDecoder:
   case PERPETUAL, CURRENT_MONTH, NEXT_MONTH, CURRENT_QUARTER, NEXT_QUARTER
-
-object ContractType:
-  given decoder: Decoder[ContractType] = EnumDecoder.derived

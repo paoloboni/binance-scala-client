@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.spot.parameters
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum SpotOrderCreateResponseType:
+enum SpotOrderCreateResponseType derives EnumDecoder:
   case ACK, RESULT, FULL
-
-object SpotOrderCreateResponseType:
-  given decoder: Decoder[SpotOrderCreateResponseType] = EnumDecoder.derived

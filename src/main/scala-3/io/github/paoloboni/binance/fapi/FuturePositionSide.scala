@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.fapi
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum FuturePositionSide:
+enum FuturePositionSide derives EnumDecoder:
   case BOTH, SHORT, LONG
-
-object FuturePositionSide:
-  given decoder: Decoder[FuturePositionSide] = EnumDecoder.derived

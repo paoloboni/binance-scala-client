@@ -23,39 +23,48 @@ package io.github.paoloboni.binance
 package common
 
 import io.circe.Decoder
-import EnumDecoder._
 
 case class Price(symbol: String, price: BigDecimal)
 
-enum OrderSide:
+enum OrderSide derives EnumDecoder:
   case SELL, BUY
 
-object OrderSide:
-  given decoder: Decoder[OrderSide] = EnumDecoder.derived
-
 case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)
+
+trait EnumDecoder[T] extends Decoder[T]
 
 object EnumDecoder:
   import scala.deriving._
   import scala.compiletime._
+  import io.circe.HCursor
 
   inline private def label[A]: String = constValue[A].asInstanceOf[String]
 
-  inline def processCases[NamesAndAlts <: Tuple](x: String): Either[String, Any] =
-    inline erasedValue[NamesAndAlts] match {
-      case _: (Tuple2[name, alt] *: alts1) =>
-        if (x == label[name]) Right(summonInline[Mirror.ProductOf[alt]].fromProduct(Tuple()).asInstanceOf[alt])
-        else processCases[alts1](x)
-      case _ => Left(s"Failed to decode $x")
-    }
+  inline def summonAllLabels[A <: Tuple]: List[String] =
+    inline erasedValue[A] match
+      case _: EmptyTuple => Nil
+      case _: (t *: ts)  => label[t] :: summonAllLabels[ts]
 
-  inline def derivedSum[T](s: Mirror.SumOf[T]): Decoder[T] =
-    Decoder.decodeString.emap(
-      processCases[Tuple.Zip[s.MirroredElemLabels, s.MirroredElemTypes]](_).map(_.asInstanceOf[T])
-    )
+  inline def summonAllValues[A <: Tuple]: List[Any] =
+    inline erasedValue[A] match
+      case _: EmptyTuple => Nil
+      case _: (t *: ts) => summonInline[Mirror.ProductOf[t]].fromProduct(Tuple()).asInstanceOf[t] :: summonAllValues[ts]
 
   // only supports Enums
-  inline given derived[T](using m: Mirror.Of[T]): Decoder[T] = inline m match {
-    case s: Mirror.SumOf[T] => derivedSum[T](s)
-    case _                  => throw MatchError("only enums are supported")
+  inline given derived[T](using m: Mirror.Of[T]): EnumDecoder[T] = inline m match {
+    case s: Mirror.SumOf[T] =>
+      val labels = summonAllLabels[s.MirroredElemLabels]
+      val values = summonAllValues[s.MirroredElemTypes]
+      new EnumDecoder[T] {
+        def apply(c: HCursor): Decoder.Result[T] = Decoder.decodeString
+          .emap {
+            case str if labels.contains(str) =>
+              val ord = labels.zipWithIndex.toMap.apply(str)
+              Right(values(ord).asInstanceOf[T])
+            case str =>
+              Left(s"Failed to decode $str")
+          }
+          .apply(c)
+      }
+    case _ => throw MatchError("only enums are supported")
   }

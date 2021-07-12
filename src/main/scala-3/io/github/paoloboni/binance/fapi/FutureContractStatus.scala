@@ -24,8 +24,5 @@ package io.github.paoloboni.binance.fapi
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
-enum FutureContractStatus:
+enum FutureContractStatus derives EnumDecoder:
   case PENDING_TRADING, TRADING, PRE_DELIVERING, DELIVERING, DELIVERED, PRE_SETTLE, SETTLING, CLOSE
-
-object FutureContractStatus:
-  given decoder: Decoder[FutureContractStatus] = EnumDecoder.derived
