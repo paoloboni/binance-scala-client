@@ -25,9 +25,6 @@ import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.{Async, IO}
 import io.github.paoloboni.binance.common.response.RateLimitType
 import io.github.paoloboni.{Env, TestAsync}
-import org.mockito.ArgumentMatchersSugar.any
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.{Mockito, MockitoSugar}
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -36,13 +33,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 // very hacky test - didn't find a good way of controlling the scheduler in tests
-class RateLimiterTest
-    extends AsyncFreeSpec
-    with AsyncIOSpec
-    with Matchers
-    with Env
-    with MockitoSugar
-    with TypeCheckedTripleEquals {
+class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with TypeCheckedTripleEquals {
 
   "it should rate limit when frequency is greater than limit" in {
     val perSecond = 10
@@ -51,17 +42,13 @@ class RateLimiterTest
     val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
     var time        = initialTime
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(IO.delay(time)).when(async).monotonic
-    Mockito
-      .doAnswer((invocation: InvocationOnMock) => {
+    implicit val async: Async[IO] = new TestAsync(
+      onMonotonic = time,
+      onSleep = sleepFor =>
         IO.delay {
-          val sleepFor = invocation.getArgument[FiniteDuration](0)
           time = time + sleepFor
         }
-      })
-      .when(async)
-      .sleep(any)
+    )
 
     (for {
       rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
@@ -70,7 +57,8 @@ class RateLimiterTest
       result      <- rateLimiter.await(IO.pure(3))
     } yield result).timeout(5.seconds).asserting { res =>
       res should ===(3)
-      (time - initialTime).toMillis should ===((3 * period + period).toMillis)
+      val periodMillis = period.toMillis
+      (time - initialTime).toMillis should ===(3 * periodMillis + periodMillis)
     }
   }
 
@@ -81,24 +69,21 @@ class RateLimiterTest
     val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
     var time        = initialTime
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(IO.delay(time)).when(async).monotonic
-    Mockito
-      .doAnswer((invocation: InvocationOnMock) => {
+    implicit val async: Async[IO] = new TestAsync(
+      onMonotonic = time,
+      onSleep = sleepFor =>
         IO.delay {
-          val sleepFor = invocation.getArgument[FiniteDuration](0)
           time = time + sleepFor
         }
-      })
-      .when(async)
-      .sleep(any)
+    )
 
     (for {
       rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
       result      <- rateLimiter.await(IO.pure(1), weight = 10)
     } yield result).timeout(5.seconds).asserting { res =>
       res should ===(1)
-      (time - initialTime).toMillis should ===((10 * period + period).toMillis)
+      val periodMillis = period.toMillis
+      (time - initialTime).toMillis should ===(10 * periodMillis + periodMillis)
     }
   }
 
@@ -109,17 +94,13 @@ class RateLimiterTest
     val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
     var time        = initialTime
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(IO.delay(time)).when(async).monotonic
-    Mockito
-      .doAnswer((invocation: InvocationOnMock) => {
+    implicit val async: Async[IO] = new TestAsync(
+      onMonotonic = time,
+      onSleep = sleepFor =>
         IO.delay {
-          val sleepFor = invocation.getArgument[FiniteDuration](0)
           time = time + sleepFor
         }
-      })
-      .when(async)
-      .sleep(any)
+    )
 
     (for {
       rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)

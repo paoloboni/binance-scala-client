@@ -22,7 +22,6 @@
 package io.github.paoloboni.http
 
 import enumeratum.{Enum, EnumEntry}
-import eu.timepit.refined.api.{Refined, Validate}
 import shapeless.labelled.FieldType
 import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, Inl, Inr, LabelledGeneric, Lazy, Witness}
 import sttp.model.QueryParams
@@ -51,11 +50,7 @@ object StringConverter {
 
   implicit val instantConverter: StringConverter[Instant] = (t: Instant) => t.toEpochMilli.toString
 
-  implicit def enumEntryConverter[T <: EnumEntry](implicit enum: Enum[T]): StringConverter[T] = (obj: T) =>
-    obj.entryName
-
-  implicit def refinedConverter[T: StringConverter, P](implicit v: Validate[T, P]): StringConverter[T Refined P] =
-    (t: Refined[T, P]) => StringConverter[T].to(t.value)
+  implicit def enumEntryConverter[T <: EnumEntry](implicit e: Enum[T]): StringConverter[T] = (obj: T) => obj.toString
 }
 
 trait QueryParamsConverter[T] {

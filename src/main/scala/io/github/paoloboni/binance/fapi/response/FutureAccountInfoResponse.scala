@@ -46,7 +46,7 @@ case class FutureAccountInfoResponse(
 )
 
 case class OwnedAsset(
-    asset: common.Asset,
+    asset: String,
     walletBalance: BigDecimal,
     unrealizedProfit: BigDecimal,
     marginBalance: BigDecimal,

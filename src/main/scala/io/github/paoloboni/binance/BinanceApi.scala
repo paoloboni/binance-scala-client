@@ -24,17 +24,14 @@ package io.github.paoloboni.binance
 import io.github.paoloboni.binance.common.BinanceConfig
 import io.github.paoloboni.http.HttpClient
 
-trait BinanceApi[F[_]] {
-  type Config <: BinanceConfig
-  def config: Config
-}
+trait BinanceApi[F[_]]
 
 object BinanceApi {
-  type Factory[F[_], API <: BinanceApi[F]] = (API#Config, HttpClient[F]) => F[API]
+  type Factory[F[_], API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]] = (Config, HttpClient[F]) => F[API]
 
   object Factory {
-    def apply[F[_], API <: BinanceApi[F]](implicit
-        instance: Factory[F, API]
-    ): Factory[F, API] = instance
+    def apply[F[_], API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]](implicit
+        instance: Factory[F, API, Config]
+    ): Factory[F, API, Config] = instance
   }
 }

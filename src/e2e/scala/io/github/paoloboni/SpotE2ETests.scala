@@ -3,7 +3,7 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
-import io.github.paoloboni.binance.common.response.{BookTicker, DiffDepthStream, KLineStream, PartialDepthStream}
+import io.github.paoloboni.binance.common.response.{BookTicker, DiffDepthStream, KLineStream, Level, PartialDepthStream}
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
@@ -19,7 +19,7 @@ import scala.util.Random
 
 class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with LoneElement {
 
-  val config: SpotConfig = SpotConfig.Default(
+  val config: SpotConfig[IO] = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
     apiSecret = sys.env("SPOT_SECRET_KEY"),
     testnet = true
@@ -134,7 +134,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   "partialBookDepthStream" in {
     BinanceClient
       .createSpotClient[IO](config)
-      .use(_.partialBookDepthStream("btcusdt", PartialDepthStream.Level.`5`).take(1).compile.toList)
+      .use(_.partialBookDepthStream("btcusdt", Level.`5`).take(1).compile.toList)
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[PartialDepthStream])
   }

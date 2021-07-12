@@ -29,7 +29,7 @@ case object INF
 
 case class ChangeInitialLeverageResponse(
     symbol: String,
-    leverage: Leverage,
+    leverage: Int,
     maxNotionalValue: MaxNotionalValue
 )
 
@@ -40,11 +40,9 @@ object MaxNotionalValue {
 }
 
 object ChangeInitialLeverageResponse {
-  import io.circe.refined._
-
   implicit val maxNotionalValueDecoder: Decoder[MaxNotionalValue] = Decoder.decodeString.flatMap {
     case "INF" => Decoder.const(MaxNotionalValue.INF)
-    case _     => Decoder.decodeBigDecimal.map(MaxNotionalValue.Value)
+    case _     => Decoder.decodeBigDecimal.map(MaxNotionalValue.Value.apply)
   }
 
   implicit val decoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder

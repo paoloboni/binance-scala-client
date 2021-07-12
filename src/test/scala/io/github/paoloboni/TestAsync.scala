@@ -26,10 +26,16 @@ import cats.effect.kernel.Sync
 import cats.effect._
 import cats.implicits._
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
-class TestAsync extends kernel.Async[IO] with StackSafeMonad[IO] {
+class TestAsync(
+    onRealtime: FiniteDuration = FiniteDuration(System.currentTimeMillis(), TimeUnit.MILLISECONDS),
+    onMonotonic: FiniteDuration = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS),
+    onSleep: FiniteDuration => IO[Unit] = time => IO.sleep(time)
+) extends kernel.Async[IO]
+    with StackSafeMonad[IO] {
 
   override def async_[A](k: (Either[Throwable, A] => Unit) => Unit): IO[A] = {
     val body = new Cont[IO, A, A] {
@@ -81,12 +87,11 @@ class TestAsync extends kernel.Async[IO] with StackSafeMonad[IO] {
   ): IO[B] =
     IO.bracketFull(acquire)(use)(release)
 
-  val monotonic: IO[FiniteDuration] = IO.monotonic
+  val monotonic: IO[FiniteDuration] = onMonotonic.pure[IO]
 
-  val realTime: IO[FiniteDuration] = IO.realTime
+  val realTime: IO[FiniteDuration] = onRealtime.pure[IO]
 
-  def sleep(time: FiniteDuration): IO[Unit] =
-    IO.sleep(time)
+  def sleep(time: FiniteDuration): IO[Unit] = onSleep(time)
 
   override def timeoutTo[A](ioa: IO[A], duration: FiniteDuration, fallback: IO[A]): IO[A] =
     ioa.timeoutTo(duration, fallback)

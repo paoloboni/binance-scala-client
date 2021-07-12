@@ -1,8 +1,9 @@
 name := "binance-scala-client"
 
-lazy val scala212               = "2.12.13"
-lazy val scala213               = "2.13.5"
-lazy val supportedScalaVersions = List(scala212, scala213)
+lazy val scala212               = "2.12.14"
+lazy val scala213               = "2.13.6"
+lazy val scala3                 = "3.0.0"
+lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalafmtOnCompile := false
 ThisBuild / organization := "io.github.paoloboni"
@@ -17,7 +18,7 @@ lazy val e2eSettings =
     )
 
 lazy val circeV             = "0.14.1"
-lazy val fs2V               = "3.0.5"
+lazy val fs2V               = "3.0.6"
 lazy val catsCoreV          = "2.6.1"
 lazy val catsEffectV        = "3.1.1"
 lazy val log4CatsV          = "2.1.1"
@@ -25,27 +26,27 @@ lazy val slf4jV             = "1.7.31"
 lazy val sttpV              = "3.3.9"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
-lazy val refinedV           = "0.9.26"
 lazy val scalatestV         = "3.2.9"
 lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.1.1"
 lazy val http4sV            = "1.0.0-M23"
 lazy val http4sBlazeV       = "0.15.1"
-lazy val mockitoScalaV      = "1.16.37"
 
 lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
   .settings(
-    scalaVersion := scala213,
+    scalaVersion := scala3,
     releaseCrossBuild := true,
+    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) => Seq("-Xmax-inlines", "64")
+      case _            => Seq.empty
+    }),
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(
       "io.circe"                      %% "circe-core"                    % circeV,
       "io.circe"                      %% "circe-generic"                 % circeV,
-      "io.circe"                      %% "circe-generic-extras"          % circeV,
-      "io.circe"                      %% "circe-refined"                 % circeV,
       "co.fs2"                        %% "fs2-core"                      % fs2V,
       "org.typelevel"                 %% "cats-core"                     % catsCoreV,
       "org.typelevel"                 %% "cats-effect"                   % catsEffectV,
@@ -55,10 +56,6 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.client3" %% "core"                          % sttpV,
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-fs2" % sttpV,
       "com.softwaremill.sttp.client3" %% "circe"                         % sttpV,
-      "com.beachape"                  %% "enumeratum"                    % enumeratumV,
-      "com.beachape"                  %% "enumeratum-circe"              % enumeratumV,
-      "com.chuusai"                   %% "shapeless"                     % shapelessV,
-      "eu.timepit"                    %% "refined"                       % refinedV,
       "io.circe"                      %% "circe-parser"                  % circeV             % "test",
       "org.slf4j"                      % "slf4j-simple"                  % slf4jV             % "test",
       "org.scalatest"                 %% "scalatest"                     % scalatestV         % "test",
@@ -68,11 +65,18 @@ lazy val root = (project in file("."))
       "org.http4s"                    %% "http4s-dsl"                    % http4sV            % "test",
       "org.http4s"                    %% "http4s-blaze-server"           % http4sV            % "test",
       "org.http4s"                    %% "http4s-circe"                  % http4sV            % "test",
-      "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test",
-      "org.mockito"                   %% "mockito-scala"                 % mockitoScalaV      % "test"
+      "org.http4s"                    %% "blaze-http"                    % http4sBlazeV       % "test"
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 12)) =>
-        Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4")
+      case Some((2, minor)) =>
+        Seq(
+          "io.circe"     %% "circe-generic-extras" % circeV,
+          "com.beachape" %% "enumeratum"           % enumeratumV,
+          "com.beachape" %% "enumeratum-circe"     % enumeratumV,
+          "com.chuusai"  %% "shapeless"            % shapelessV
+        ) ++ (minor match {
+          case 12 => Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0")
+          case _  => Seq.empty
+        })
       case _ =>
         Seq.empty
     })

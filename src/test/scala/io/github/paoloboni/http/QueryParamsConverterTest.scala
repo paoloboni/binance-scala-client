@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.http
 
-import io.github.paoloboni.http.QueryParamsConverter.Ops
+import io.github.paoloboni.http.QueryParamsConverter._
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

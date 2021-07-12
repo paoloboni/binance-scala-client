@@ -24,7 +24,6 @@ package io.github.paoloboni.binance.spot.response
 import cats.effect.kernel.Async
 import cats.implicits._
 import io.circe.Decoder
-import io.circe.generic.extras.Configuration
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.binance.spot.SpotOrderType
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -45,10 +44,7 @@ case class EXCHANGE_MAX_NUM_ORDERS(maxNumOrders: Int)                           
 case class EXCHANGE_MAX_ALGO_ORDERS(maxNumAlgoOrders: Int)                                        extends Filter
 
 object Filter {
-  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("filterType")
-  import io.circe.generic.extras.semiauto._
-
-  implicit val decoder: Decoder[Filter] = deriveConfiguredDecoder[Filter]
+  implicit val decoder: Decoder[Filter] = FilterCodecs.decoder
 }
 
 case class Symbol(

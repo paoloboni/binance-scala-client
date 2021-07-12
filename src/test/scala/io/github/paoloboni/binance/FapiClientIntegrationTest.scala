@@ -26,7 +26,6 @@ import cats.effect.{ExitCode, IO}
 import cats.implicits._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
-import eu.timepit.refined.refineMV
 import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
@@ -37,25 +36,17 @@ import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
 import org.http4s.websocket.WebSocketFrame
-import org.mockito.{Mockito, MockitoSugar}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{EitherValues, OptionValues}
+import org.scalatest.EitherValues._
 import scodec.bits.ByteVector
-import shapeless.tag
 import sttp.client3.UriContext
 
 import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class FapiClientIntegrationTest
-    extends AnyFreeSpec
-    with Matchers
-    with EitherValues
-    with OptionValues
-    with TestClient
-    with MockitoSugar {
+class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClient {
 
   private val wsPort = 9999
 
@@ -74,7 +65,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo(from.toString),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -98,7 +89,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806520000"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -123,7 +114,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548836400000"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -197,7 +188,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo(from.toString),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -219,7 +210,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806459999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -241,7 +232,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806519999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -264,7 +255,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806579999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -286,7 +277,7 @@ class FapiClientIntegrationTest
           .withQueryParams(
             Map(
               "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.entryName),
+              "interval"  -> equalTo(interval.toString),
               "startTime" -> equalTo("1548806639999"),
               "endTime"   -> equalTo(to.toString),
               "limit"     -> equalTo(threshold.toString)
@@ -486,8 +477,7 @@ class FapiClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createFutureClient[IO](config)
@@ -513,7 +503,7 @@ class FapiClientIntegrationTest
       maxWithdrawAmount = 23.72469206,
       assets = List(
         OwnedAsset(
-          asset = tag[AssetTag][String]("USDT"),
+          asset = "USDT",
           walletBalance = 23.72469206,
           unrealizedProfit = 0.00000000,
           marginBalance = 23.72469206,
@@ -577,8 +567,7 @@ class FapiClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val changePositionParams = true
 
@@ -621,10 +610,9 @@ class FapiClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
-    val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = refineMV(100))
+    val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 100)
 
     val result = BinanceClient
       .createFutureClient[IO](config)
@@ -633,7 +621,7 @@ class FapiClientIntegrationTest
 
     result shouldBe ChangeInitialLeverageResponse(
       symbol = "BTCUSDT",
-      leverage = refineMV(100),
+      leverage = 100,
       maxNotionalValue = MaxNotionalValue.Value(1000000)
     )
 
@@ -653,9 +641,14 @@ class FapiClientIntegrationTest
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParams(
           Map(
-            "recvWindow" -> equalTo("5000"),
-            "timestamp"  -> equalTo(fixedTime.toString),
-            "signature"  -> equalTo("e41b485fdf1b2b4e7b50c24c82c8f37d639e52f542bb1deae9de0effe2863576")
+            "recvWindow"   -> equalTo("5000"),
+            "timestamp"    -> equalTo(fixedTime.toString),
+            "type"         -> equalTo("MARKET"),
+            "symbol"       -> equalTo("BTCUSDT"),
+            "side"         -> equalTo("BUY"),
+            "positionSide" -> equalTo("BOTH"),
+            "quantity"     -> equalTo("10"),
+            "signature"    -> equalTo("e41b485fdf1b2b4e7b50c24c82c8f37d639e52f542bb1deae9de0effe2863576")
           ).asJava
         )
         .willReturn(
@@ -691,8 +684,7 @@ class FapiClientIntegrationTest
 
     val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
-    implicit val async: Async[IO] = Mockito.spy(new TestAsync)
-    doReturn(fixedTime.millis.pure[IO]).when(async).realTime
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
     val result = BinanceClient
       .createFutureClient[IO](config)
@@ -857,7 +849,7 @@ class FapiClientIntegrationTest
       apiSecret: String = "",
       wsPort: Int = 80
   ) =
-    FapiConfig.Custom(
+    FapiConfig.Custom[IO](
       restBaseUrl = uri"http://localhost:${server.port}",
       wsBaseUrl = uri"ws://localhost:$wsPort",
       exchangeInfoUrl = uri"http://localhost:${server.port}/fapi/v1/exchangeInfo",
