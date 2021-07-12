@@ -31,7 +31,6 @@ lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.1.1"
 lazy val http4sV            = "1.0.0-M23"
 lazy val http4sBlazeV       = "0.15.1"
-lazy val mockitoV           = "3.11.2"
 
 lazy val root = (project in file("."))
   .configs(EndToEndTest)
