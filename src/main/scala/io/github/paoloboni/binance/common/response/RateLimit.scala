@@ -21,31 +21,9 @@
 
 package io.github.paoloboni.binance.common.response
 
-import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.github.paoloboni.http.ratelimit.Rate
 
 import scala.concurrent.duration._
-
-sealed trait RateLimitType extends EnumEntry
-object RateLimitType extends Enum[RateLimitType] with CirceEnum[RateLimitType] {
-
-  override def values = findValues
-
-  case object REQUEST_WEIGHT extends RateLimitType
-  case object ORDERS         extends RateLimitType
-  case object RAW_REQUESTS   extends RateLimitType
-  case object NONE           extends RateLimitType
-}
-
-sealed trait RateLimitInterval extends EnumEntry
-object RateLimitInterval extends Enum[RateLimitInterval] with CirceEnum[RateLimitInterval] {
-
-  override def values = findValues
-
-  case object SECOND extends RateLimitInterval
-  case object MINUTE extends RateLimitInterval
-  case object DAY    extends RateLimitInterval
-}
 
 case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int) {
   def toRate = Rate(

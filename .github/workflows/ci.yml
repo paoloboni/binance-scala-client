@@ -22,8 +22,9 @@ jobs:
           - 8
           - 11
         scala:
-          - 2.12.13
-          - 2.13.5
+          - 2.12.14
+          - 2.13.6
+          - 3.0.0
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,10 +43,17 @@ jobs:
       - name: Build and test
         run: sbt ++${{ matrix.scala }} scalafmtCheck test:scalafmtCheck scalafmtSbtCheck headerCheck test:headerCheck test
         shell: bash
+        timeout-minutes: 5
   e2e:
     if: github.actor == 'paoloboni'
     needs: test
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scala:
+          - 2.13.6
+          - 3.0.0
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -66,5 +74,5 @@ jobs:
           FAPI_SECRET_KEY: ${{ secrets.FAPI_SECRET_KEY }}
           SPOT_API_KEY: ${{ secrets.SPOT_API_KEY }}
           SPOT_SECRET_KEY: ${{ secrets.SPOT_SECRET_KEY }}
-        run: sbt e2e:test
+        run: sbt ++${{ matrix.scala }} e2e:test
         shell: bash

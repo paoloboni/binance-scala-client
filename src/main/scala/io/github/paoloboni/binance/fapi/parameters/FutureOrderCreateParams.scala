@@ -22,20 +22,7 @@
 package io.github.paoloboni.binance.fapi.parameters
 
 import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi._
-import enumeratum.{CirceEnum, Enum, EnumEntry}
-import io.circe.generic.extras.Configuration
-import io.circe.{Decoder, Encoder}
-
-sealed trait FutureOrderCreateResponseType extends EnumEntry
-object FutureOrderCreateResponseType
-    extends Enum[FutureOrderCreateResponseType]
-    with CirceEnum[FutureOrderCreateResponseType] {
-  val values = findValues
-
-  case object ACK    extends FutureOrderCreateResponseType
-  case object RESULT extends FutureOrderCreateResponseType
-}
+import io.github.paoloboni.binance.fapi.{FuturePositionSide, FutureTimeInForce}
 
 sealed trait FutureOrderCreateParams
 
@@ -120,12 +107,4 @@ object FutureOrderCreateParams {
       quantity: BigDecimal,
       newClientOrderId: Option[String] = None
   ) extends FutureOrderCreateParams
-
-  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")
-  import io.circe.generic.extras.semiauto._
-
-  implicit val decoder: Decoder[FutureOrderCreateParams] = deriveConfiguredDecoder[FutureOrderCreateParams]
-  implicit val encoder: Encoder[FutureOrderCreateParams] =
-    deriveConfiguredEncoder[FutureOrderCreateParams]
-      .mapJson(_.dropNullValues) // do not include None values in the json
 }

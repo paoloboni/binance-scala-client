@@ -23,9 +23,7 @@ package io.github.paoloboni.binance.fapi.response
 
 import cats.effect.Async
 import cats.implicits._
-import enumeratum.{CirceEnum, Enum, EnumEntry}
 import io.circe.Decoder
-import io.circe.generic.extras.Configuration
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.http.ratelimit.RateLimiter
@@ -41,21 +39,7 @@ case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, m
 case class MIN_NOTIONAL(notional: Int)                                                                 extends Filter
 
 object Filter {
-  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("filterType")
-  import io.circe.generic.extras.semiauto._
-
-  implicit val decoder: Decoder[Filter] = deriveConfiguredDecoder[Filter]
-}
-
-sealed trait ContractType extends EnumEntry
-object ContractType extends Enum[ContractType] with CirceEnum[ContractType] {
-  val values = findValues
-
-  case object PERPETUAL       extends ContractType
-  case object CURRENT_MONTH   extends ContractType
-  case object NEXT_MONTH      extends ContractType
-  case object CURRENT_QUARTER extends ContractType
-  case object NEXT_QUARTER    extends ContractType
+  implicit val decoder: Decoder[Filter] = FilterCodecs.decoder
 }
 
 case class Symbol(
@@ -80,9 +64,7 @@ case class Symbol(
     orderTypes: List[FutureOrderType],
     filters: List[Filter],
     timeInForce: List[FutureTimeInForce]
-) {
-  def getContractType: Option[ContractType] = ContractType.withNameOption(contractType)
-}
+)
 
 case class AssetInfo(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
 

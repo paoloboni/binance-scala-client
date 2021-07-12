@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.binance.spot.response
 
-import io.github.paoloboni.binance.common.{Asset, OrderSide}
+import io.github.paoloboni.binance.common.OrderSide
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 
 case class SpotOrderCreateResponse(
@@ -45,5 +45,5 @@ case class SpotFill(
     price: BigDecimal,
     qty: BigDecimal,
     commission: BigDecimal,
-    commissionAsset: Asset
+    commissionAsset: String
 )

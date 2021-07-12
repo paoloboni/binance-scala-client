@@ -21,18 +21,8 @@
 
 package io.github.paoloboni.binance.spot.parameters
 
-import enumeratum.{Enum, EnumEntry}
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot._
-
-sealed trait SpotOrderCreateResponseType extends EnumEntry
-object SpotOrderCreateResponseType extends Enum[SpotOrderCreateResponseType] {
-  val values = findValues
-
-  case object ACK    extends SpotOrderCreateResponseType
-  case object RESULT extends SpotOrderCreateResponseType
-  case object FULL   extends SpotOrderCreateResponseType
-}
 
 sealed trait SpotOrderCreateParams
 

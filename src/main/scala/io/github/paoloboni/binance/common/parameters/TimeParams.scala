@@ -21,6 +21,4 @@
 
 package io.github.paoloboni.binance.common.parameters
 
-import io.github.paoloboni.binance.common.BinanceConfig.RecvWindow
-
-case class TimeParams(recvWindow: RecvWindow, timestamp: Long)
+case class TimeParams(recvWindow: Int, timestamp: Long)

@@ -1463,6 +1463,8 @@ class SpotExchangeInfoJsonTest extends AnyFlatSpec with Matchers {
   "Spot ExchangeInfos" should "be decodeable from json" in {
     val result = decode[ExchangeInformation](exchangeInfoTest)
 
-    result.isRight shouldBe true
+    withClue(result.left.map(error => Console.err.println("error: " + error))) {
+      result.isRight shouldBe true
+    }
   }
 }
