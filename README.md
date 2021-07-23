@@ -41,9 +41,9 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 ### Future API
 
 #### Rest
-* [Exchange information](https://binance-docs.github.io/apidocs/#exchange-information): Current exchange trading rules and symbol information
-* [Kline/Candlestick data](https://binance-docs.github.io/apidocs/#kline-candlestick-data): Kline/candlestick bars for a symbol
-* [Symbol price ticker](https://binance-docs.github.io/apidocs/#symbol-price-ticker): Latest price for a symbol or symbols
+* [Exchange information](https://binance-docs.github.io/apidocs/futures/en/#exchange-information): Current exchange trading rules and symbol information
+* [Kline/Candlestick data](https://binance-docs.github.io/apidocs/futures/en/#kline-candlestick-data): Kline/candlestick bars for a symbol
+* [Symbol price ticker](https://binance-docs.github.io/apidocs/futures/en/#symbol-price-ticker): Latest price for a symbol or symbols
 * [Account information](https://binance-docs.github.io/apidocs/#account-information-user_data): Get current account information
 * [New order (trade)](https://binance-docs.github.io/apidocs/futures/en/#new-order-trade): Send in a new order
 * [Change position mode (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-position-mode-trade): Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
@@ -53,7 +53,46 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Aggregate trade streams](https://binance-docs.github.io/apidocs/futures/en/#aggregate-trade-streams): The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100 milliseconds.
 * [Kline/Candlestick Streams](https://binance-docs.github.io/apidocs/futures/en/#kline-candlestick-streams): The Kline/Candlestick Stream push updates to the current klines/candlestick every 250 milliseconds (if existing).
 
-## Example
+## Initialise the client
+
+The client initialisation returns an API object as a [Cats Resource](https://typelevel.org/cats-effect/docs/std/resource).
+There are two factories available at the moment, one for Spot API and the other one for Future API.
+
+### Spot client
+
+```scala
+import cats.effect.{IO, Resource}
+import io.github.paoloboni.binance.BinanceClient
+import io.github.paoloboni.binance.common.SpotConfig
+import io.github.paoloboni.binance.spot.SpotApi
+
+val config = SpotConfig.Default[IO](
+  apiKey = "***",     // your api key
+  apiSecret = "***"   // your api secret
+)
+val client: Resource[IO, SpotApi[IO]] = BinanceClient.createSpotClient[IO](config)
+```
+
+### Future client
+
+```scala
+import cats.effect.{IO, Resource}
+import io.github.paoloboni.binance.BinanceClient
+import io.github.paoloboni.binance.common.FapiConfig
+import io.github.paoloboni.binance.fapi.FutureApi
+
+val config = SpotConfig.Default[IO](
+  apiKey = "***",     // your api key
+  apiSecret = "***"   // your api secret
+)
+val client: Resource[IO, FutureApi[IO]] = BinanceClient.createFutureClient[IO](config)
+```
+
+### Documentation
+
+The API documentation is available [here](https://paoloboni.github.io/binance-scala-client/latest/api/).
+
+## Example app
 
 This is a sample app to monitor the exchange prices (fetch every 5 seconds).
 
