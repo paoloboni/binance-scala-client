@@ -81,7 +81,7 @@ import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.FapiConfig
 import io.github.paoloboni.binance.fapi.FutureApi
 
-val config = SpotConfig.Default[IO](
+val config = FapiConfig.Default[IO](
   apiKey = "***",     // your api key
   apiSecret = "***"   // your api secret
 )
