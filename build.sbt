@@ -36,7 +36,7 @@ lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
   .settings(
-    scalaVersion      := scala3,
+    scalaVersion      := scala213,
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Xmax-inlines", "64")
@@ -81,7 +81,9 @@ lazy val root = (project in file("."))
         Seq.empty
     })
   )
-  .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin, GhpagesPlugin)
+
+git.remoteRepo := "git@github.com:paoloboni/binance-scala-client.git"
 
 import ReleaseTransformations._
 
