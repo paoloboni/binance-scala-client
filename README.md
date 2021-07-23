@@ -69,7 +69,7 @@ import scala.concurrent.duration.DurationInt
 
 object PriceMonitor extends IOApp {
 
-  val config = SpotConfig.Default(
+  val config = SpotConfig.Default[IO](
     apiKey = "***",
     apiSecret = "***"
   )

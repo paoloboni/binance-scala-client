@@ -2,19 +2,19 @@ name := "binance-scala-client"
 
 lazy val scala212               = "2.12.14"
 lazy val scala213               = "2.13.6"
-lazy val scala3                 = "3.0.0"
+lazy val scala3                 = "3.0.1"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalafmtOnCompile := false
-ThisBuild / organization := "io.github.paoloboni"
+ThisBuild / organization      := "io.github.paoloboni"
 
 lazy val EndToEndTest = config("e2e") extend Test
 lazy val e2eSettings =
   inConfig(EndToEndTest)(Defaults.testSettings) ++
     Seq(
-      EndToEndTest / fork := false,
+      EndToEndTest / fork              := false,
       EndToEndTest / parallelExecution := false,
-      EndToEndTest / scalaSource := baseDirectory.value / "src" / "e2e" / "scala"
+      EndToEndTest / scalaSource       := baseDirectory.value / "src" / "e2e" / "scala"
     )
 
 lazy val circeV             = "0.14.1"
@@ -23,7 +23,7 @@ lazy val catsCoreV          = "2.6.1"
 lazy val catsEffectV        = "3.1.1"
 lazy val log4CatsV          = "2.1.1"
 lazy val slf4jV             = "1.7.31"
-lazy val sttpV              = "3.3.9"
+lazy val sttpV              = "3.3.11"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
 lazy val scalatestV         = "3.2.9"
@@ -36,14 +36,14 @@ lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
   .settings(
-    scalaVersion := scala3,
+    scalaVersion      := scala3,
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Xmax-inlines", "64")
       case _            => Seq.empty
     }),
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-    crossScalaVersions := supportedScalaVersions,
+    crossScalaVersions            := supportedScalaVersions,
     libraryDependencies ++= Seq(
       "io.circe"                      %% "circe-core"                    % circeV,
       "io.circe"                      %% "circe-generic"                 % circeV,
