@@ -88,7 +88,7 @@ val config = SpotConfig.Default[IO](
 val client: Resource[IO, FutureApi[IO]] = BinanceClient.createFutureClient[IO](config)
 ```
 
-### Documentation
+## Documentation
 
 The API documentation is available [here](https://paoloboni.github.io/binance-scala-client/latest/api/).
 
