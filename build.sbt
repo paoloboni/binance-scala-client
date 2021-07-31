@@ -81,7 +81,7 @@ lazy val root = (project in file("."))
         Seq.empty
     })
   )
-  .enablePlugins(AutomateHeaderPlugin, GhpagesPlugin)
+  .enablePlugins(AutomateHeaderPlugin, GhpagesPlugin, SiteScaladocPlugin)
 
 git.remoteRepo := "git@github.com:paoloboni/binance-scala-client.git"
 
