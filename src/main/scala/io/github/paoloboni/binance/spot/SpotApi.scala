@@ -236,6 +236,21 @@ final case class SpotApi[F[_]: Logger](
     } yield ()
   }
 
+  /** The Trade Streams push raw trade information; each trade has a unique buyer and seller.
+    *
+    * @param symbol
+    *   the symbol
+    * @return
+    *   a stream of trades
+    */
+  def tradeStreams(symbol: String): Stream[F, TradeStream] =
+    for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@trade").toEither)
+      )
+      stream <- client.ws[TradeStream](uri)
+    } yield stream
+
   /** The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
     *
     * @param symbol

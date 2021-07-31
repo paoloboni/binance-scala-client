@@ -22,7 +22,7 @@ lazy val fs2V               = "3.0.6"
 lazy val catsCoreV          = "2.6.1"
 lazy val catsEffectV        = "3.1.1"
 lazy val log4CatsV          = "2.1.1"
-lazy val slf4jV             = "1.7.31"
+lazy val slf4jV             = "1.7.32"
 lazy val sttpV              = "3.3.11"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
@@ -36,7 +36,7 @@ lazy val root = (project in file("."))
   .configs(EndToEndTest)
   .settings(e2eSettings)
   .settings(
-    scalaVersion      := scala3,
+    scalaVersion      := scala213,
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Xmax-inlines", "64")
@@ -81,7 +81,9 @@ lazy val root = (project in file("."))
         Seq.empty
     })
   )
-  .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin, GhpagesPlugin)
+
+git.remoteRepo := "git@github.com:paoloboni/binance-scala-client.git"
 
 import ReleaseTransformations._
 
