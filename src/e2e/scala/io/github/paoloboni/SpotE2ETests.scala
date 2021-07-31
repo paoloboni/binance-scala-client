@@ -3,7 +3,7 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
-import io.github.paoloboni.binance.common.response.{BookTicker, DiffDepthStream, KLineStream, Level, PartialDepthStream}
+import io.github.paoloboni.binance.common.response.{BookTicker, DiffDepthStream, TradeStream, KLineStream, Level, PartialDepthStream}
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
