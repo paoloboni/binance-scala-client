@@ -31,7 +31,6 @@ final case class TradeStream(
     b: Long,       // Buyer order ID
     a: Long,       // Seller order ID
     T: Long,       // Trade time
-    
     m: Boolean,    // Is the buyer the market maker?
     M: Boolean     // Ignore
 )
