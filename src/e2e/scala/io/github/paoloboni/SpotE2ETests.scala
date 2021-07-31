@@ -3,7 +3,15 @@ package io.github.paoloboni
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.implicits._
-import io.github.paoloboni.binance.common.response.{BookTicker, DiffDepthStream, TradeStream, KLineStream, Level, PartialDepthStream}
+import io.github.paoloboni.binance.common.response.{
+  BookTicker,
+  Depth,
+  DiffDepthStream,
+  KLineStream,
+  Level,
+  PartialDepthStream,
+  TradeStream
+}
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
@@ -24,6 +32,13 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     apiSecret = sys.env("SPOT_SECRET_KEY"),
     testnet = true
   )
+
+  "getDepth" in {
+    BinanceClient
+      .createSpotClient[IO](config)
+      .use(_.getDepth(common.parameters.Depth("BTCUSDT", 500)))
+      .asserting(_ shouldBe a[Depth])
+  }
 
   "getPrices" in {
     BinanceClient

@@ -50,6 +50,24 @@ final case class SpotApi[F[_]: Logger](
 )(implicit F: Async[F])
     extends BinanceApi[F] {
 
+  /** Returns the depth of the orderbook. 
+    *
+    * @param query
+    *   an `Depth` object containing the query parameters
+    * @return
+    *   the orderbook depth
+    */
+  def getDepth(query: common.parameters.Depth): F[Depth] =
+    for {
+      uri <- F.fromEither(Try(uri"${config.restBaseUrl}/api/v3/depth").map(_.addParams(query.toQueryParams)).toEither)
+      depthOrError <- client.get[CirceResponse[Depth]](
+        uri = uri,
+        responseAs = asJson[Depth],
+        limiters = rateLimiters.filterNot(_.limitType == common.response.RateLimitType.ORDERS),
+      )
+      depth <- F.fromEither(depthOrError)
+    } yield depth
+
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint in case the result set doesn't
     * fit in a single page.
     *
