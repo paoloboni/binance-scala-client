@@ -115,6 +115,14 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
       .asserting(_ shouldBe "OK")
   }
 
+  "tradeStreams" in {
+    BinanceClient
+      .createSpotClient[IO](config)
+      .use(_.tradeStreams("btcusdt").take(1).compile.toList)
+      .timeout(30.seconds)
+      .asserting(_.loneElement shouldBe a[TradeStream])
+  }
+
   "kLineStreams" in {
     BinanceClient
       .createSpotClient[IO](config)

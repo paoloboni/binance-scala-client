@@ -719,6 +719,53 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
   }
 
+  "it should stream trades" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e": "trade",
+                              |  "E": 123456789,
+                              |  "s": "BNBBTC",
+                              |  "t": 12345,
+                              |  "p": "0.001",
+                              |  "q": "100",
+                              |  "b": 88,
+                              |  "a": 50,
+                              |  "T": 123456785,
+                              |  "m": true,
+                              |  "M": true
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(_.tradeStreams("btcusdt").compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only TradeStream(
+        e = "trade",     
+        E = 123456789,   
+        s = "BNBBTC",    
+        t = 12345,       
+        p = 0.001,     
+        q = 100,       
+        b = 88,          
+        a = 50,          
+        T = 123456785,   
+        m = true,        
+        M = true         
+      )
+    }
+  }
+
   "it should stream KLines" in new Env {
     withWiremockServer { server =>
       stubInfoEndpoint(server)
