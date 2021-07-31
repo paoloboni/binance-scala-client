@@ -751,17 +751,17 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
       } yield result
 
       test.timeout(30.seconds).unsafeRunSync() should contain only TradeStream(
-        e = "trade",     
-        E = 123456789,   
-        s = "BNBBTC",    
-        t = 12345,       
-        p = 0.001,     
-        q = 100,       
-        b = 88,          
-        a = 50,          
-        T = 123456785,   
-        m = true,        
-        M = true         
+        e = "trade",
+        E = 123456789,
+        s = "BNBBTC",
+        t = 12345,
+        p = 0.001,
+        q = 100,
+        b = 88,
+        a = 50,
+        T = 123456785,
+        m = true,
+        M = true
       )
     }
   }
