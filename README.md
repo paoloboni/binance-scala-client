@@ -37,6 +37,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Diff. Depth Stream](https://binance-docs.github.io/apidocs/spot/en/#diff-depth-stream): Order book price and quantity depth updates used to locally manage an order book.
 * [All Book Tickers Stream](https://binance-docs.github.io/apidocs/spot/en/#all-book-tickers-stream): Pushes any update to the best bid or ask's price or quantity in real-time for all symbols.
 * [Partial Book Depth Streams](https://binance-docs.github.io/apidocs/spot/en/#partial-book-depth-streams): Top bids and asks.
+* [Trade Streams](https://binance-docs.github.io/apidocs/spot/en/#trade-streams): The Trade Streams push raw trade information.
 
 ### Future API
 
