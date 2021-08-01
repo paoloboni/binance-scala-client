@@ -22,7 +22,7 @@
 package io.github.paoloboni.binance.common.response
 
 final case class Depth(
-    lastUpdateId: Long,   // Last Update Id
-    bids: Seq[Bid],       // Bids to be updated
-    asks: Seq[Ask],       // Asks to be updated
+    lastUpdateId: Long, // Last Update Id
+    bids: Seq[Bid],     // Bids to be updated
+    asks: Seq[Ask]      // Asks to be updated
 )
