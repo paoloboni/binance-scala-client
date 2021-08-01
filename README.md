@@ -31,6 +31,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [New order (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#new-order--trade): Send in a new order
 * [Cancel order (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-order-trade): Cancel an active order
 * [Cancel open orders (trade)](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-all-open-orders-on-a-symbol-trade): Cancels all active orders on a symbol
+* [Order book](https://binance-docs.github.io/apidocs/spot/en/#order-book): Order book depth on a symbol
 
 #### WebSocket
 * [Kline/Candlestick Streams](https://binance-docs.github.io/apidocs/spot/en/#kline-candlestick-streams): The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
