@@ -36,7 +36,7 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
   "getDepth" in {
     BinanceClient
       .createSpotClient[IO](config)
-      .use(_.getDepth(common.parameters.Depth("BTCUSDT", 500)))
+      .use(_.getDepth(common.parameters.Depth("BTCUSDT", common.parameters.DepthLimit.`500`)))
       .asserting(_ shouldBe a[Depth])
   }
 

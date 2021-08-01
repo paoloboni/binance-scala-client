@@ -21,4 +21,18 @@
 
 package io.github.paoloboni.binance.common.parameters
 
-final case class Depth(symbol: String, limit: DepthLimit)
+import scala.collection.immutable
+import enumeratum.{CirceEnum, Enum, EnumEntry}
+
+sealed abstract class DepthLimit(val weight: Int) extends EnumEntry
+object DepthLimit extends Enum[DepthLimit] with CirceEnum[DepthLimit] {
+  val values: immutable.IndexedSeq[DepthLimit] = findValues
+  case object `5`    extends DepthLimit(1)
+  case object `10`   extends DepthLimit(1)
+  case object `20`   extends DepthLimit(1)
+  case object `50`   extends DepthLimit(1)
+  case object `100`  extends DepthLimit(1)
+  case object `500`  extends DepthLimit(5)
+  case object `1000` extends DepthLimit(10)
+  case object `5000` extends DepthLimit(50)
+}

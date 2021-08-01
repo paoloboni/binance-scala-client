@@ -21,4 +21,15 @@
 
 package io.github.paoloboni.binance.common.parameters
 
-final case class Depth(symbol: String, limit: DepthLimit)
+import io.circe.Decoder
+import io.github.paoloboni.binance.common.EnumDecoder
+
+enum DepthLimit(val weight: Int) derives EnumDecoder:
+  case `5` extends DepthLimit(1)
+  case `10` extends DepthLimit(1)
+  case `20` extends DepthLimit(1)
+  case `50` extends DepthLimit(1)
+  case `100` extends DepthLimit(1)
+  case `500` extends DepthLimit(5)
+  case `1000` extends DepthLimit(10)
+  case `5000` extends DepthLimit(50)

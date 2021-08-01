@@ -335,8 +335,8 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
   "it should return the orderbook depth" in new Env {
     withWiremockServer { server =>
-      val symbol    = "ETHUSDT"
-      val threshold = 1
+      val symbol = "ETHUSDT"
+      val limit  = common.parameters.DepthLimit.`5`
 
       stubInfoEndpoint(server)
 
@@ -345,7 +345,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
           .withQueryParams(
             Map(
               "symbol" -> equalTo(symbol),
-              "limit"  -> equalTo(threshold.toString)
+              "limit"  -> equalTo(limit.toString)
             ).asJava
           )
           .willReturn(
@@ -369,7 +369,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
       val result = BinanceClient
         .createSpotClient[IO](config)
-        .use(_.getDepth(common.parameters.Depth(symbol = symbol, limit = threshold)))
+        .use(_.getDepth(common.parameters.Depth(symbol, limit)))
         .unsafeRunSync()
 
       result shouldBe Depth(
