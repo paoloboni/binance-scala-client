@@ -20,15 +20,15 @@ lazy val e2eSettings =
 lazy val circeV             = "0.14.1"
 lazy val fs2V               = "3.0.6"
 lazy val catsCoreV          = "2.6.1"
-lazy val catsEffectV        = "3.1.1"
+lazy val catsEffectV        = "3.2.1"
 lazy val log4CatsV          = "2.1.1"
 lazy val slf4jV             = "1.7.32"
-lazy val sttpV              = "3.3.11"
+lazy val sttpV              = "3.3.13"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
 lazy val scalatestV         = "3.2.9"
 lazy val wiremockV          = "2.27.2"
-lazy val catsEffectTestingV = "1.1.1"
+lazy val catsEffectTestingV = "1.2.0"
 lazy val http4sV            = "1.0.0-M23"
 lazy val http4sBlazeV       = "0.15.1"
 
@@ -81,7 +81,7 @@ lazy val root = (project in file("."))
         Seq.empty
     })
   )
-  .enablePlugins(AutomateHeaderPlugin, GhpagesPlugin)
+  .enablePlugins(AutomateHeaderPlugin, GhpagesPlugin, SiteScaladocPlugin)
 
 git.remoteRepo := "git@github.com:paoloboni/binance-scala-client.git"
 
