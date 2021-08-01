@@ -333,6 +333,57 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
     }
   }
 
+  "it should return the orderbook depth" in new Env {
+    withWiremockServer { server =>
+      val symbol = "ETHUSDT"
+      val limit  = common.parameters.DepthLimit.`5`
+
+      stubInfoEndpoint(server)
+
+      server.stubFor(
+        get(urlPathEqualTo("/api/v3/depth"))
+          .withQueryParams(
+            Map(
+              "symbol" -> equalTo(symbol),
+              "limit"  -> equalTo(limit.toString)
+            ).asJava
+          )
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |{
+                          |  "lastUpdateId": 1027024,
+                          |  "bids": [
+                          |    ["4.00000000","431.00000000"]
+                          |  ],
+                          |  "asks": [
+                          |    ["4.00000200","12.00000000"]
+                          |  ]
+                          |}
+                      """.stripMargin)
+          )
+      )
+
+      val config = prepareConfiguration(server)
+
+      val result = BinanceClient
+        .createSpotClient[IO](config)
+        .use(_.getDepth(common.parameters.Depth(symbol, limit)))
+        .unsafeRunSync()
+
+      result shouldBe Depth(
+        lastUpdateId = 1027024,
+        bids = List(
+          Bid(4.00000000, 431.0)
+        ),
+        asks = List(
+          Ask(4.00000200, 12.0)
+        )
+      )
+    }
+  }
+
   "it should return a list of prices" in new Env {
     withWiremockServer { server =>
       stubInfoEndpoint(server)
