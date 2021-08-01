@@ -62,7 +62,7 @@ final case class SpotApi[F[_]: Logger](
     for {
       uri <- F.fromEither(
         Try(uri"${config.restBaseUrl}/api/v3/depth")
-          .map(_.addParams(QueryParams.fromMap(Map("symbol" -> query.symbol, "limit" -> query.limit.toString))))
+          .map(_.addParams(query.toQueryParams))
           .toEither
       )
       depthOrError <- client.get[CirceResponse[Depth]](
