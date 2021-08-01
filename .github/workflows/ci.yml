@@ -8,7 +8,7 @@ on:
       - 'project/**'
       - '**/*.sbt'
   push:
-    branches: [master]
+    branches: [master, staging]
     paths:
       - 'src/**'
       - 'project/**'
