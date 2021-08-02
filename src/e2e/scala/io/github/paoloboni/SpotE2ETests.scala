@@ -1,31 +1,29 @@
 package io.github.paoloboni
 
-import cats.effect.IO
-import cats.effect.testing.scalatest.AsyncIOSpec
+import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
+import cats.effect.{IO, Resource}
 import cats.implicits._
-import io.github.paoloboni.binance.common.response.{
-  BookTicker,
-  Depth,
-  DiffDepthStream,
-  KLineStream,
-  Level,
-  PartialDepthStream,
-  TradeStream
-}
+import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotOrderCreateResponse}
-import io.github.paoloboni.binance.{BinanceClient, _}
+import io.github.paoloboni.binance._
 import org.scalatest.LoneElement
-import org.scalatest.freespec.AsyncFreeSpec
+import org.scalatest.freespec.FixtureAsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
-class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with LoneElement {
+class SpotE2ETests
+    extends FixtureAsyncFreeSpec
+    with AsyncIOSpec
+    with Matchers
+    with Env
+    with LoneElement
+    with CatsResourceIO[SpotApi[IO]] {
 
   val config: SpotConfig[IO] = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
@@ -33,139 +31,122 @@ class SpotE2ETests extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env
     testnet = true
   )
 
+  val resource: Resource[IO, SpotApi[IO]] = BinanceClient.createSpotClient[IO](config)
+
   "getDepth" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.getDepth(common.parameters.Depth("BTCUSDT", common.parameters.DepthLimit.`500`)))
+    _.getDepth(common.parameters.Depth("BTCUSDT", common.parameters.DepthLimit.`500`))
       .asserting(_ shouldBe a[Depth])
   }
 
-  "getPrices" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.getPrices())
-      .asserting(_ shouldNot be(empty))
-  }
+  "getPrices" in { _.getPrices().asserting(_ shouldNot be(empty)) }
 
-  "getBalance" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.getBalance())
-      .asserting(_ shouldBe a[SpotAccountInfoResponse])
-  }
+  "getBalance" in { _.getBalance().asserting(_ shouldBe a[SpotAccountInfoResponse]) }
 
-  "getKLines" in {
+  "getKLines" in { client =>
     val now = Instant.now()
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(
-        _.getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100)).compile.toList
-      )
+    client
+      .getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100))
+      .compile
+      .toList
       .asserting(_ shouldNot be(empty))
   }
 
-  "createOrder" in {
+  "createOrder" in { client =>
     val side = Random.shuffle(OrderSide.values).head
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(
-        _.createOrder(
-          SpotOrderCreateParams.MARKET(
-            symbol = "XRPUSDT",
-            side = side,
-            quantity = BigDecimal(100).some
-          )
+    client
+      .createOrder(
+        SpotOrderCreateParams.MARKET(
+          symbol = "XRPUSDT",
+          side = side,
+          quantity = BigDecimal(100).some
         )
       )
       .asserting(_ shouldBe a[SpotOrderCreateResponse])
   }
 
-  "cancelOrder" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(client =>
-        for {
-          createOrderResponse <- client.createOrder(
-            SpotOrderCreateParams.LIMIT(
-              symbol = "XRPUSDT",
-              side = OrderSide.SELL,
-              timeInForce = SpotTimeInForce.GTC,
-              quantity = 10,
-              price = 1
-            )
-          )
-
-          _ <- client.cancelOrder(
-            SpotOrderCancelParams(
-              symbol = "XRPUSDT",
-              orderId = createOrderResponse.orderId.some,
-              origClientOrderId = None
-            )
-          )
-        } yield "OK"
+  "cancelOrder" in { client =>
+    (for {
+      createOrderResponse <- client.createOrder(
+        SpotOrderCreateParams.LIMIT(
+          symbol = "XRPUSDT",
+          side = OrderSide.SELL,
+          timeInForce = SpotTimeInForce.GTC,
+          quantity = 10,
+          price = 1
+        )
       )
+
+      _ <- client.cancelOrder(
+        SpotOrderCancelParams(
+          symbol = "XRPUSDT",
+          orderId = createOrderResponse.orderId.some,
+          origClientOrderId = None
+        )
+      )
+    } yield "OK")
       .asserting(_ shouldBe "OK")
   }
 
-  "cancelAllOrders" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(client =>
-        for {
-          _ <- client.createOrder(
-            SpotOrderCreateParams.LIMIT(
-              symbol = "XRPUSDT",
-              side = OrderSide.SELL,
-              timeInForce = SpotTimeInForce.GTC,
-              quantity = 10,
-              price = 1
-            )
-          )
-
-          _ <- client.cancelAllOrders(
-            SpotOrderCancelAllParams(symbol = "XRPUSDT")
-          )
-        } yield "OK"
+  "cancelAllOrders" in { client =>
+    (for {
+      _ <- client.createOrder(
+        SpotOrderCreateParams.LIMIT(
+          symbol = "XRPUSDT",
+          side = OrderSide.SELL,
+          timeInForce = SpotTimeInForce.GTC,
+          quantity = 10,
+          price = 1
+        )
       )
+
+      _ <- client.cancelAllOrders(
+        SpotOrderCancelAllParams(symbol = "XRPUSDT")
+      )
+    } yield "OK")
       .asserting(_ shouldBe "OK")
   }
 
   "tradeStreams" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.tradeStreams("btcusdt").take(1).compile.toList)
+    _.tradeStreams("btcusdt")
+      .take(1)
+      .compile
+      .toList
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[TradeStream])
   }
 
   "kLineStreams" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.kLineStreams("btcusdt", Interval.`1m`).take(1).compile.toList)
+    _.kLineStreams("btcusdt", Interval.`1m`)
+      .take(1)
+      .compile
+      .toList
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[KLineStream])
   }
 
   "diffDepthStream" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.diffDepthStream("btcusdt").take(1).compile.toList)
+    _.diffDepthStream("btcusdt")
+      .take(1)
+      .compile
+      .toList
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[DiffDepthStream])
   }
 
   "partialBookDepthStream" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.partialBookDepthStream("btcusdt", Level.`5`).take(1).compile.toList)
+    _.partialBookDepthStream("btcusdt", Level.`5`)
+      .take(1)
+      .compile
+      .toList
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[PartialDepthStream])
   }
 
   "allBookTickersStream" in {
-    BinanceClient
-      .createSpotClient[IO](config)
-      .use(_.allBookTickersStream().take(1).compile.toList)
+    _.allBookTickersStream()
+      .take(1)
+      .compile
+      .toList
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[BookTicker])
   }
