@@ -27,6 +27,7 @@ import cats.effect.std.Queue
 import cats.effect.syntax.spawn._
 import cats.implicits._
 import fs2.Stream
+import io.github.paoloboni.binance.common
 import io.github.paoloboni.binance.common.response.RateLimitType
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -68,6 +69,10 @@ sealed trait RateLimiter[F[_]] {
   def limitType: RateLimitType
 }
 
+case class RateLimiters[F[_]](value: List[RateLimiter[F]]) {
+  lazy val requestsOnly: List[RateLimiter[F]] = value.filterNot(_.limitType == common.response.RateLimitType.ORDERS)
+}
+
 case class Rate(n: Int, t: FiniteDuration, limitType: RateLimitType) {
-  def perSecond: Double = n.toDouble / t.toSeconds.toDouble
+  lazy val perSecond: Double = n.toDouble / t.toSeconds.toDouble
 }
