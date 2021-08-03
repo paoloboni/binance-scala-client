@@ -28,6 +28,7 @@ import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
 import io.github.paoloboni.binance.common.response._
+import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
@@ -330,6 +331,20 @@ final case class SpotApi[F[_]: Logger](
     for {
       uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/ws/!bookTicker").toEither))
       stream <- client.ws[BookTicker](uri)
+    } yield stream
+
+  /** The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100
+    * milliseconds.
+    *
+    * @param symbol
+    *   the symbol
+    * @return
+    *   a stream of aggregate trade events
+    */
+  def aggregateTradeStreams(symbol: String): Stream[F, AggregateTradeStream] =
+    for {
+      uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@aggTrade").toEither))
+      stream <- client.ws[AggregateTradeStream](uri)
     } yield stream
 }
 
