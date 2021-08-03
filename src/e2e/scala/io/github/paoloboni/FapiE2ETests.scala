@@ -4,7 +4,7 @@ import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{IO, Resource}
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.KLineStream
+import io.github.paoloboni.binance.common.response.{ContractKLineStream, KLineStream}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
@@ -40,8 +40,6 @@ class FapiE2ETests
 
   "getKLines" in { client =>
     val now = Instant.now()
-    BinanceClient
-      .createFutureClient[IO](config)
     client
       .getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100))
       .compile
@@ -86,6 +84,15 @@ class FapiE2ETests
       .toList
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[KLineStream])
+  }
+
+  "contractKLineStreams" in {
+    _.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`)
+      .take(1)
+      .compile
+      .toList
+      .timeout(30.seconds)
+      .asserting(_.loneElement shouldBe a[ContractKLineStream])
   }
 
   "markPriceStream" in {

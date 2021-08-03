@@ -19,16 +19,33 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.common.response
 
-import enumeratum.{CirceEnum, Enum, EnumEntry}
+import io.github.paoloboni.binance.common.Interval
+import io.github.paoloboni.binance.fapi.FutureContractType
 
-sealed trait FutureOrderCreateResponseType extends EnumEntry
-object FutureOrderCreateResponseType
-    extends Enum[FutureOrderCreateResponseType]
-    with CirceEnum[FutureOrderCreateResponseType] {
-  val values = findValues
+case class ContractKLineStreamPayload(
+    t: Long,       // Kline start time
+    T: Long,       // Kline close time
+    i: Interval,   // Interval
+    f: Long,       // First trade ID
+    L: Long,       // Last trade ID
+    o: BigDecimal, // Open price
+    c: BigDecimal, // Close price
+    h: BigDecimal, // High price
+    l: BigDecimal, // Low price
+    v: BigDecimal, // Base asset volume
+    n: Int,        // Number of trades
+    x: Boolean,    // Is this kline closed?
+    q: BigDecimal, // Quote asset volume
+    V: BigDecimal, // Taker buy base asset volume
+    Q: BigDecimal  // Taker buy quote asset volume
+)
 
-  case object ACK    extends FutureOrderCreateResponseType
-  case object RESULT extends FutureOrderCreateResponseType
-}
+case class ContractKLineStream(
+    e: String,              // Event type
+    E: Long,                // Event time
+    ps: String,             // Pair
+    ct: FutureContractType, // Contract type
+    k: ContractKLineStreamPayload
+)

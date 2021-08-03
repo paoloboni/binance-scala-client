@@ -29,7 +29,12 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.{KLineStream, KLineStreamPayload}
+import io.github.paoloboni.binance.common.response.{
+  ContractKLineStream,
+  ContractKLineStreamPayload,
+  KLineStream,
+  KLineStreamPayload
+}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
@@ -811,6 +816,74 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
           q = 1.0000,
           V = 500,
           Q = 0.500
+        )
+      )
+    }
+  }
+
+  "it should stream continuous Contract KLines" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e":"continuous_kline",
+                              |  "E":1607443058651,
+                              |  "ps":"BTCUSDT",
+                              |  "ct":"PERPETUAL",
+                              |  "k":{
+                              |    "t":1607443020000,
+                              |    "T":1607443079999,
+                              |    "i":"1m",
+                              |    "f":116467658886,
+                              |    "L":116468012423,
+                              |    "o":"18787.00",
+                              |    "c":"18804.04",
+                              |    "h":"18804.04",
+                              |    "l":"18786.54",
+                              |    "v":"197.664",
+                              |    "n": 543,
+                              |    "x":false,
+                              |    "q":"3715253.19494",
+                              |    "V":"184.769",
+                              |    "Q":"3472925.84746",
+                              |    "B":"0"
+                              |  }
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`).compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only ContractKLineStream(
+        e = "continuous_kline",
+        E = 1607443058651L,
+        ps = "BTCUSDT",
+        ct = FutureContractType.PERPETUAL,
+        k = ContractKLineStreamPayload(
+          t = 1607443020000L,
+          T = 1607443079999L,
+          i = Interval.`1m`,
+          f = 116467658886L,
+          L = 116468012423L,
+          o = 18787.00,
+          c = 18804.04,
+          h = 18804.04,
+          l = 18786.54,
+          v = 197.664,
+          n = 543,
+          x = false,
+          q = 3715253.19494,
+          V = 184.769,
+          Q = 3472925.84746
         )
       )
     }

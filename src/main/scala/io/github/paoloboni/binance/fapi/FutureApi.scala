@@ -27,7 +27,7 @@ import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.parameters.TimeParams
-import io.github.paoloboni.binance.common.response.{CirceResponse, KLineStream}
+import io.github.paoloboni.binance.common.response.{CirceResponse, ContractKLineStream, KLineStream}
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
@@ -296,6 +296,33 @@ final case class FutureApi[F[_]: Logger](
         F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@kline_${interval.toString}").toEither)
       )
       stream <- client.ws[KLineStream](uri)
+    } yield stream
+
+  /** Continuous Contract Kline/Candlestick Streams of updates every 250 milliseconds.
+    *
+    * @param symbol
+    *   the symbol
+    * @param contractType
+    *   the contract type
+    * @param interval
+    *   the interval
+    * @return
+    *   a stream of contract klines
+    */
+  def contractKLineStreams(
+      symbol: String,
+      contractType: FutureContractType,
+      interval: Interval
+  ): Stream[F, ContractKLineStream] =
+    for {
+      uri <- Stream.eval(
+        F.fromEither(
+          Try(
+            uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}_${contractType.toString.toLowerCase}@continuousKline_${interval.toString}"
+          ).toEither
+        )
+      )
+      stream <- client.ws[ContractKLineStream](uri)
     } yield stream
 
   /** Mark price and funding rate for a single symbol pushed every 3 seconds
