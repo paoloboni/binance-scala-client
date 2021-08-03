@@ -29,7 +29,12 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.{KLineStream, KLineStreamPayload}
+import io.github.paoloboni.binance.common.response.{
+  ContractKLineStream,
+  ContractKLineStreamPayload,
+  KLineStream,
+  KLineStreamPayload
+}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
@@ -737,6 +742,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         e = "aggTrade",
         E = 1623095242152L,
         s = "BTCUSDT",
+        a = 102141499,
         p = 39792.73,
         q = 10.543,
         f = 183139249,
@@ -811,6 +817,156 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
           V = 500,
           Q = 0.500
         )
+      )
+    }
+  }
+
+  "it should stream continuous Contract KLines" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e":"continuous_kline",
+                              |  "E":1607443058651,
+                              |  "ps":"BTCUSDT",
+                              |  "ct":"PERPETUAL",
+                              |  "k":{
+                              |    "t":1607443020000,
+                              |    "T":1607443079999,
+                              |    "i":"1m",
+                              |    "f":116467658886,
+                              |    "L":116468012423,
+                              |    "o":"18787.00",
+                              |    "c":"18804.04",
+                              |    "h":"18804.04",
+                              |    "l":"18786.54",
+                              |    "v":"197.664",
+                              |    "n": 543,
+                              |    "x":false,
+                              |    "q":"3715253.19494",
+                              |    "V":"184.769",
+                              |    "Q":"3472925.84746",
+                              |    "B":"0"
+                              |  }
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`).compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only ContractKLineStream(
+        e = "continuous_kline",
+        E = 1607443058651L,
+        ps = "BTCUSDT",
+        ct = FutureContractType.PERPETUAL,
+        k = ContractKLineStreamPayload(
+          t = 1607443020000L,
+          T = 1607443079999L,
+          i = Interval.`1m`,
+          f = 116467658886L,
+          L = 116468012423L,
+          o = 18787.00,
+          c = 18804.04,
+          h = 18804.04,
+          l = 18786.54,
+          v = 197.664,
+          n = 543,
+          x = false,
+          q = 3715253.19494,
+          V = 184.769,
+          Q = 3472925.84746
+        )
+      )
+    }
+  }
+
+  "it should stream Mark Price updates for a given symbol" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e": "markPriceUpdate",
+                              |  "E": 1562305380000,
+                              |  "s": "BTCUSDT",
+                              |  "p": "11794.15000000",
+                              |  "i": "11784.62659091",
+                              |  "P": "11784.25641265",
+                              |  "r": "0.00038167",
+                              |  "T": 1562306400000
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.markPriceStream("btcusdt").compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only MarkPriceUpdate(
+        e = "markPriceUpdate",
+        E = 1562305380000L,
+        s = "BTCUSDT",
+        p = 11794.15000000,
+        i = 11784.62659091,
+        P = 11784.25641265,
+        r = 0.00038167,
+        T = 1562306400000L
+      )
+    }
+  }
+
+  "it should stream Mark Price for all symbols" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""[{
+                              |  "e": "markPriceUpdate",
+                              |  "E": 1562305380000,
+                              |  "s": "BTCUSDT",
+                              |  "p": "11185.87786614",
+                              |  "i": "11784.62659091",
+                              |  "P": "11784.25641265",
+                              |  "r": "0.00030000",
+                              |  "T": 1562306400000
+                              |}]""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.markPriceStream().compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only MarkPriceUpdate(
+        e = "markPriceUpdate",
+        E = 1562305380000L,
+        s = "BTCUSDT",
+        p = 11185.87786614,
+        i = 11784.62659091,
+        P = 11784.25641265,
+        r = 0.00030000,
+        T = 1562306400000L
       )
     }
   }

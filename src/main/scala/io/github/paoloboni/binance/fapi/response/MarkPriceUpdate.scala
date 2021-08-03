@@ -21,15 +21,13 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-case class AggregateTradeStream(
+case class MarkPriceUpdate(
     e: String,     // Event type
     E: Long,       // Event time
     s: String,     // Symbol
-    a: Long,       // Aggregate trade ID
-    p: BigDecimal, // Price
-    q: BigDecimal, // Quantity
-    f: Long,       // First trade ID
-    l: Long,       // Last trade ID
-    T: Long,       // Trade time
-    m: Boolean     // Is the buyer the market maker?
+    p: BigDecimal, // Mark price
+    i: BigDecimal, // Index price
+    P: BigDecimal, // Estimated Settle Price, only useful in the last hour before the settlement starts
+    r: BigDecimal, // Funding rate
+    T: Long        // Next funding time
 )

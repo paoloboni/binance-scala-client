@@ -21,11 +21,7 @@
 
 package io.github.paoloboni.binance.fapi.parameters
 
-import io.github.paoloboni.binance.common.OrderSide
-import io.github.paoloboni.binance.fapi._
 import enumeratum.{CirceEnum, Enum, EnumEntry}
-import io.circe.generic.extras.Configuration
-import io.circe.{Decoder, Encoder}
 
 sealed trait FutureOrderCreateResponseType extends EnumEntry
 object FutureOrderCreateResponseType

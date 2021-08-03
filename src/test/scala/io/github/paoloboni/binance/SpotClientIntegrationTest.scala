@@ -29,6 +29,7 @@ import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response._
+import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotFill, SpotOrderCreateResponse}
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
@@ -1036,6 +1037,51 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                       """.stripMargin)
         )
     )
+  }
+
+  "it should stream aggregate trade information" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e": "aggTrade",
+                              |  "E": 1623095242152,
+                              |  "a": 102141499,
+                              |  "s": "BTCUSDT",
+                              |  "p": "39792.73",
+                              |  "q": "10.543",
+                              |  "f": 183139249,
+                              |  "l": 183139250,
+                              |  "T": 1623095241998,
+                              |  "m": true
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(_.aggregateTradeStreams("btcusdt").compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only AggregateTradeStream(
+        e = "aggTrade",
+        E = 1623095242152L,
+        s = "BTCUSDT",
+        a = 102141499,
+        p = 39792.73,
+        q = 10.543,
+        f = 183139249,
+        l = 183139250,
+        T = 1623095241998L,
+        m = true
+      )
+    }
   }
 
   private def prepareConfiguration(
