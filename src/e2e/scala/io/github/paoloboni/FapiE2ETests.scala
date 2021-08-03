@@ -87,4 +87,13 @@ class FapiE2ETests
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[KLineStream])
   }
+
+  "markPriceStream" in {
+    _.markPriceStream("btcusdt")
+      .take(1)
+      .compile
+      .toList
+      .timeout(30.seconds)
+      .asserting(_.loneElement shouldBe a[MarkPriceUpdate])
+  }
 }

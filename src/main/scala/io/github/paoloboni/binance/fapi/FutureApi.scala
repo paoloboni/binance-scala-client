@@ -297,6 +297,21 @@ final case class FutureApi[F[_]: Logger](
       )
       stream <- client.ws[KLineStream](uri)
     } yield stream
+
+  /** Mark price and funding rate for a single symbol pushed every 3 seconds
+    *
+    * @param symbol
+    *   the symbol
+    * @return
+    *   a stream of mark price updates
+    */
+  def markPriceStream(symbol: String): Stream[F, MarkPriceUpdate] =
+    for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@markPrice").toEither)
+      )
+      stream <- client.ws[MarkPriceUpdate](uri)
+    } yield stream
 }
 
 object FutureApi {

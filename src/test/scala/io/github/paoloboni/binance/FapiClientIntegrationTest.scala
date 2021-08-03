@@ -816,6 +816,47 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
     }
   }
 
+  "it should stream Mark Price" in new Env {
+    withWiremockServer { server =>
+      stubInfoEndpoint(server)
+
+      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
+
+      val toClient: Stream[IO, WebSocketFrame] = Stream(
+        WebSocketFrame.Text("""{
+                              |  "e": "markPriceUpdate",
+                              |  "E": 1562305380000,
+                              |  "s": "BTCUSDT",
+                              |  "p": "11794.15000000",
+                              |  "i": "11784.62659091",
+                              |  "P": "11784.25641265",
+                              |  "r": "0.00038167",
+                              |  "T": 1562306400000
+                              |}""".stripMargin),
+        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      )
+
+      val test = for {
+        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.markPriceStream("btcusdt").compile.toList)
+        _ <- s.cancel
+      } yield result
+
+      test.timeout(30.seconds).unsafeRunSync() should contain only MarkPriceUpdate(
+        e = "markPriceUpdate",
+        E = 1562305380000L,
+        s = "BTCUSDT",
+        p = 11794.15000000,
+        i = 11784.62659091,
+        P = 11784.25641265,
+        r = 0.00038167,
+        T = 1562306400000L
+      )
+    }
+  }
+
   private def stubInfoEndpoint(server: WireMockServer) = {
     server.stubFor(
       get("/fapi/v1/exchangeInfo")
