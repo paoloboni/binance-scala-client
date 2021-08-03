@@ -96,4 +96,13 @@ class FapiE2ETests
       .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[MarkPriceUpdate])
   }
+
+  "markPriceStream all symbols" in {
+    _.markPriceStream()
+      .take(1)
+      .compile
+      .toList
+      .timeout(30.seconds)
+      .asserting(_.loneElement shouldBe a[MarkPriceUpdate])
+  }
 }

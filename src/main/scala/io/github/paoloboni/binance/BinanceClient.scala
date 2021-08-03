@@ -49,6 +49,7 @@ object BinanceClient {
       new DefaultAsyncHttpClientConfig.Builder()
         .setMaxConnections(config.maxTotalConnections)
         .setRequestTimeout(config.responseHeaderTimeout.toMillis.toInt)
+        .setWebSocketMaxFrameSize(61440)
         .build()
     AsyncHttpClientFs2Backend
       .resourceUsingConfig(conf)

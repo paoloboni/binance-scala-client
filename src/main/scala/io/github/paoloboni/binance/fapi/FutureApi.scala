@@ -312,6 +312,19 @@ final case class FutureApi[F[_]: Logger](
       )
       stream <- client.ws[MarkPriceUpdate](uri)
     } yield stream
+
+  /** Mark price and funding rate for all symbols pushed every 3 seconds
+    *
+    * @return
+    *   a stream of mark price updates
+    */
+  def markPriceStream(): Stream[F, MarkPriceUpdate] =
+    for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/!markPrice@arr").toEither)
+      )
+      stream <- client.ws[List[MarkPriceUpdate]](uri).flatMap(Stream.emits(_))
+    } yield stream
 }
 
 object FutureApi {
