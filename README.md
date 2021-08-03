@@ -39,6 +39,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [All Book Tickers Stream](https://binance-docs.github.io/apidocs/spot/en/#all-book-tickers-stream): Pushes any update to the best bid or ask's price or quantity in real-time for all symbols.
 * [Partial Book Depth Streams](https://binance-docs.github.io/apidocs/spot/en/#partial-book-depth-streams): Top bids and asks.
 * [Trade Streams](https://binance-docs.github.io/apidocs/spot/en/#trade-streams): The Trade Streams push raw trade information.
+* [Aggregate Trade Streams](https://binance-docs.github.io/apidocs/spot/en/#aggregate-trade-streams): The Aggregate Trade Streams push trade information that is aggregated for a single taker order.
 
 ### Future API
 
@@ -54,6 +55,9 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 #### WebSocket
 * [Aggregate trade streams](https://binance-docs.github.io/apidocs/futures/en/#aggregate-trade-streams): The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100 milliseconds.
 * [Kline/Candlestick Streams](https://binance-docs.github.io/apidocs/futures/en/#kline-candlestick-streams): The Kline/Candlestick Stream push updates to the current klines/candlestick every 250 milliseconds (if existing).
+* [Mark Price Stream](https://binance-docs.github.io/apidocs/futures/en/#mark-price-stream): Mark price and funding rate for a single symbol pushed every 3 seconds.
+* [Mark Price Stream for All market](https://binance-docs.github.io/apidocs/futures/en/#mark-price-stream-for-all-market): Mark price and funding rate for all symbols pushed every 3 seconds.
+* [Continuous Contract kline streams](https://binance-docs.github.io/apidocs/futures/en/#continuous-contract-kline-candlestick-streams): Continuous Contract Kline/Candlestick Streams of updates every 250 milliseconds.
 
 ## Initialise the client
 
