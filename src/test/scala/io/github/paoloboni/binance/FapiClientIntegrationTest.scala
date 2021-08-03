@@ -737,6 +737,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         e = "aggTrade",
         E = 1623095242152L,
         s = "BTCUSDT",
+        a = 102141499,
         p = 39792.73,
         q = 10.543,
         f = 183139249,

@@ -22,13 +22,14 @@
 package io.github.paoloboni.binance.fapi.response
 
 case class AggregateTradeStream(
-    e: String,
-    E: Long,
-    s: String,
-    p: BigDecimal,
-    q: BigDecimal,
-    f: Long,
-    l: Long,
-    T: Long,
-    m: Boolean
+    e: String,     // Event type
+    E: Long,       // Event time
+    s: String,     // Symbol
+    a: Long,       // Aggregate trade ID
+    p: BigDecimal, // Price
+    q: BigDecimal, // Quantity
+    f: Long,       // First trade ID
+    l: Long,       // Last trade ID
+    T: Long,       // Trade time
+    m: Boolean     // Is the buyer the market maker?
 )
