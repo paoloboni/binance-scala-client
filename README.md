@@ -5,7 +5,9 @@
 
 [![Build Status](https://github.com/paoloboni/binance-scala-client/actions/workflows/ci.yml/badge.svg)](https://github.com/paoloboni/binance-scala-client/actions?query=workflow)
 [![Latest version](https://img.shields.io/maven-central/v/io.github.paoloboni/binance-scala-client_2.13.svg)](https://search.maven.org/artifact/io.github.paoloboni/binance-scala-client_2.13)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Join the chat at https://gitter.im/binance-scala-client/community](https://badges.gitter.im/binance-scala-client/community.svg)](https://gitter.im/binance-scala-client/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+[![Join the chat at https://gitter.im/binance-scala-client/community](https://badges.gitter.im/binance-scala-client/community.svg)](https://gitter.im/binance-scala-client/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat on Discord at https://discord.gg/7KrBehYs55](https://img.shields.io/discord/878591852331290634?logo=discord)](https://discord.gg/7KrBehYs55)
 [![Support](https://img.shields.io/badge/support-buymeacoffee-green)](https://www.buymeacoffee.com/paoloboni)
 
 A functional Scala client for Binance, powered by [cats-effect](https://typelevel.org/cats-effect/) and [fs2](https://fs2.io/).
