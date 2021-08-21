@@ -90,24 +90,26 @@ sealed class HttpClient[F[_]: Logger](implicit
     def webSocketFramePipe(
         q: Queue[F, Option[DataFrame]]
     ): Pipe[F, WebSocketFrame.Data[_], WebSocketFrame] = { input =>
-      input.evalMapFilter[F, WebSocketFrame] {
-        case WebSocketFrame.Text(payload, _, _) =>
-          (decode[DataFrame](payload) match {
-            case Left(ex) =>
-              Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(None) // stopping
-            case Right(decoded) =>
-              q.offer(Some(decoded))
-          }) *> F.pure(None)
-        case _ =>
-          q.offer(None).map(_ => None) // stopping
+      input.flatMap[F, WebSocketFrame] { data =>
+        (data match {
+          case WebSocketFrame.Text(payload, _, _) =>
+            decode[DataFrame](payload) match {
+              case Left(ex) =>
+                Stream.eval(Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(None)) // stopping
+              case Right(decoded) =>
+                Stream.eval(q.offer(Some(decoded)))
+            }
+          case _ =>
+            Stream.eval(q.offer(None)) // stopping
+        }) >> Stream.empty
       }
     }
 
-    Stream
-      .eval(for {
-        _     <- Logger[F].debug("ws connecting to: " + uri.toString())
-        queue <- Queue.unbounded[F, Option[DataFrame]]
-        _ <- F.start(
+    (for {
+      _     <- Stream.eval(Logger[F].debug("ws connecting to: " + uri.toString()))
+      queue <- Stream.eval(Queue.unbounded[F, Option[DataFrame]])
+      _ <- Stream.resource(
+        F.background(
           basicRequest
             .get(uri)
             .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe(queue)))
@@ -117,8 +119,8 @@ sealed class HttpClient[F[_]: Logger](implicit
             }
             .void
         )
-      } yield Stream.fromQueueNoneTerminated(queue))
-      .flatten
+      )
+    } yield queue).flatMap(Stream.fromQueueNoneTerminated(_))
   }
 
   private def sendRequest[Response](
