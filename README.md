@@ -1,6 +1,6 @@
 # Scala client for Binance API
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 [![Build Status](https://github.com/paoloboni/binance-scala-client/actions/workflows/ci.yml/badge.svg)](https://github.com/paoloboni/binance-scala-client/actions?query=workflow)
@@ -157,6 +157,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="https://github.com/DarkWingMcQuack"><img src="https://avatars.githubusercontent.com/u/38857302?v=4?s=100" width="100px;" alt=""/><br /><sub><b>DarkWingMcQuack</b></sub></a><br /><a href="https://github.com/paoloboni/binance-scala-client/commits?author=DarkWingMcQuack" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/Swoorup"><img src="https://avatars.githubusercontent.com/u/3408009?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Swoorup Joshi</b></sub></a><br /><a href="https://github.com/paoloboni/binance-scala-client/commits?author=Swoorup" title="Code">💻</a></td>
   </tr>
 </table>
 
