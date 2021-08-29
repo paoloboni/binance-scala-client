@@ -28,7 +28,7 @@ lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.7"
 lazy val scalatestV         = "3.2.9"
 lazy val wiremockV          = "2.27.2"
-lazy val catsEffectTestingV = "1.2.0"
+lazy val catsEffectTestingV = "1.3.0"
 lazy val http4sV            = "1.0.0-M24"
 lazy val http4sBlazeV       = "0.15.1"
 
