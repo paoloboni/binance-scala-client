@@ -6,13 +6,13 @@ on:
     paths:
       - 'src/**'
       - 'project/**'
-      - '**/*.sbt'
+      - 'build.sbt'
   push:
     branches: [master]
     paths:
       - 'src/**'
       - 'project/**'
-      - '**/*.sbt'
+      - 'build.sbt'
   schedule:
     - cron: '0 0 * * 0'
 jobs:
