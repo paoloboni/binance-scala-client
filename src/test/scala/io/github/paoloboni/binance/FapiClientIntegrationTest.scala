@@ -726,7 +726,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
             "orderId"    -> equalTo(orderId.toString),
-            "signature"  -> equalTo("78662228538c59ff8a3dfe09e744a89794acac3a4914798137a11eaa67e483ae")
+            "signature"  -> equalTo("e41b485fdf1b2b4e7b50c24c82c8f37d639e52f542bb1deae9de0effe2863576")
           ).asJava
         )
         .willReturn(
