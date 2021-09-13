@@ -712,7 +712,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
     import Env.{log, runtime}
     stubInfoEndpoint(server)
 
-    val orderId = 22542179L
+    val orderId   = 22542179L
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -723,10 +723,10 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParams(
           Map(
-            "recvWindow"   -> equalTo("5000"),
-            "timestamp"    -> equalTo(fixedTime.toString),
-            "orderId"      -> equalTo(orderId.toString),
-            "signature"    -> equalTo("78662228538c59ff8a3dfe09e744a89794acac3a4914798137a11eaa67e483ae")
+            "recvWindow" -> equalTo("5000"),
+            "timestamp"  -> equalTo(fixedTime.toString),
+            "orderId"    -> equalTo(orderId.toString),
+            "signature"  -> equalTo("78662228538c59ff8a3dfe09e744a89794acac3a4914798137a11eaa67e483ae")
           ).asJava
         )
         .willReturn(
