@@ -147,6 +147,39 @@ object PriceMonitor extends IOApp {
 }
 ```
 
+## Contributing
+
+### How to run unit and integration tests
+
+```
+sbt test
+```
+
+### How to run end-to-end tests
+
+```
+FAPI_API_KEY=<your-fapi-api-key> \
+    FAPI_SECRET_KEY=<your-fapi-secret-key> \
+    SPOT_API_KEY=<your-spot-api-key> \
+    SPOT_SECRET_KEY=<your-spot-secret-key> \
+    sbt e2e:test
+```
+
+### How to get Spot API and secret keys
+
+- Navigate to https://testnet.binance.vision
+- Login with your Github account
+- Click on "Generate HMAC_SHA256 Key"
+- Enter a description and press "Generate"
+- Take note of the generated values
+
+### How to get Future API and secret keys
+
+- Navigate to https://testnet.binancefuture.com
+- Register a new account or login with an existing one
+- Click on "API key" link in the lower part of the screen
+- Take note of the values
+
 ## Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
