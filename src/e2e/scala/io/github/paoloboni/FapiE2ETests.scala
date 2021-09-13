@@ -29,6 +29,7 @@ class FapiE2ETests
     apiSecret = sys.env("FAPI_SECRET_KEY"),
     testnet = true
   )
+  var orderIdTest: Long = 0
 
   val resource: Resource[IO, FutureApi[IO]] = BinanceClient.createFutureClient[IO](config)
 
@@ -54,15 +55,29 @@ class FapiE2ETests
       .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
   }
 
-  "createOrder" in { client =>
+    "createOrder" in { client =>
+    implicit val runtime = cats.effect.unsafe.IORuntime.global
     val side = Random.shuffle(OrderSide.values).head
-    client
+    val response = client
       .createOrder(
         FutureOrderCreateParams.MARKET(
           symbol = "LTCUSDT",
           side = side,
           positionSide = FuturePositionSide.BOTH,
           quantity = 10
+        )
+      )
+    orderIdTest = response.unsafeRunSync()(runtime).orderId
+    response.asserting(_ shouldBe a[FutureOrderCreateResponse])
+  }
+
+
+  "getOrder" in { client =>
+    client
+      .getOrder(
+        FutureGetOrderParams.OrderId(
+          symbol = "LTCUSDT",
+          orderId = orderIdTest
         )
       )
       .asserting(_ shouldBe a[FutureOrderCreateResponse])
