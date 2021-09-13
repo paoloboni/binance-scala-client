@@ -88,7 +88,9 @@ class FapiE2ETests
           )
         )
     } yield orderFetched
-    result.asserting(_ shouldBe a[FutureOrderGetResponse]) // this cannot be a FutureOrderCreateResponse - needs a different data structure
+    result.asserting(
+      _ shouldBe a[FutureOrderGetResponse]
+    )
   }
 
   "aggregateTradeStreams" in {

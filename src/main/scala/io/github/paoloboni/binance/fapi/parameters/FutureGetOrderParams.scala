@@ -26,16 +26,15 @@ sealed trait FutureGetOrderParams
 object FutureGetOrderParams {
 
   case class OrderId(
-                      symbol: String,
-                      orderId: Long,
-                      recvWindow: Int = 5000,
-                    ) extends FutureGetOrderParams
+      symbol: String,
+      orderId: Long,
+      recvWindow: Int = 5000
+  ) extends FutureGetOrderParams
 
   case class OrigClientOrderId(
-                                symbol: String,
-                                origClientOrderId: String,
-                                recvWindow: Int = 5000,
-                              ) extends FutureGetOrderParams
-
+      symbol: String,
+      origClientOrderId: String,
+      recvWindow: Int = 5000
+  ) extends FutureGetOrderParams
 
 }

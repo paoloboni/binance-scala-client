@@ -280,7 +280,7 @@ final case class FutureApi[F[_]: Logger](
 
     def url(currentMillis: Long) = {
       val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
-      val query = params.param(timeParams.toMap)
+      val query      = params.param(timeParams.toMap)
       for {
         uri <- Try(uri"${config.restBaseUrl}/fapi/v1/order")
           .map(_.addParams(query))
