@@ -29,7 +29,6 @@ class FapiE2ETests
     apiSecret = sys.env("FAPI_SECRET_KEY"),
     testnet = true
   )
-  var orderIdTest: Long = 0
 
   val resource: Resource[IO, FutureApi[IO]] = BinanceClient.createFutureClient[IO](config)
 
@@ -55,10 +54,9 @@ class FapiE2ETests
       .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
   }
 
-    "createOrder" in { client =>
-    implicit val runtime = cats.effect.unsafe.IORuntime.global
+  "createOrder" in { client =>
     val side = Random.shuffle(OrderSide.values).head
-    val response = client
+    client
       .createOrder(
         FutureOrderCreateParams.MARKET(
           symbol = "LTCUSDT",
@@ -67,20 +65,30 @@ class FapiE2ETests
           quantity = 10
         )
       )
-    orderIdTest = response.unsafeRunSync()(runtime).orderId
-    response.asserting(_ shouldBe a[FutureOrderCreateResponse])
+      .asserting(_ shouldBe a[FutureOrderCreateResponse])
   }
 
-
   "getOrder" in { client =>
-    client
-      .getOrder(
-        FutureGetOrderParams.OrderId(
-          symbol = "LTCUSDT",
-          orderId = orderIdTest
+    val side = Random.shuffle(OrderSide.values).head
+    val result = for {
+      orderCreated <- client
+        .createOrder(
+          FutureOrderCreateParams.MARKET(
+            symbol = "LTCUSDT",
+            side = side,
+            positionSide = FuturePositionSide.BOTH,
+            quantity = 10
+          )
         )
-      )
-      .asserting(_ shouldBe a[FutureOrderCreateResponse])
+      orderFetched <- client
+        .getOrder(
+          FutureGetOrderParams.OrderId(
+            symbol = "LTCUSDT",
+            orderId = orderCreated.orderId
+          )
+        )
+    } yield orderFetched
+    result.asserting(_ shouldBe a[FutureOrderGetResponse]) // this cannot be a FutureOrderCreateResponse - needs a different data structure
   }
 
   "aggregateTradeStreams" in {

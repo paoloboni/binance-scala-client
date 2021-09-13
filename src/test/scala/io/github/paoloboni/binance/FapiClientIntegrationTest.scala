@@ -708,6 +708,77 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
     result shouldBe a[FutureOrderCreateResponse]
   }
 
+  "it should get an order details" in withWiremockServer { server =>
+    import Env.{log, runtime}
+    stubInfoEndpoint(server)
+
+    val orderId = 22542179L
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      get(urlPathMatching("/fapi/v1/order"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParams(
+          Map(
+            "recvWindow"   -> equalTo("5000"),
+            "timestamp"    -> equalTo(fixedTime.toString),
+            "orderId"      -> equalTo(orderId.toString),
+            "signature"    -> equalTo("78662228538c59ff8a3dfe09e744a89794acac3a4914798137a11eaa67e483ae")
+          ).asJava
+        )
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody("""{
+                        |    "clientOrderId": "testOrder",
+                        |    "cumQuote": "0",
+                        |    "executedQty": "0",
+                        |    "orderId": 22542179,
+                        |    "avgPrice": "0.00000",
+                        |    "origQty": "10",
+                        |    "price": "0",
+                        |    "reduceOnly": false,
+                        |    "side": "BUY",
+                        |    "positionSide": "SHORT",
+                        |    "status": "NEW",
+                        |    "stopPrice": "9300",
+                        |    "closePosition": false,
+                        |    "symbol": "BTCUSDT",
+                        |    "time": "500",
+                        |    "timeInForce": "GTC",
+                        |    "type": "TRAILING_STOP_MARKET",
+                        |    "origType": "TRAILING_STOP_MARKET",
+                        |    "activatePrice": "9020",
+                        |    "priceRate": "0.3",
+                        |    "updateTime": 1566818724722,
+                        |    "workingType": "CONTRACT_PRICE",
+                        |    "priceProtect": false
+                        |}""".stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
+
+    val result = BinanceClient
+      .createFutureClient[IO](config)
+      .use(
+        _.getOrder(
+          FutureGetOrderParams.OrderId(
+            symbol = "BTCUSDT",
+            orderId = orderId
+          )
+        )
+      )
+      .unsafeRunSync()
+
+    result shouldBe a[FutureOrderGetResponse]
+  }
+
   "it should stream aggregate trade information" in new Env {
     withWiremockServer { server =>
       stubInfoEndpoint(server)

@@ -275,13 +275,12 @@ final case class FutureApi[F[_]: Logger](
     * @return
     *   The id of the order created
     */
-  def getOrder(getOrder: FutureGetOrderParams): F[FutureOrderCreateResponse] = {
+  def getOrder(getOrder: FutureGetOrderParams): F[FutureOrderGetResponse] = {
     val params = getOrder.toQueryParams
 
     def url(currentMillis: Long) = {
       val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
-      val query = params
-        .param(timeParams.toMap)
+      val query = params.param(timeParams.toMap)
       for {
         uri <- Try(uri"${config.restBaseUrl}/fapi/v1/order")
           .map(_.addParams(query))
@@ -294,9 +293,9 @@ final case class FutureApi[F[_]: Logger](
       currentTime <- F.realTime
       uri         <- F.fromEither(url(currentTime.toMillis))
       responseOrError <- client
-        .get[CirceResponse[FutureOrderCreateResponse]](
+        .get[CirceResponse[FutureOrderGetResponse]](
           uri = uri,
-          responseAs = asJson[FutureOrderCreateResponse],
+          responseAs = asJson[FutureOrderGetResponse],
           limiters = rateLimiters.value,
           headers = Map("X-MBX-APIKEY" -> config.apiKey)
         )
