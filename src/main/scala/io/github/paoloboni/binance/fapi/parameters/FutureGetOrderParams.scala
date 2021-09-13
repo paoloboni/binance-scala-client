@@ -22,6 +22,7 @@
 package io.github.paoloboni.binance.fapi.parameters
 
 sealed trait FutureGetOrderParams
+
 object FutureGetOrderParams {
 
   case class OrderId(
@@ -31,10 +32,10 @@ object FutureGetOrderParams {
                     ) extends FutureGetOrderParams
 
   case class OrigClientOrderId(
-                      symbol: String,
-                      origClientOrderId: String,
-                      recvWindow: Int = 5000,
-                    ) extends FutureGetOrderParams
+                                symbol: String,
+                                origClientOrderId: String,
+                                recvWindow: Int = 5000,
+                              ) extends FutureGetOrderParams
 
 
 }
