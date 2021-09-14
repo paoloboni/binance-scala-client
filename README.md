@@ -52,6 +52,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Symbol price ticker](https://binance-docs.github.io/apidocs/futures/en/#symbol-price-ticker): Latest price for a symbol or symbols
 * [Account information](https://binance-docs.github.io/apidocs/#account-information-user_data): Get current account information
 * [New order (trade)](https://binance-docs.github.io/apidocs/futures/en/#new-order-trade): Send in a new order
+* [Query order](https://binance-docs.github.io/apidocs/futures/en/#query-order-user_data): Check an order's status
 * [Change position mode (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-position-mode-trade): Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
 * [Change initial leverage (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-initial-leverage-trade): Change user's initial leverage of specific symbol market
 
@@ -146,6 +147,39 @@ object PriceMonitor extends IOApp {
   }
 }
 ```
+
+## Contributing
+
+### How to run unit and integration tests
+
+```
+sbt test
+```
+
+### How to run end-to-end tests
+
+```
+FAPI_API_KEY=<your-fapi-api-key> \
+    FAPI_SECRET_KEY=<your-fapi-secret-key> \
+    SPOT_API_KEY=<your-spot-api-key> \
+    SPOT_SECRET_KEY=<your-spot-secret-key> \
+    sbt e2e:test
+```
+
+### How to get Spot API and secret keys
+
+- Navigate to https://testnet.binance.vision
+- Login with your Github account
+- Click on "Generate HMAC_SHA256 Key"
+- Enter a description and press "Generate"
+- Take note of the generated values
+
+### How to get Future API and secret keys
+
+- Navigate to https://testnet.binancefuture.com
+- Register a new account or login with an existing one
+- Click on "API key" link in the lower part of the screen
+- Take note of the values
 
 ## Contributors ✨
 
