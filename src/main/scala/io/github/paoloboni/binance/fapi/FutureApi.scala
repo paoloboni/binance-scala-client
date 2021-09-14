@@ -303,6 +303,75 @@ final case class FutureApi[F[_]: Logger](
     } yield response
   }
 
+  /** Cancels an order.
+    *
+    * @param orderCancel
+    *   the parameters required to cancel the order
+    *
+    * @return
+    *   currently nothing
+    */
+  def cancelOrder(orderCancel: FutureOrderCancelParams): F[Unit] = {
+
+    def url(currentMillis: Long) = {
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query      = orderCancel.toQueryParams.param(timeParams.toMap)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/fapi/v1/order").map(_.addParams(query)).toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
+    }
+
+    for {
+      currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
+      res <- client
+        .delete[CirceResponse[io.circe.Json]](
+          uri = uri,
+          responseAs = asJson[io.circe.Json],
+          limiters = rateLimiters.value,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+      _ <- F.fromEither(res)
+    } yield ()
+  }
+
+  /** Cancels all orders of a symbol.
+    *
+    * @param orderCancel
+    *   the parameters required to cancel all the orders
+    *
+    * @return
+    *   currently nothing
+    */
+  def cancelAllOrders(orderCancel: FutureOrderCancelAllParams): F[Unit] = {
+
+    def url(currentMillis: Long) = {
+      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
+      val query      = orderCancel.toQueryParams.param(timeParams.toMap)
+      for {
+        uri <- Try(uri"${config.restBaseUrl}/fapi/v1/allOpenOrders")
+          .map(_.addParams(query))
+          .toEither
+        signature = HMAC.sha256(config.apiSecret, uri.queryString)
+      } yield uri.addParam("signature", signature)
+    }
+
+    for {
+      currentTime <- F.realTime
+      uri         <- F.fromEither(url(currentTime.toMillis))
+      res <- client
+        .delete[CirceResponse[io.circe.Json]](
+          uri = uri,
+          responseAs = asJson[io.circe.Json],
+          limiters = rateLimiters.value,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+      _ <- F.fromEither(res)
+    } yield ()
+  }
+
+
   /** The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100
     * milliseconds.
     *

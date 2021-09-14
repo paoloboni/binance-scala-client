@@ -11,7 +11,7 @@ import io.github.paoloboni.binance.fapi.response._
 import org.scalatest.LoneElement
 import org.scalatest.freespec.FixtureAsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
-
+import cats.implicits._
 import java.time.Instant
 import scala.concurrent.duration.DurationInt
 import scala.util.Random
@@ -89,6 +89,51 @@ class FapiE2ETests
         )
     } yield orderFetched
     result.asserting( _ shouldBe a[FutureOrderGetResponse])
+  }
+
+  "cancelOrder" in { client =>
+    (for {
+      createOrderResponse <- client.createOrder(
+        FutureOrderCreateParams.STOP(
+          symbol = "BTCUSDT",
+          side = OrderSide.SELL,
+          positionSide = FuturePositionSide.BOTH,
+          timeInForce = FutureTimeInForce.GTC,
+          quantity = 10,
+          stopPrice = 42000,
+          price = 43000
+        )
+      )
+
+      _ <- client.cancelOrder(
+        FutureOrderCancelParams(
+          symbol = "BTCUSDT",
+          orderId = createOrderResponse.orderId.some,
+          origClientOrderId = None
+        )
+      )
+    } yield "OK")
+      .asserting(_ shouldBe "OK")
+  }
+
+  "cancelAllOrders" in { client =>
+    (for {
+      _ <- client.createOrder(
+        FutureOrderCreateParams.LIMIT(
+          symbol = "XRPUSDT",
+          side = OrderSide.SELL,
+          positionSide = FuturePositionSide.BOTH,
+          timeInForce = FutureTimeInForce.GTC,
+          quantity = 10,
+          price = 1
+        )
+      )
+
+      _ <- client.cancelAllOrders(
+        FutureOrderCancelAllParams(symbol = "XRPUSDT")
+      )
+    } yield "OK")
+      .asserting(_ shouldBe "OK")
   }
 
   "aggregateTradeStreams" in {

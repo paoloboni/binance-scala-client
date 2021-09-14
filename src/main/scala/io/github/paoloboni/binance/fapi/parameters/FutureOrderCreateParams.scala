@@ -54,6 +54,7 @@ object FutureOrderCreateParams {
       quantity: BigDecimal,
       reduceOnly: Boolean = false,
       stopPrice: BigDecimal,
+      price: BigDecimal,
       workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE,
       priceProtect: Boolean = false,
       newClientOrderId: Option[String] = None
