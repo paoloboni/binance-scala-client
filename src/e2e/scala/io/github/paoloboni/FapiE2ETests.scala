@@ -68,6 +68,29 @@ class FapiE2ETests
       .asserting(_ shouldBe a[FutureOrderCreateResponse])
   }
 
+  "getOrder" in { client =>
+    val side = Random.shuffle(OrderSide.values).head
+    val result = for {
+      orderCreated <- client
+        .createOrder(
+          FutureOrderCreateParams.MARKET(
+            symbol = "LTCUSDT",
+            side = side,
+            positionSide = FuturePositionSide.BOTH,
+            quantity = 10
+          )
+        )
+      orderFetched <- client
+        .getOrder(
+          FutureGetOrderParams.OrderId(
+            symbol = "LTCUSDT",
+            orderId = orderCreated.orderId
+          )
+        )
+    } yield orderFetched
+    result.asserting( _ shouldBe a[FutureOrderGetResponse])
+  }
+
   "aggregateTradeStreams" in {
     _.aggregateTradeStreams("btcusdt")
       .take(1)
