@@ -371,7 +371,6 @@ final case class FutureApi[F[_]: Logger](
     } yield ()
   }
 
-
   /** The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100
     * milliseconds.
     *
