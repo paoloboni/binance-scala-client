@@ -52,6 +52,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Symbol price ticker](https://binance-docs.github.io/apidocs/futures/en/#symbol-price-ticker): Latest price for a symbol or symbols
 * [Account information](https://binance-docs.github.io/apidocs/#account-information-user_data): Get current account information
 * [New order (trade)](https://binance-docs.github.io/apidocs/futures/en/#new-order-trade): Send in a new order
+* [Query order](https://binance-docs.github.io/apidocs/futures/en/#query-order-user_data): Check an order's status
 * [Change position mode (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-position-mode-trade): Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
 * [Change initial leverage (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-initial-leverage-trade): Change user's initial leverage of specific symbol market
 
