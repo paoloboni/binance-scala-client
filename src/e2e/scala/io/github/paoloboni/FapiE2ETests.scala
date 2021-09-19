@@ -88,7 +88,7 @@ class FapiE2ETests
           )
         )
     } yield orderFetched
-    result.asserting( _ shouldBe a[FutureOrderGetResponse])
+    result.asserting(_ shouldBe a[FutureOrderGetResponse])
   }
 
   "aggregateTradeStreams" in {
