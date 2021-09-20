@@ -88,26 +88,26 @@ class FapiE2ETests
           )
         )
     } yield orderFetched
-    result.asserting( _ shouldBe a[FutureOrderGetResponse])
+    result.asserting(_ shouldBe a[FutureOrderGetResponse])
   }
 
   "cancelOrder" in { client =>
     (for {
       createOrderResponse <- client.createOrder(
         FutureOrderCreateParams.STOP(
-          symbol = "BTCUSDT",
+          symbol = "XRPUSDT",
           side = OrderSide.SELL,
           positionSide = FuturePositionSide.BOTH,
           timeInForce = FutureTimeInForce.GTC,
           quantity = 10,
-          stopPrice = 42000,
-          price = 43000
+          stopPrice = 1,
+          price = 1.2
         )
       )
 
       _ <- client.cancelOrder(
         FutureOrderCancelParams(
-          symbol = "BTCUSDT",
+          symbol = "XRPUSDT",
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
