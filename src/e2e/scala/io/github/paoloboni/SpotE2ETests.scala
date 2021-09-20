@@ -57,9 +57,9 @@ class SpotE2ETests
     client
       .createOrder(
         SpotOrderCreateParams.MARKET(
-          symbol = "XRPUSDT",
+          symbol = "TRXUSDT",
           side = side,
-          quantity = BigDecimal(100).some
+          quantity = BigDecimal(50).some
         )
       )
       .asserting(_ shouldBe a[SpotOrderCreateResponse])
