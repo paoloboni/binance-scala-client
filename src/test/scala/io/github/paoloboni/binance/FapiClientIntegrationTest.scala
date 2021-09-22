@@ -41,9 +41,11 @@ import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
 import org.http4s.websocket.WebSocketFrame
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.EitherValues._
+import org.scalatest.Inspectors._
 import scodec.bits.ByteVector
 import sttp.client3.UriContext
 
@@ -51,7 +53,7 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClient {
+class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClient with TypeCheckedTripleEquals {
 
   private val wsPort = 9999
 
@@ -558,7 +560,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withQueryParam("dualSidePosition", equalTo(true.toString))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("32789fb9396ee7087528096011b766b83de86afcd51a58b60d487d0e07a97676"))
+        .withQueryParam("signature", equalTo("4fb3c513fff4c269ad18ffcf45f44b9f46205f51696ba7e5ed91ac489f42ed75"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -580,9 +582,14 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
       .createFutureClient[IO](config)
       .use(_.changePositionMode(changePositionParams))
       .unsafeRunSync()
+
+    forExactly(1, server.getAllServeEvents.asScala) { event =>
+      event.getRequest.getUrl should include("/fapi/v1/positionSide/dual")
+      event.getResponse.getStatus should ===(200)
+    }
   }
 
-  "it should be able to change the inital leverage" in withWiremockServer { server =>
+  "it should be able to change the initial leverage" in withWiremockServer { server =>
     import Env.{log, runtime}
 
     stubInfoEndpoint(server)
@@ -599,7 +606,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withQueryParam("leverage", equalTo(100.toString))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("88ad5448acafacdda1da384cb71962785c43dc0b142ec550bbb6dcca53aa68d2"))
+        .withQueryParam("signature", equalTo("0c8dbb8c3a8f2dc9a071a5860e4686c4ddff9dcdfcc83eb2aba57805b2c369b2"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -653,7 +660,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
             "side"         -> equalTo("BUY"),
             "positionSide" -> equalTo("BOTH"),
             "quantity"     -> equalTo("10"),
-            "signature"    -> equalTo("e41b485fdf1b2b4e7b50c24c82c8f37d639e52f542bb1deae9de0effe2863576")
+            "signature"    -> equalTo("d34c07e97437033bb7e960bdd219b3293a1a511068782653b95304358cf85d94")
           ).asJava
         )
         .willReturn(
@@ -726,7 +733,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
             "recvWindow" -> equalTo("5000"),
             "timestamp"  -> equalTo(fixedTime.toString),
             "orderId"    -> equalTo(orderId.toString),
-            "signature"  -> equalTo("78662228538c59ff8a3dfe09e744a89794acac3a4914798137a11eaa67e483ae")
+            "signature"  -> equalTo("ad492d2b0950baa9ff3aa0908281ad83cc2132d835daa0cb87d673d83b275fbd")
           ).asJava
         )
         .willReturn(
@@ -793,7 +800,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("31419491a08b991dab525300c890f2488e039199eb55c1e6a5c5367b9fedc5b0"))
+        .withQueryParam("signature", equalTo("5cb34cc9078d1474d997f91c68fc225c408bc6d8773a76abdbe00a19969d973c"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -850,7 +857,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("5634d2bdfb9b723e6df85c1551c13acb90b0836c218bc8a08c597eba3f1563e7"))
+        .withQueryParam("signature", equalTo("8a31f1e30c7c9ecd7c9b4b7e3ab6f45c8a04926af3aebed822798b9e550ac55d"))
         .willReturn(
           aResponse()
             .withStatus(201)

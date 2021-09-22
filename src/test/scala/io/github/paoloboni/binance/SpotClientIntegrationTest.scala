@@ -514,7 +514,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("1fdf1f9299acbc36b7d4db23bea2e295c5fda706fc9f7f47e51c771c34a2e3bd"))
+        .withQueryParam("signature", equalTo("6dd6fabe62dd86a4bc346a28d8fd6a2df3af23ba3638c513af8ff8060481c095"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -598,7 +598,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("31419491a08b991dab525300c890f2488e039199eb55c1e6a5c5367b9fedc5b0"))
+        .withQueryParam("signature", equalTo("5cb34cc9078d1474d997f91c68fc225c408bc6d8773a76abdbe00a19969d973c"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -655,7 +655,7 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         .withHeader("X-MBX-APIKEY", equalTo(apiKey))
         .withQueryParam("recvWindow", equalTo("5000"))
         .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("5634d2bdfb9b723e6df85c1551c13acb90b0836c218bc8a08c597eba3f1563e7"))
+        .withQueryParam("signature", equalTo("8a31f1e30c7c9ecd7c9b4b7e3ab6f45c8a04926af3aebed822798b9e550ac55d"))
         .willReturn(
           aResponse()
             .withStatus(201)

@@ -19,20 +19,23 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.encryption
 
-sealed trait FutureGetOrderParams
+import cats.effect.Async
+import cats.implicits._
+import io.github.paoloboni.binance.common.parameters.TimeParams
+import io.github.paoloboni.http.QueryParamsConverter.Ops
+import io.github.paoloboni.http.UriOps
+import sttp.model.Uri
 
-object FutureGetOrderParams {
+class MkSignedUri[F[_]](recvWindow: Int, apiSecret: String) {
 
-  case class OrderId(
-      symbol: String,
-      orderId: Long
-  ) extends FutureGetOrderParams
-
-  case class OrigClientOrderId(
-      symbol: String,
-      origClientOrderId: String
-  ) extends FutureGetOrderParams
-
+  def apply(uri: Uri, params: (String, String)*)(implicit F: Async[F]): F[Uri] =
+    F.realTime.map { currentTime =>
+      val timeParams   = TimeParams(recvWindow, currentTime.toMillis).toQueryParams
+      val query        = timeParams.param(params.toMap)
+      val uriAndParams = uri.addParams(query)
+      val signature    = HMAC.sha256(apiSecret, uriAndParams.queryString)
+      uriAndParams.addParam("signature", signature)
+    }
 }
