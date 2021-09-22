@@ -24,7 +24,7 @@ package io.github.paoloboni.encryption
 import cats.effect.Async
 import cats.implicits._
 import io.github.paoloboni.binance.common.parameters.TimeParams
-import io.github.paoloboni.http.QueryParamsConverter.Ops
+import io.github.paoloboni.http.QueryParamsConverter._
 import io.github.paoloboni.http.UriOps
 import sttp.model.Uri
 
