@@ -96,12 +96,12 @@ class FapiE2ETests
       createOrderResponse <- client.createOrder(
         FutureOrderCreateParams.STOP(
           symbol = "XRPUSDT",
-          side = OrderSide.SELL,
+          side = OrderSide.BUY,
           positionSide = FuturePositionSide.BOTH,
           timeInForce = FutureTimeInForce.GTC,
           quantity = 10,
-          stopPrice = 1,
-          price = 1.2
+          stopPrice = 2,
+          price = 1.8
         )
       )
 

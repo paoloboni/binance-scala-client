@@ -69,17 +69,17 @@ class SpotE2ETests
     (for {
       createOrderResponse <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "TRXUSDT",
+          symbol = "XRPUSDT",
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 50,
-          price = 0.3
+          quantity = 10,
+          price = 1.8
         )
       )
 
       _ <- client.cancelOrder(
         SpotOrderCancelParams(
-          symbol = "TRXUSDT",
+          symbol = "XRPUSDT",
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
@@ -92,16 +92,16 @@ class SpotE2ETests
     (for {
       _ <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "TRXUSDT",
+          symbol = "XRPUSDT",
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 50,
-          price = 0.3
+          quantity = 10,
+          price = 1.8
         )
       )
 
       _ <- client.cancelAllOrders(
-        SpotOrderCancelAllParams(symbol = "TRXUSDT")
+        SpotOrderCancelAllParams(symbol = "XRPUSDT")
       )
     } yield "OK")
       .asserting(_ shouldBe "OK")
