@@ -18,7 +18,7 @@ lazy val e2eSettings =
     )
 
 lazy val circeV             = "0.14.1"
-lazy val fs2V               = "3.1.2"
+lazy val fs2V               = "3.1.3"
 lazy val catsCoreV          = "2.6.1"
 lazy val catsEffectV        = "3.2.9"
 lazy val log4CatsV          = "2.1.1"
@@ -29,7 +29,7 @@ lazy val shapelessV         = "2.3.7"
 lazy val scalatestV         = "3.2.10"
 lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.3.0"
-lazy val http4sV            = "1.0.0-M25"
+lazy val http4sV            = "1.0.0-M27"
 lazy val http4sBlazeV       = "0.15.2"
 
 lazy val root = (project in file("."))
