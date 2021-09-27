@@ -55,14 +55,14 @@ final case class FutureApi[F[_]: Logger](
     apiSecret = config.apiSecret
   )
 
-  private val baseUrl             = config.restBaseUrl
-  private val kLinesUri           = baseUrl.addPath("fapi", "v1", "klines")
-  private val tickerPriceUri      = baseUrl.addPath("fapi", "v1", "ticker", "price")
-  private val positionSideDualUri = baseUrl.addPath("fapi", "v1", "positionSide", "dual")
-  private val leverageUri         = baseUrl.addPath("fapi", "v1", "leverage")
-  private val accountUri          = baseUrl.addPath("fapi", "v1", "account")
-  private val orderUri            = baseUrl.addPath("fapi", "v1", "order")
-  private val allOpenOrdersUri    = baseUrl.addPath("fapi", "v1", "allOpenOrders")
+  private val baseUrl             = config.restBaseUrl.addPath("fapi", "v1")
+  private val kLinesUri           = baseUrl.addPath("klines")
+  private val tickerPriceUri      = baseUrl.addPath("ticker", "price")
+  private val positionSideDualUri = baseUrl.addPath("positionSide", "dual")
+  private val leverageUri         = baseUrl.addPath("leverage")
+  private val accountUri          = baseUrl.addPath("account")
+  private val orderUri            = baseUrl.addPath("order")
+  private val allOpenOrdersUri    = baseUrl.addPath("allOpenOrders")
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint in case the result set doesn't
     * fit in a single page.

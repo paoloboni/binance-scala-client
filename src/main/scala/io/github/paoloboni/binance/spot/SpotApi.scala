@@ -56,13 +56,13 @@ final case class SpotApi[F[_]: Logger](
     apiSecret = config.apiSecret
   )
 
-  private val baseUrl        = config.restBaseUrl
-  private val depthUri       = baseUrl.addPath("api", "v3", "depth")
-  private val kLinesUri      = baseUrl.addPath("api", "v3", "klines")
-  private val tickerPriceUri = baseUrl.addPath("api", "v3", "ticker", "price")
-  private val accountUri     = baseUrl.addPath("api", "v3", "account")
-  private val orderUri       = baseUrl.addPath("api", "v3", "order")
-  private val openOrdersUri  = baseUrl.addPath("api", "v3", "openOrders")
+  private val baseUrl        = config.restBaseUrl.addPath("api", "v3")
+  private val depthUri       = baseUrl.addPath("depth")
+  private val kLinesUri      = baseUrl.addPath("klines")
+  private val tickerPriceUri = baseUrl.addPath("ticker", "price")
+  private val accountUri     = baseUrl.addPath("account")
+  private val orderUri       = baseUrl.addPath("order")
+  private val openOrdersUri  = baseUrl.addPath("openOrders")
 
   /** Returns the depth of the orderbook.
     *
