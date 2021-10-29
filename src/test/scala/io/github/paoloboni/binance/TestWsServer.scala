@@ -30,18 +30,16 @@ import org.http4s.implicits._
 import org.http4s.server.websocket._
 import org.http4s.websocket.WebSocketFrame
 
-import scala.concurrent.ExecutionContext.global
-
 class TestWsServer[F[_]](toClient: Stream[F, WebSocketFrame])(port: Int)(implicit F: Async[F]) extends Http4sDsl[F] {
-  def routes: HttpRoutes[F] =
+  def routes(wsb: WebSocketBuilder[F]): HttpRoutes[F] =
     HttpRoutes.of[F] { case GET -> Root / "ws" / streamName =>
       val fromClient: Pipe[F, WebSocketFrame, Unit] = _.evalMap(message => F.delay(println("received: " + message)))
-      WebSocketBuilder[F].build(toClient, fromClient)
+      wsb.build(toClient, fromClient)
     }
 
   def stream: Stream[F, ExitCode] =
-    BlazeServerBuilder[F](global)
+    BlazeServerBuilder[F]
       .bindHttp(port)
-      .withHttpApp(routes.orNotFound)
+      .withHttpWebSocketApp(routes(_).orNotFound)
       .serve
 }
