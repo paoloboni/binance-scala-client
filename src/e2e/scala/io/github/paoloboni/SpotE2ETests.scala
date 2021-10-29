@@ -59,7 +59,7 @@ class SpotE2ETests
         SpotOrderCreateParams.MARKET(
           symbol = "TRXUSDT",
           side = side,
-          quantity = BigDecimal(50).some
+          quantity = BigDecimal(100).some
         )
       )
       .asserting(_ shouldBe a[SpotOrderCreateResponse])
