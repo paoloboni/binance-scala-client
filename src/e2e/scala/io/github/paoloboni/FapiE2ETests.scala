@@ -1,28 +1,19 @@
 package io.github.paoloboni
 
-import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{IO, Resource}
+import cats.implicits._
+import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response.{ContractKLineStream, KLineStream}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
-import org.scalatest.LoneElement
-import org.scalatest.freespec.FixtureAsyncFreeSpec
-import org.scalatest.matchers.should.Matchers
-import cats.implicits._
+
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
-class FapiE2ETests
-    extends FixtureAsyncFreeSpec
-    with AsyncIOSpec
-    with Matchers
-    with Env
-    with LoneElement
-    with CatsResourceIO[FutureApi[IO]] {
+class FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
 
   val config: FapiConfig[IO] = FapiConfig.Default(
     apiKey = sys.env("FAPI_API_KEY"),
@@ -141,7 +132,6 @@ class FapiE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[AggregateTradeStream])
   }
 
@@ -150,7 +140,6 @@ class FapiE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[KLineStream])
   }
 
@@ -159,7 +148,6 @@ class FapiE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[ContractKLineStream])
   }
 
@@ -168,7 +156,6 @@ class FapiE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[MarkPriceUpdate])
   }
 
@@ -177,7 +164,6 @@ class FapiE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[MarkPriceUpdate])
   }
 }

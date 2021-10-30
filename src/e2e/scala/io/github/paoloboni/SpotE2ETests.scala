@@ -1,8 +1,8 @@
 package io.github.paoloboni
 
-import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{IO, Resource}
 import cats.implicits._
+import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
@@ -10,21 +10,11 @@ import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotOrderCreateResponse}
-import org.scalatest.LoneElement
-import org.scalatest.freespec.FixtureAsyncFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
-class SpotE2ETests
-    extends FixtureAsyncFreeSpec
-    with AsyncIOSpec
-    with Matchers
-    with Env
-    with LoneElement
-    with CatsResourceIO[SpotApi[IO]] {
+class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   val config: SpotConfig[IO] = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
@@ -112,7 +102,6 @@ class SpotE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[TradeStream])
   }
 
@@ -121,7 +110,6 @@ class SpotE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[KLineStream])
   }
 
@@ -130,7 +118,6 @@ class SpotE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[DiffDepthStream])
   }
 
@@ -139,7 +126,6 @@ class SpotE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[PartialDepthStream])
   }
 
@@ -148,7 +134,6 @@ class SpotE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[BookTicker])
   }
 
@@ -157,7 +142,6 @@ class SpotE2ETests
       .take(1)
       .compile
       .toList
-      .timeout(30.seconds)
       .asserting(_.loneElement shouldBe a[AggregateTradeStream])
   }
 }
