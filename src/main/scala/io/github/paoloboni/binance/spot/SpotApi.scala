@@ -104,8 +104,8 @@ final case class SpotApi[F[_]: Logger](
       )
       rawKlines <- Stream.eval(F.fromEither(response))
       klines <- rawKlines match {
-        //check if a lone element is enough to fulfill the query. Otherwise a limit of 1 leads
-        //to a strange behaviour
+        // check if a lone element is enough to fulfill the query. Otherwise a limit of 1 leads
+        // to a strange behaviour
         case loneElement :: Nil
             if (query.endTime.toEpochMilli - loneElement.openTime) > query.interval.duration.toMillis =>
           val newQuery = query.copy(startTime = Instant.ofEpochMilli(loneElement.closeTime))
