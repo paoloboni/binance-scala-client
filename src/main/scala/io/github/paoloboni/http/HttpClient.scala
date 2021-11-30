@@ -23,6 +23,7 @@ package io.github.paoloboni.http
 
 import cats.effect.kernel.Async
 import cats.effect.std.Queue
+import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.{Pipe, Stream}
 import io.circe.Decoder
@@ -104,21 +105,21 @@ sealed class HttpClient[F[_]: Logger](implicit
     }
 
     Stream
-      .eval(for {
-        _     <- Logger[F].debug("ws connecting to: " + uri.toString())
-        queue <- Queue.unbounded[F, Option[DataFrame]]
-        _ <- F.start(
-          basicRequest
+      .resource {
+        for {
+          _     <- Logger[F].debug("ws connecting to: " + uri.toString()).toResource
+          queue <- Queue.unbounded[F, Option[DataFrame]].toResource
+          _ <- basicRequest
             .get(uri)
             .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe(queue)))
             .send(client)
             .flatMap { response =>
               Logger[F].debug("response: " + response)
             }
-            .void
-        )
-      } yield Stream.fromQueueNoneTerminated(queue))
-      .flatten
+            .background
+        } yield queue
+      }
+      .flatMap(Stream.fromQueueNoneTerminated(_))
   }
 
   private def sendRequest[Response](
