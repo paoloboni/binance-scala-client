@@ -16,6 +16,8 @@ abstract class BaseE2ETest[API]
     with LoneElement
     with CatsResourceIO[API] {
 
+  implicit override def executionContext = scala.concurrent.ExecutionContext.Implicits.global
+
   override protected val ResourceTimeout: Duration = 30.seconds
 
   def config: BinanceConfig.Aux[IO, API]
