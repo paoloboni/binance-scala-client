@@ -35,8 +35,7 @@ import scala.concurrent.duration.DurationInt
 class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with TypeCheckedTripleEquals {
 
   "it should rate limit when frequency is greater than limit" in {
-    val perSecond = 10
-    val period    = 100.millis
+    val perSecond = 10 // period = 100.millis
 
     TestControl
       .executeEmbed(for {
@@ -48,14 +47,13 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
         endTime     <- IO.monotonic
       } yield (result, startTime, endTime))
       .asserting { case (res, start, end) =>
-        (end - start) should ===(3 * period)
+        (end - start) should ===(300.millis)
         res should ===(3)
       }
   }
 
   "it should rate limit when frequency is greater than limit and weight > 1" in {
-    val perSecond = 10
-    val period    = 100.millis
+    val perSecond = 10 // period = 100.millis
 
     TestControl
       .executeEmbed(for {
@@ -65,14 +63,13 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
         endTime     <- IO.monotonic
       } yield (result, startTime, endTime))
       .asserting { case (res, start, end) =>
-        (end - start) should ===(10 * period)
+        (end - start) should ===(1.second)
         res should ===(1)
       }
   }
 
   "it should not rate limit when frequency is lower than limit" in {
-    val perSecond = 1
-    val period    = 1.second
+    val perSecond = 1 // period = 1.second
 
     TestControl
       .executeEmbed(for {
@@ -82,7 +79,7 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
         endTime     <- IO.monotonic
       } yield (result, startTime, endTime))
       .asserting { case (res, start, end) =>
-        (end - start) should ===(period)
+        (end - start) should ===(1.second)
         res should ===(1)
       }
   }
