@@ -123,7 +123,7 @@ class TestAsync(
 
   override def blocking[A](thunk: => A): IO[A] = IO.blocking(thunk)
 
-  override def interruptible[A](many: Boolean)(thunk: => A) = IO.interruptible(many)(thunk)
+  override def interruptible[A](thunk: => A) = IO.interruptible(thunk)
 
   def suspend[A](hint: Sync.Type)(thunk: => A): IO[A] =
     IO.suspend(hint)(thunk)
