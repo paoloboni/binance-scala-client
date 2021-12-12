@@ -19,8 +19,8 @@ lazy val e2eSettings =
 
 lazy val circeV             = "0.14.1"
 lazy val fs2V               = "3.2.2"
-lazy val catsCoreV          = "2.7.0"
-lazy val catsEffectV        = "3.2.9"
+lazy val catsCoreV          = "2.6.1"
+lazy val catsEffectV        = "3.3.0"
 lazy val log4CatsV          = "2.1.1"
 lazy val slf4jV             = "1.7.32"
 lazy val sttpV              = "3.3.17"
@@ -61,6 +61,7 @@ lazy val root = (project in file("."))
       "org.scalatest"                 %% "scalatest"                     % scalatestV         % "test",
       "com.github.tomakehurst"         % "wiremock"                      % wiremockV          % "test",
       "org.typelevel"                 %% "cats-effect-testing-scalatest" % catsEffectTestingV % "test",
+      "org.typelevel"                 %% "cats-effect-testkit"           % catsEffectV        % "test",
       "org.http4s"                    %% "http4s-core"                   % http4sV            % "test",
       "org.http4s"                    %% "http4s-dsl"                    % http4sV            % "test",
       "org.http4s"                    %% "http4s-blaze-server"           % http4sV            % "test",

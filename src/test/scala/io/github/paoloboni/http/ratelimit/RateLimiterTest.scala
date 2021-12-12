@@ -21,93 +21,66 @@
 
 package io.github.paoloboni.http.ratelimit
 
+import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import cats.effect.{Async, IO}
+import cats.effect.testkit.TestControl
+import io.github.paoloboni.Env
 import io.github.paoloboni.binance.common.response.RateLimitType
-import io.github.paoloboni.{Env, TestAsync}
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
 
-// very hacky test - didn't find a good way of controlling the scheduler in tests
 class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with TypeCheckedTripleEquals {
 
   "it should rate limit when frequency is greater than limit" in {
-    val perSecond = 10
-    val period    = 100.millis
+    val perSecond = 10 // period = 100.millis
 
-    val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
-    var time        = initialTime
-
-    implicit val async: Async[IO] = new TestAsync(
-      onMonotonic = time,
-      onSleep = sleepFor =>
-        IO.delay {
-          time = time + sleepFor
-        }
-    )
-
-    (for {
-      rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
-      _           <- rateLimiter.await(IO.pure(1))
-      _           <- rateLimiter.await(IO.pure(2))
-      result      <- rateLimiter.await(IO.pure(3))
-    } yield result).timeout(5.seconds).asserting { res =>
-      res should ===(3)
-      val periodMillis = period.toMillis
-      (time - initialTime).toMillis should ===(3 * periodMillis + periodMillis)
-    }
+    TestControl
+      .executeEmbed(for {
+        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
+        startTime   <- IO.monotonic
+        _           <- rateLimiter.await(IO.pure(1))
+        _           <- rateLimiter.await(IO.pure(2))
+        result      <- rateLimiter.await(IO.pure(3))
+        endTime     <- IO.monotonic
+      } yield (result, startTime, endTime))
+      .asserting { case (res, start, end) =>
+        (end - start) should ===(300.millis)
+        res should ===(3)
+      }
   }
 
   "it should rate limit when frequency is greater than limit and weight > 1" in {
-    val perSecond = 10
-    val period    = 100.millis
+    val perSecond = 10 // period = 100.millis
 
-    val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
-    var time        = initialTime
-
-    implicit val async: Async[IO] = new TestAsync(
-      onMonotonic = time,
-      onSleep = sleepFor =>
-        IO.delay {
-          time = time + sleepFor
-        }
-    )
-
-    (for {
-      rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
-      result      <- rateLimiter.await(IO.pure(1), weight = 10)
-    } yield result).timeout(5.seconds).asserting { res =>
-      res should ===(1)
-      val periodMillis = period.toMillis
-      (time - initialTime).toMillis should ===(10 * periodMillis + periodMillis)
-    }
+    TestControl
+      .executeEmbed(for {
+        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
+        startTime   <- IO.monotonic
+        result      <- rateLimiter.await(IO.pure(1), weight = 10)
+        endTime     <- IO.monotonic
+      } yield (result, startTime, endTime))
+      .asserting { case (res, start, end) =>
+        (end - start) should ===(1.second)
+        res should ===(1)
+      }
   }
 
   "it should not rate limit when frequency is lower than limit" in {
-    val perSecond = 1
-    val period    = 1.second
+    val perSecond = 1 // period = 1.second
 
-    val initialTime = FiniteDuration(System.nanoTime(), TimeUnit.NANOSECONDS)
-    var time        = initialTime
-
-    implicit val async: Async[IO] = new TestAsync(
-      onMonotonic = time,
-      onSleep = sleepFor =>
-        IO.delay {
-          time = time + sleepFor
-        }
-    )
-
-    (for {
-      rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
-      result      <- rateLimiter.await(IO.pure(1))
-    } yield result).timeout(5.seconds).asserting { res =>
-      res should ===(1)
-      (time - initialTime).toMillis should ===((period + period).toMillis)
-    }
+    TestControl
+      .executeEmbed(for {
+        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
+        startTime   <- IO.monotonic
+        result      <- rateLimiter.await(IO.pure(1))
+        endTime     <- IO.monotonic
+      } yield (result, startTime, endTime))
+      .asserting { case (res, start, end) =>
+        (end - start) should ===(1.second)
+        res should ===(1)
+      }
   }
 }
