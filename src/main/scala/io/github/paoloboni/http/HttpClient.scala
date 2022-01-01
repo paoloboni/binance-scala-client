@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Paolo Boni
+ * Copyright (c) 2022 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -35,6 +35,7 @@ import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.{BodySerializer, SttpBackend, _}
 import sttp.model.Uri
 import sttp.ws.WebSocketFrame
+import scala.reflect.ClassTag
 
 sealed class HttpClient[F[_]: Logger](implicit
     F: Async[F],

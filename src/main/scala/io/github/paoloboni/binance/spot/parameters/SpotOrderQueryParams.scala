@@ -19,20 +19,13 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.spot.parameters
 
-sealed trait FutureGetOrderParams
+import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.spot._
 
-object FutureGetOrderParams {
-
-  case class OrderId(
-      symbol: String,
-      orderId: Long
-  ) extends FutureGetOrderParams
-
-  case class OrigClientOrderId(
-      symbol: String,
-      origClientOrderId: String
-  ) extends FutureGetOrderParams
-
-}
+case class SpotOrderQueryParams(
+    symbol: String,
+    orderId: Option[Long],
+    origClientOrderId: Option[String] = None
+)

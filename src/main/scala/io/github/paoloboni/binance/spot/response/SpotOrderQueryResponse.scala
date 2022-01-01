@@ -19,20 +19,28 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.parameters
+package io.github.paoloboni.binance.spot.response
 
-sealed trait FutureGetOrderParams
+import io.github.paoloboni.binance.common.OrderSide
+import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 
-object FutureGetOrderParams {
-
-  case class OrderId(
-      symbol: String,
-      orderId: Long
-  ) extends FutureGetOrderParams
-
-  case class OrigClientOrderId(
-      symbol: String,
-      origClientOrderId: String
-  ) extends FutureGetOrderParams
-
-}
+case class SpotOrderQueryResponse(
+    symbol: String,
+    orderId: Long,
+    orderListId: Long,
+    clientOrderId: String,
+    price: BigDecimal,
+    origQty: BigDecimal,
+    executedQty: BigDecimal,
+    cummulativeQuoteQty: BigDecimal,
+    status: SpotOrderStatus,
+    timeInForce: SpotTimeInForce,
+    `type`: SpotOrderType,
+    side: OrderSide,
+    stopPrice: Option[BigDecimal] = None,
+    icebergQty: Option[BigDecimal] = None,
+    time: Long,
+    updateTime: Long,
+    isWorking: Boolean,
+    origQuoteOrderQty: BigDecimal
+)
