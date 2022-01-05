@@ -192,6 +192,14 @@ final case class SpotApi[F[_]: Logger](
     } yield response
   }
 
+  /** Queries the status and fill price of an existing order.
+    *
+    * @param orderQuery
+    *   The order must be identified by Symbol plus one of OrderId or ClientOrderId
+    *
+    * @return
+    *   Attributes of the order including status, fill amount and filled price.
+    */
   def queryOrder(orderQuery: SpotOrderQueryParams): F[SpotOrderQueryResponse] =
     for {
       uri <- mkSignedUri(
