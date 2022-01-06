@@ -9,7 +9,7 @@ import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
-import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotOrderCreateResponse}
+import io.github.paoloboni.binance.spot.response._
 
 import java.time.Instant
 import scala.util.Random
@@ -53,6 +53,29 @@ class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         )
       )
       .asserting(_ shouldBe a[SpotOrderCreateResponse])
+  }
+
+  "queryOrder" in { client =>
+    (for {
+      createOrderResponse <- client.createOrder(
+        SpotOrderCreateParams.LIMIT(
+          symbol = "XRPUSDT",
+          side = OrderSide.SELL,
+          timeInForce = SpotTimeInForce.GTC,
+          quantity = 10,
+          price = 1.8
+        )
+      )
+
+      queryResponse <- client.queryOrder(
+        SpotOrderQueryParams(
+          symbol = "XRPUSDT",
+          orderId = createOrderResponse.orderId.some,
+          origClientOrderId = None
+        )
+      )
+    } yield queryResponse)
+       .asserting(_ shouldBe a[SpotOrderQueryResponse])
   }
 
   "cancelOrder" in { client =>

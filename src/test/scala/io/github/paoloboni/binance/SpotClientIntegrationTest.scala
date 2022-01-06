@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Paolo Boni
+ * Copyright (c) 2022 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -31,7 +31,7 @@ import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
-import io.github.paoloboni.binance.spot.response.{SpotAccountInfoResponse, SpotFill, SpotOrderCreateResponse}
+import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import io.github.paoloboni.integration._
 import io.github.paoloboni.{Env, TestAsync, TestClient}
@@ -580,6 +580,88 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         fills = List(
           SpotFill(price = 4000, qty = 1, commission = 4, commissionAsset = "USDT")
         )
+      )
+    )
+  }
+  "it should query an order" in withWiremockServer { server =>
+    import Env.{log, runtime}
+    stubInfoEndpoint(server)
+
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    server.stubFor(
+      get(urlPathMatching("/api/v3/order"))
+        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+        .withQueryParam("recvWindow", equalTo("5000"))
+        .withQueryParam("timestamp", equalTo(fixedTime.toString))
+        .withQueryParam("signature", equalTo("aa7eee71d8ee20facd68cd4ba50b9393fecf6992be95d2014d98296203c2f310"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withBody("""{
+                        |  "symbol": "BTCUSDT",
+                        |  "orderId": 28,
+                        |  "orderListId": -1,
+                        |  "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+                        |  "transactTime": 1507725176595,
+                        |  "price": "0.00000000",
+                        |  "origQty": "10.00000000",
+                        |  "executedQty": "10.00000000",
+                        |  "cummulativeQuoteQty": "10.00000000",
+                        |  "status": "FILLED",
+                        |  "timeInForce": "GTC",
+                        |  "type": "MARKET",
+                        |  "side": "SELL",
+                        |  "stopPrice": "5.0",
+                        |  "icebergQty": "0.0",
+                        |  "time": 1499827319559,
+                        |  "updateTime": 1499827319559,
+                        |  "isWorking": true,
+                        |  "origQuoteOrderQty": "0.000000"
+                        |}
+                      """.stripMargin)
+        )
+    )
+
+    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
+
+    val result = BinanceClient
+      .createSpotClient[IO](config)
+      .use(
+        _.queryOrder(
+          SpotOrderQueryParams(
+            symbol = "BTCUSDT",
+            orderId = Option(28L)
+          )
+        )
+      )
+      .unsafeRunSync()
+
+    result should ===(
+      SpotOrderQueryResponse(
+        symbol = "BTCUSDT",
+        orderId = 28L,
+        orderListId = -1,
+        clientOrderId = "6gCrw2kRUAF9CvJDGP16IP",
+        price = 0,
+        origQty = 10,
+        executedQty = 10,
+        cummulativeQuoteQty = 10,
+        status = SpotOrderStatus.FILLED,
+        timeInForce = SpotTimeInForce.GTC,
+        `type` = SpotOrderType.MARKET,
+        side = OrderSide.SELL,
+        stopPrice = Option(BigDecimal("5.0")),
+        icebergQty = Option(BigDecimal("0.0")),
+        time = 1499827319559L,
+        updateTime = 1499827319559L,
+        isWorking = true,
+        origQuoteOrderQty = BigDecimal("0.0")
       )
     )
   }

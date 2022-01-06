@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Paolo Boni
+ * Copyright (c) 2022 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -191,6 +191,30 @@ final case class SpotApi[F[_]: Logger](
       response <- F.fromEither(responseOrError)
     } yield response
   }
+
+  /** Queries the status and fill price of an existing order.
+    *
+    * @param orderQuery
+    *   The order must be identified by Symbol plus one of OrderId or ClientOrderId
+    *
+    * @return
+    *   Attributes of the order including status, fill amount and filled price.
+    */
+  def queryOrder(orderQuery: SpotOrderQueryParams): F[SpotOrderQueryResponse] =
+    for {
+      uri <- mkSignedUri(
+        uri = orderUri,
+        orderQuery.toQueryParams.toSeq: _*
+      )
+      responseOrError <- client.get[CirceResponse[SpotOrderQueryResponse]](
+        uri = uri,
+        responseAs = asJson[SpotOrderQueryResponse],
+        limiters = rateLimiters.requestsOnly,
+        headers = Map("X-MBX-APIKEY" -> config.apiKey),
+        weight = 2
+      )
+      response <- F.fromEither(responseOrError)
+    } yield response
 
   /** Cancels an order.
     *
