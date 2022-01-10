@@ -19,10 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common.response
+package io.github.paoloboni.binance.common.parameters
 
-final case class Depth(
-    lastUpdateId: Long, // Last Update Id
-    bids: Seq[Bid],     // Bids to be updated
-    asks: Seq[Ask]      // Asks to be updated
-)
+final case class DepthParams(symbol: String, limit: DepthLimit)

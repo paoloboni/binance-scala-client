@@ -370,10 +370,10 @@ class SpotClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
 
       val result = BinanceClient
         .createSpotClient[IO](config)
-        .use(_.getDepth(common.parameters.Depth(symbol, limit)))
+        .use(_.getDepth(common.parameters.DepthParams(symbol, limit)))
         .unsafeRunSync()
 
-      result shouldBe Depth(
+      result shouldBe DepthGetResponse(
         lastUpdateId = 1027024,
         bids = List(
           Bid(4.00000000, 431.0)
