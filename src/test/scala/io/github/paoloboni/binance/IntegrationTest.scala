@@ -44,7 +44,7 @@ abstract class IntegrationTest
     with TypeCheckedTripleEquals
     with CatsResourceIO[WireMockServer] {
 
-  implicit override def executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  implicit override def executionContext: ExecutionContext = cats.effect.unsafe.implicits.global.compute
 
   override protected val ResourceTimeout: Duration = 10.seconds
 
