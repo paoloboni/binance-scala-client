@@ -21,26 +21,29 @@
 
 package io.github.paoloboni.http
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.Json
+import io.github.paoloboni.Env.log
+import io.github.paoloboni.binance.IntegrationTest
 import io.github.paoloboni.binance.common.response.CirceResponse
-import io.github.paoloboni.integration._
-import io.github.paoloboni.{Env, TestClient}
-import org.scalatest.EitherValues
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-import sttp.client3.{HttpError, UriContext}
+import org.asynchttpclient.DefaultAsyncHttpClientConfig
+import org.scalatest.EitherValues._
+import sttp.capabilities
+import sttp.capabilities.fs2.Fs2Streams
+import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 import sttp.client3.circe._
+import sttp.client3.{HttpError, SttpBackend, UriContext}
 
-class HttpClientTest extends AnyFreeSpec with Matchers with EitherValues with Env with TestClient {
-  "a bad request response should be translated into a HttpError" in withWiremockServer { server =>
+class HttpClientTest extends IntegrationTest {
+
+  "a bad request response should be translated into a HttpError" in { server =>
     val responseBody = """{ "error": "bad request" }"""
-    server.stubFor(get("/test").willReturn(aResponse().withStatus(400).withBody(responseBody)))
 
-    val result = clientResource
-      .use { implicit c =>
+    mkTestClient
+      .use { implicit client =>
         for {
+          _ <- IO.delay(server.stubFor(get("/test").willReturn(aResponse().withStatus(400).withBody(responseBody))))
           httpClient <- HttpClient.make[IO]
           url = uri"http://localhost:${server.port().toString}/test"
           responseOrError <- httpClient.get[CirceResponse[Json]](url, asJson[Json], limiters = List.empty)
@@ -48,12 +51,17 @@ class HttpClientTest extends AnyFreeSpec with Matchers with EitherValues with En
         } yield response
       }
       .attempt
-      .unsafeRunSync()
+      .asserting { result =>
+        result.left.value shouldBe a[HttpError[_]]
 
-    result.left.value shouldBe a[HttpError[_]]
-
-    val error = result.left.value.asInstanceOf[HttpError[String]]
-    error.statusCode.code shouldBe 400
-    error.body shouldBe responseBody
+        val error = result.left.value.asInstanceOf[HttpError[String]]
+        error.statusCode.code shouldBe 400
+        error.body shouldBe responseBody
+      }
   }
+
+  private val mkTestClient: Resource[IO, SttpBackend[IO, Any with Fs2Streams[IO] with capabilities.WebSockets]] =
+    AsyncHttpClientFs2Backend.resourceUsingConfig[IO](
+      new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(5000).build()
+    )
 }

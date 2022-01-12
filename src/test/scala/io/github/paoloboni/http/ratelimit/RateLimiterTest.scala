@@ -24,7 +24,7 @@ package io.github.paoloboni.http.ratelimit
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.testkit.TestControl
-import io.github.paoloboni.Env
+import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance.common.response.RateLimitType
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.freespec.AsyncFreeSpec
@@ -32,7 +32,7 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.DurationInt
 
-class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with Env with TypeCheckedTripleEquals {
+class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with TypeCheckedTripleEquals {
 
   "it should rate limit when frequency is greater than limit" in {
     val perSecond = 10 // period = 100.millis
