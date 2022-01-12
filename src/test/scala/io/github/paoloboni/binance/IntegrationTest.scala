@@ -46,7 +46,7 @@ abstract class IntegrationTest
 
   implicit override def executionContext: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  override protected val ResourceTimeout: Duration = 5.seconds
+  override protected val ResourceTimeout: Duration = 10.seconds
 
   val resource: Resource[IO, WireMockServer] = Resource.make(
     IO.delay {
