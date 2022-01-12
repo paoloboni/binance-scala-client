@@ -30,7 +30,8 @@ import org.http4s.implicits._
 import org.http4s.server.websocket._
 import org.http4s.websocket.WebSocketFrame
 
-class TestWsServer[F[_]](toClient: Stream[F, WebSocketFrame])(port: Int)(implicit F: Async[F]) extends Http4sDsl[F] {
+class TestWsServer[F[_]](toClient: Stream[F, WebSocketFrame])(val port: Int)(implicit F: Async[F])
+    extends Http4sDsl[F] {
   def routes(wsb: WebSocketBuilder[F]): HttpRoutes[F] =
     HttpRoutes.of[F] { case GET -> Root / "ws" / streamName =>
       val fromClient: Pipe[F, WebSocketFrame, Unit] = _.evalMap(message => F.delay(println("received: " + message)))

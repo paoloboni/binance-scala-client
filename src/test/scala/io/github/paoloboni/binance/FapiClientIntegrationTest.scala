@@ -28,6 +28,8 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
 import io.circe.parser._
+import io.github.paoloboni.Env.log
+import io.github.paoloboni.TestAsync
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response.{
   ContractKLineStream,
@@ -38,12 +40,7 @@ import io.github.paoloboni.binance.common.response.{
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
-import io.github.paoloboni.integration._
-import io.github.paoloboni.{Env, TestAsync, TestClient}
 import org.http4s.websocket.WebSocketFrame
-import org.scalactic.TypeCheckedTripleEquals
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.EitherValues._
 import org.scalatest.Inspectors._
 import scodec.bits.ByteVector
@@ -53,20 +50,16 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClient with TypeCheckedTripleEquals {
+class FapiClientIntegrationTest extends IntegrationTest {
 
-  private val wsPort = 9999
+  "it should fire multiple requests when expected number of elements returned is above threshold" in { server =>
+    val from      = 1548806400000L
+    val to        = 1548866280000L
+    val symbol    = "ETHUSDT"
+    val interval  = Interval.`1m`
+    val threshold = 2
 
-  "it should fire multiple requests when expected number of elements returned is above threshold" in new Env {
-    withWiremockServer { server =>
-      val from      = 1548806400000L
-      val to        = 1548866280000L
-      val symbol    = "ETHUSDT"
-      val interval  = Interval.`1m`
-      val threshold = 2
-
-      stubInfoEndpoint(server)
-
+    val stubResponse1 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -90,7 +83,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
+    val stubResponse2 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -114,8 +109,10 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
-      // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
+    // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
+    val stubResponse3 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -138,10 +135,15 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
-      val config = prepareConfiguration(server)
-
-      val result = BinanceClient
+    (for {
+      _      <- stubResponse1
+      _      <- stubResponse2
+      _      <- stubResponse3
+      _      <- stubInfoEndpoint(server)
+      config <- createConfiguration(server)
+      result <- BinanceClient
         .createFutureClient[IO](config)
         .use { gw =>
           gw
@@ -157,8 +159,7 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
             .compile
             .toList
         }
-        .unsafeRunSync()
-
+    } yield result).asserting { result =>
       val responseFullJson = parse(
         """
           |[
@@ -173,23 +174,20 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
       ).value
       val expected = responseFullJson.as[List[KLine]].value
 
+      server.verify(3, getRequestedFor(urlMatching("/fapi/v1/klines.*")))
       result should have size 6
       result should contain theSameElementsInOrderAs expected
-
-      server.verify(3, getRequestedFor(urlMatching("/fapi/v1/klines.*")))
     }
   }
 
-  "it should be able to stream klines even with a threshold of 1" in new Env {
-    withWiremockServer { server =>
-      val from      = 1548806400000L
-      val to        = 1548806640000L
-      val symbol    = "ETHUSDT"
-      val interval  = Interval.`1m`
-      val threshold = 1
+  "it should be able to stream klines even with a threshold of 1" in { server =>
+    val from      = 1548806400000L
+    val to        = 1548806640000L
+    val symbol    = "ETHUSDT"
+    val interval  = Interval.`1m`
+    val threshold = 1
 
-      stubInfoEndpoint(server)
-
+    val stubResponse1 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -211,7 +209,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
+    val stubResponse2 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -233,7 +233,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
+    val stubResponse3 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -255,8 +257,10 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
-      // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
+    // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
+    val stubResponse4 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -278,7 +282,9 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
+    val stubResponse5 = IO.delay(
       server.stubFor(
         get(urlPathEqualTo("/fapi/v1/klines"))
           .withQueryParams(
@@ -300,10 +306,17 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
               """.stripMargin)
           )
       )
+    )
 
-      val config = prepareConfiguration(server)
-
-      val result = BinanceClient
+    (for {
+      _      <- stubResponse1
+      _      <- stubResponse2
+      _      <- stubResponse3
+      _      <- stubResponse4
+      _      <- stubResponse5
+      _      <- stubInfoEndpoint(server)
+      config <- createConfiguration(server)
+      result <- BinanceClient
         .createFutureClient[IO](config)
         .use { gw =>
           gw
@@ -319,179 +332,156 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
             .compile
             .toList
         }
-        .unsafeRunSync()
-
+    } yield result).asserting { result =>
       val responseFullJson = parse(
         """
-          |[
-          | [1548806400000,"104.41000000","104.43000000","104.27000000","104.37000000","185.23745000",1548806459999,"19328.98599530",80,"62.03712000","6475.81062590","0"],
-          | [1548806460000,"104.38000000","104.40000000","104.33000000","104.36000000","211.54271000",1548806519999,"22076.70809650",68,"175.75948000","18342.53313250","0"],
-          | [1548806520000,"104.36000000","104.39000000","104.36000000","104.38000000","59.74736000",1548806579999,"6235.56895740",28,"37.98161000","3963.95268370","0"],
-          | [1548806580000,"104.37000000","104.37000000","104.11000000","104.30000000","503.86391000",1548806639999,"52516.17118740",150,"275.42894000","28709.15114540","0"]
-          |]
-        """.stripMargin
+              |[
+              | [1548806400000,"104.41000000","104.43000000","104.27000000","104.37000000","185.23745000",1548806459999,"19328.98599530",80,"62.03712000","6475.81062590","0"],
+              | [1548806460000,"104.38000000","104.40000000","104.33000000","104.36000000","211.54271000",1548806519999,"22076.70809650",68,"175.75948000","18342.53313250","0"],
+              | [1548806520000,"104.36000000","104.39000000","104.36000000","104.38000000","59.74736000",1548806579999,"6235.56895740",28,"37.98161000","3963.95268370","0"],
+              | [1548806580000,"104.37000000","104.37000000","104.11000000","104.30000000","503.86391000",1548806639999,"52516.17118740",150,"275.42894000","28709.15114540","0"]
+              |]
+            """.stripMargin
       ).value
       val expected = responseFullJson.as[List[KLine]].value
 
+      server.verify(4, getRequestedFor(urlMatching("/fapi/v1/klines.*")))
+
       result should have size 4
       result should contain theSameElementsInOrderAs expected
-
-      server.verify(4, getRequestedFor(urlMatching("/fapi/v1/klines.*")))
     }
+
   }
 
-  "it should return a list of prices" in new Env {
-    withWiremockServer { server =>
-      stubInfoEndpoint(server)
+  "it should return a list of prices" in { server =>
 
-      server.stubFor(
-        get("/fapi/v1/ticker/price")
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withBody("""
-                          |[
-                          |    {
-                          |        "symbol": "ETHBTC",
-                          |        "price": "0.03444300"
-                          |    },
-                          |    {
-                          |        "symbol": "LTCBTC",
-                          |        "price": "0.01493000"
-                          |    }
-                          |]
-                      """.stripMargin)
-          )
+    val responseBody =
+      """
+        |[
+        |    {
+        |        "symbol": "ETHBTC",
+        |        "price": "0.03444300"
+        |    },
+        |    {
+        |        "symbol": "LTCBTC",
+        |        "price": "0.01493000"
+        |    }
+        |]""".stripMargin
+
+      val stubResponse = IO.delay(
+        server.stubFor(
+          get("/fapi/v1/ticker/price")
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody(responseBody)
+            )
+        )
       )
 
-      val config = prepareConfiguration(server)
-
-      val result = BinanceClient
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server)
+      result <- BinanceClient
         .createFutureClient[IO](config)
         .use(_.getPrices())
-        .unsafeRunSync()
-
-      result should contain theSameElementsInOrderAs List(
+    } yield result).asserting(
+      _ should contain theSameElementsInOrderAs List(
         Price("ETHBTC", BigDecimal(0.03444300)),
         Price("LTCBTC", BigDecimal(0.01493000))
       )
-    }
+    )
+
   }
 
-  "it should return a single price" in new Env {
-    withWiremockServer { server =>
-      stubInfoEndpoint(server)
-
-      server.stubFor(
-        get(urlPathEqualTo("/fapi/v1/ticker/price"))
-          .withQueryParam("symbol", equalTo("ETHBTC"))
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withBody("""
+  "it should return a single price" in { server =>
+    (for {
+      _ <- stubInfoEndpoint(server)
+      _ <- IO.delay(
+        server.stubFor(
+          get(urlPathEqualTo("/fapi/v1/ticker/price"))
+            .withQueryParam("symbol", equalTo("ETHBTC"))
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody("""
                           |{
                           |    "symbol": "ETHBTC",
                           |    "price": "0.03444300"
                           |}""".stripMargin)
-          )
+            )
+        )
       )
-
-      val config = prepareConfiguration(server)
-
-      val result = BinanceClient
+      config <- createConfiguration(server)
+      result <- BinanceClient
         .createFutureClient[IO](config)
         .use(_.getPrice("ETHBTC"))
-        .unsafeRunSync()
-
-      result shouldBe Price("ETHBTC", BigDecimal(0.03444300))
-    }
+    } yield result).asserting(_ shouldBe Price("ETHBTC", BigDecimal(0.03444300)))
   }
 
-  "it should return the balance" in withWiremockServer { server =>
-    import Env.{log, runtime}
-
-    stubInfoEndpoint(server)
+  "it should return the balance" in { server =>
 
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
 
-    server.stubFor(
-      get(urlPathMatching("/fapi/v1/account"))
-        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withQueryParam("recvWindow", equalTo("5000"))
-        .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("6cd35332399b004466463b9ad65a112a14f31fb9ddfd5e19bd7298fbd491dbc7"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("""
-                        |{
-                        |    "feeTier": 0,
-                        |    "canTrade": true,
-                        |    "canDeposit": true,
-                        |    "canWithdraw": true,
-                        |    "updateTime": 0,
-                        |    "totalInitialMargin": "0.00000000",
-                        |    "totalMaintMargin": "0.00000000",
-                        |    "totalWalletBalance": "23.72469206",
-                        |    "totalUnrealizedProfit": "0.00000000",
-                        |    "totalMarginBalance": "23.72469206",
-                        |    "totalPositionInitialMargin": "0.00000000",
-                        |    "totalOpenOrderInitialMargin": "0.00000000",
-                        |    "totalCrossWalletBalance": "23.72469206",
-                        |    "totalCrossUnPnl": "0.00000000",
-                        |    "availableBalance": "23.72469206",
-                        |    "maxWithdrawAmount": "23.72469206",
-                        |    "assets": [
-                        |        {
-                        |            "asset": "USDT",
-                        |            "walletBalance": "23.72469206",
-                        |            "unrealizedProfit": "0.00000000",
-                        |            "marginBalance": "23.72469206",
-                        |            "maintMargin": "0.00000000",
-                        |            "initialMargin": "0.00000000",
-                        |            "positionInitialMargin": "0.00000000",
-                        |            "openOrderInitialMargin": "0.00000000",
-                        |            "crossWalletBalance": "23.72469206",
-                        |            "crossUnPnl": "0.00000000",
-                        |            "availableBalance": "23.72469206",
-                        |            "maxWithdrawAmount": "23.72469206",
-                        |            "marginAvailable": true
-                        |        }
-                        |    ],
-                        |    "positions": [
-                        |        {
-                        |            "symbol": "BTCUSDT",
-                        |            "initialMargin": "0",
-                        |            "maintMargin": "0",
-                        |            "unrealizedProfit": "0.00000000",
-                        |            "positionInitialMargin": "0",
-                        |            "openOrderInitialMargin": "0",
-                        |            "leverage": "100",
-                        |            "isolated": true,
-                        |            "entryPrice": "0.00000",
-                        |            "maxNotional": "250000",
-                        |            "positionSide": "BOTH",
-                        |            "positionAmt": "0"
-                        |        }
-                        |    ]
-                        |}
-                        """.stripMargin)
-        )
-    )
+    val responseBody =
+      """
+        |{
+        |    "feeTier": 0,
+        |    "canTrade": true,
+        |    "canDeposit": true,
+        |    "canWithdraw": true,
+        |    "updateTime": 0,
+        |    "totalInitialMargin": "0.00000000",
+        |    "totalMaintMargin": "0.00000000",
+        |    "totalWalletBalance": "23.72469206",
+        |    "totalUnrealizedProfit": "0.00000000",
+        |    "totalMarginBalance": "23.72469206",
+        |    "totalPositionInitialMargin": "0.00000000",
+        |    "totalOpenOrderInitialMargin": "0.00000000",
+        |    "totalCrossWalletBalance": "23.72469206",
+        |    "totalCrossUnPnl": "0.00000000",
+        |    "availableBalance": "23.72469206",
+        |    "maxWithdrawAmount": "23.72469206",
+        |    "assets": [
+        |        {
+        |            "asset": "USDT",
+        |            "walletBalance": "23.72469206",
+        |            "unrealizedProfit": "0.00000000",
+        |            "marginBalance": "23.72469206",
+        |            "maintMargin": "0.00000000",
+        |            "initialMargin": "0.00000000",
+        |            "positionInitialMargin": "0.00000000",
+        |            "openOrderInitialMargin": "0.00000000",
+        |            "crossWalletBalance": "23.72469206",
+        |            "crossUnPnl": "0.00000000",
+        |            "availableBalance": "23.72469206",
+        |            "maxWithdrawAmount": "23.72469206",
+        |            "marginAvailable": true
+        |        }
+        |    ],
+        |    "positions": [
+        |        {
+        |            "symbol": "BTCUSDT",
+        |            "initialMargin": "0",
+        |            "maintMargin": "0",
+        |            "unrealizedProfit": "0.00000000",
+        |            "positionInitialMargin": "0",
+        |            "openOrderInitialMargin": "0",
+        |            "leverage": "100",
+        |            "isolated": true,
+        |            "entryPrice": "0.00000",
+        |            "maxNotional": "250000",
+        |            "positionSide": "BOTH",
+        |            "positionAmt": "0"
+        |        }
+        |    ]
+        |}""".stripMargin
 
-    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-
-    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
-
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(_.getBalance())
-      .unsafeRunSync()
-
-    result shouldBe FutureAccountInfoResponse(
+    val expected = FutureAccountInfoResponse(
       feeTier = 0,
       canTrade = true,
       canDeposit = true,
@@ -542,131 +532,155 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
         )
       )
     )
-  }
-
-  "it should be able to change the position mode" in withWiremockServer { server =>
-    import Env.{log, runtime}
-
-    stubInfoEndpoint(server)
-
-    val fixedTime = 1499827319559L
-
-    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
-    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
-
-    server.stubFor(
-      post(urlPathMatching("/fapi/v1/positionSide/dual"))
-        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withQueryParam("dualSidePosition", equalTo(true.toString))
-        .withQueryParam("recvWindow", equalTo("5000"))
-        .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("4fb3c513fff4c269ad18ffcf45f44b9f46205f51696ba7e5ed91ac489f42ed75"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("""
-                      |{
-                      |    "code": 200,
-                      |    "msg": "success"
-                      |}""".stripMargin)
-        )
-    )
-
-    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
     implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
-    val changePositionParams = true
+    val stubResponse = IO.delay(
+      server.stubFor(
+        get(urlPathMatching("/fapi/v1/account"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParam("recvWindow", equalTo("5000"))
+          .withQueryParam("timestamp", equalTo(fixedTime.toString))
+          .withQueryParam("signature", equalTo("6cd35332399b004466463b9ad65a112a14f31fb9ddfd5e19bd7298fbd491dbc7"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody(responseBody)
+          )
+      )
+    )
 
-    BinanceClient
-      .createFutureClient[IO](config)
-      .use(_.changePositionMode(changePositionParams))
-      .unsafeRunSync()
-
-    forExactly(1, server.getAllServeEvents.asScala) { event =>
-      event.getRequest.getUrl should include("/fapi/v1/positionSide/dual")
-      event.getResponse.getStatus should ===(200)
-    }
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+      result <- BinanceClient
+        .createFutureClient[IO](config)
+        .use(_.getBalance())
+    } yield result).asserting(_ shouldBe expected)
   }
 
-  "it should be able to change the initial leverage" in withWiremockServer { server =>
-    import Env.{log, runtime}
+  "it should be able to change the position mode" in { server =>
 
-    stubInfoEndpoint(server)
+    val fixedTime = 1499827319559L
+
+    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    val stubResponse = IO.delay(
+      server.stubFor(
+        post(urlPathMatching("/fapi/v1/positionSide/dual"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParam("dualSidePosition", equalTo(true.toString))
+          .withQueryParam("recvWindow", equalTo("5000"))
+          .withQueryParam("timestamp", equalTo(fixedTime.toString))
+          .withQueryParam("signature", equalTo("4fb3c513fff4c269ad18ffcf45f44b9f46205f51696ba7e5ed91ac489f42ed75"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                        |{
+                        |    "code": 200,
+                        |    "msg": "success"
+                        |}""".stripMargin)
+          )
+      )
+    )
+
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+      changePositionParams = true
+      _ <- BinanceClient
+        .createFutureClient[IO](config)
+        .use(_.changePositionMode(changePositionParams))
+    } yield ()).asserting(_ =>
+      forExactly(1, server.getAllServeEvents.asScala) { event =>
+        event.getRequest.getUrl should include("/fapi/v1/positionSide/dual")
+        event.getResponse.getStatus should ===(200)
+      }
+    )
+  }
+
+  "it should be able to change the initial leverage" in { server =>
 
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
 
-    server.stubFor(
-      post(urlPathMatching("/fapi/v1/leverage"))
-        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withQueryParam("symbol", equalTo("BTCUSDT"))
-        .withQueryParam("leverage", equalTo(100.toString))
-        .withQueryParam("recvWindow", equalTo("5000"))
-        .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("0c8dbb8c3a8f2dc9a071a5860e4686c4ddff9dcdfcc83eb2aba57805b2c369b2"))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("""
+    val stubResponse = IO.delay(
+      server.stubFor(
+        post(urlPathMatching("/fapi/v1/leverage"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParam("symbol", equalTo("BTCUSDT"))
+          .withQueryParam("leverage", equalTo(100.toString))
+          .withQueryParam("recvWindow", equalTo("5000"))
+          .withQueryParam("timestamp", equalTo(fixedTime.toString))
+          .withQueryParam("signature", equalTo("0c8dbb8c3a8f2dc9a071a5860e4686c4ddff9dcdfcc83eb2aba57805b2c369b2"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
                       |{
                       |    "leverage": 100,
                       |    "maxNotionalValue": "1000000",
                       |    "symbol": "BTCUSDT"
                       |}
                       """.stripMargin)
-        )
+          )
+      )
     )
-
-    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
     implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
-    val changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 100)
-
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(_.changeInitialLeverage(changeLeverageParams))
-      .unsafeRunSync()
-
-    result shouldBe ChangeInitialLeverageResponse(
-      symbol = "BTCUSDT",
-      leverage = 100,
-      maxNotionalValue = MaxNotionalValue.Value(1000000)
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+      changeLeverageParams = ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 100)
+      result <- BinanceClient
+        .createFutureClient[IO](config)
+        .use(_.changeInitialLeverage(changeLeverageParams))
+    } yield result).asserting(
+      _ shouldBe ChangeInitialLeverageResponse(
+        symbol = "BTCUSDT",
+        leverage = 100,
+        maxNotionalValue = MaxNotionalValue.Value(1000000)
+      )
     )
-
   }
 
-  "it should create an order" in withWiremockServer { server =>
-    import Env.{log, runtime}
-    stubInfoEndpoint(server)
+  "it should create an order" in { server =>
 
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
 
-    server.stubFor(
-      post(urlPathMatching("/fapi/v1/order"))
-        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withQueryParams(
-          Map(
-            "recvWindow"   -> equalTo("5000"),
-            "timestamp"    -> equalTo(fixedTime.toString),
-            "type"         -> equalTo("MARKET"),
-            "symbol"       -> equalTo("BTCUSDT"),
-            "side"         -> equalTo("BUY"),
-            "positionSide" -> equalTo("BOTH"),
-            "quantity"     -> equalTo("10"),
-            "signature"    -> equalTo("d34c07e97437033bb7e960bdd219b3293a1a511068782653b95304358cf85d94")
-          ).asJava
-        )
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withBody("""{
+    val stubResponse = IO.delay(
+      server.stubFor(
+        post(urlPathMatching("/fapi/v1/order"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParams(
+            Map(
+              "recvWindow"   -> equalTo("5000"),
+              "timestamp"    -> equalTo(fixedTime.toString),
+              "type"         -> equalTo("MARKET"),
+              "symbol"       -> equalTo("BTCUSDT"),
+              "side"         -> equalTo("BUY"),
+              "positionSide" -> equalTo("BOTH"),
+              "quantity"     -> equalTo("10"),
+              "signature"    -> equalTo("d34c07e97437033bb7e960bdd219b3293a1a511068782653b95304358cf85d94")
+            ).asJava
+          )
+          .willReturn(
+            aResponse()
+              .withStatus(201)
+              .withBody("""{
                         |    "clientOrderId": "testOrder",
                         |    "cumQty": "0",
                         |    "cumQuote": "0",
@@ -691,33 +705,32 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                         |    "workingType": "CONTRACT_PRICE",
                         |    "priceProtect": false
                         |}""".stripMargin)
-        )
+          )
+      )
     )
-
-    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
     implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(
-        _.createOrder(
-          FutureOrderCreateParams.MARKET(
-            symbol = "BTCUSDT",
-            side = OrderSide.BUY,
-            positionSide = FuturePositionSide.BOTH,
-            quantity = 10
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+      result <- BinanceClient
+        .createFutureClient[IO](config)
+        .use(
+          _.createOrder(
+            FutureOrderCreateParams.MARKET(
+              symbol = "BTCUSDT",
+              side = OrderSide.BUY,
+              positionSide = FuturePositionSide.BOTH,
+              quantity = 10
+            )
           )
         )
-      )
-      .unsafeRunSync()
-
-    result shouldBe a[FutureOrderCreateResponse]
+    } yield result).asserting(_ shouldBe a[FutureOrderCreateResponse])
   }
 
-  "it should get an order details" in withWiremockServer { server =>
-    import Env.{log, runtime}
-    stubInfoEndpoint(server)
+  "it should get an order details" in { server =>
 
     val orderId   = 22542179L
     val fixedTime = 1499827319559L
@@ -725,21 +738,22 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
 
-    server.stubFor(
-      get(urlPathMatching("/fapi/v1/order"))
-        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withQueryParams(
-          Map(
-            "recvWindow" -> equalTo("5000"),
-            "timestamp"  -> equalTo(fixedTime.toString),
-            "orderId"    -> equalTo(orderId.toString),
-            "signature"  -> equalTo("ad492d2b0950baa9ff3aa0908281ad83cc2132d835daa0cb87d673d83b275fbd")
-          ).asJava
-        )
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("""{
+    val stubResponse = IO.delay(
+      server.stubFor(
+        get(urlPathMatching("/fapi/v1/order"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParams(
+            Map(
+              "recvWindow" -> equalTo("5000"),
+              "timestamp"  -> equalTo(fixedTime.toString),
+              "orderId"    -> equalTo(orderId.toString),
+              "signature"  -> equalTo("ad492d2b0950baa9ff3aa0908281ad83cc2132d835daa0cb87d673d83b275fbd")
+            ).asJava
+          )
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""{
                         |    "clientOrderId": "testOrder",
                         |    "cumQuote": "0",
                         |    "executedQty": "0",
@@ -764,47 +778,47 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                         |    "workingType": "CONTRACT_PRICE",
                         |    "priceProtect": false
                         |}""".stripMargin)
-        )
+          )
+      )
     )
-
-    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
     implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(
-        _.getOrder(
-          FutureGetOrderParams.OrderId(
-            symbol = "BTCUSDT",
-            orderId = orderId
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+      result <- BinanceClient
+        .createFutureClient[IO](config)
+        .use(
+          _.getOrder(
+            FutureGetOrderParams.OrderId(
+              symbol = "BTCUSDT",
+              orderId = orderId
+            )
           )
         )
-      )
-      .unsafeRunSync()
-
-    result shouldBe a[FutureOrderGetResponse]
+    } yield result).asserting(_ shouldBe a[FutureOrderGetResponse])
   }
 
-  "it should cancel an order" in withWiremockServer { server =>
-    import Env.{log, runtime}
-    stubInfoEndpoint(server)
+  "it should cancel an order" in { server =>
 
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
 
-    server.stubFor(
-      delete(urlPathMatching("/fapi/v1/order"))
-        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withQueryParam("recvWindow", equalTo("5000"))
-        .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("5cb34cc9078d1474d997f91c68fc225c408bc6d8773a76abdbe00a19969d973c"))
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withBody("""
+    val stubResponse = IO.delay(
+      server.stubFor(
+        delete(urlPathMatching("/fapi/v1/order"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParam("recvWindow", equalTo("5000"))
+          .withQueryParam("timestamp", equalTo(fixedTime.toString))
+          .withQueryParam("signature", equalTo("5cb34cc9078d1474d997f91c68fc225c408bc6d8773a76abdbe00a19969d973c"))
+          .willReturn(
+            aResponse()
+              .withStatus(201)
+              .withBody("""
                         |{
                         |  "symbol": "LTCBTC",
                         |  "origClientOrderId": "myOrder1",
@@ -821,47 +835,46 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                         |  "side": "BUY"
                         |}
                       """.stripMargin)
-        )
+          )
+      )
     )
-
-    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
     implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(client =>
-        for {
-          _ <- client.cancelOrder(
-            FutureOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
-          )
-        } yield "OK"
-      )
-      .unsafeRunSync()
-
-    result shouldBe "OK"
-
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+      result <- BinanceClient
+        .createFutureClient[IO](config)
+        .use(client =>
+          for {
+            _ <- client.cancelOrder(
+              FutureOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
+            )
+          } yield "OK"
+        )
+    } yield result).asserting(_ shouldBe "OK")
   }
 
-  "it should cancel all orders" in withWiremockServer { server =>
-    import Env.{log, runtime}
-    stubInfoEndpoint(server)
+  "it should cancel all orders" in { server =>
 
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
     val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
 
-    server.stubFor(
-      delete(urlPathMatching("/fapi/v1/allOpenOrders"))
-        .withHeader("X-MBX-APIKEY", equalTo(apiKey))
-        .withQueryParam("recvWindow", equalTo("5000"))
-        .withQueryParam("timestamp", equalTo(fixedTime.toString))
-        .withQueryParam("signature", equalTo("8a31f1e30c7c9ecd7c9b4b7e3ab6f45c8a04926af3aebed822798b9e550ac55d"))
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withBody("""
+    val stubResponse = IO.delay(
+      server.stubFor(
+        delete(urlPathMatching("/fapi/v1/allOpenOrders"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParam("recvWindow", equalTo("5000"))
+          .withQueryParam("timestamp", equalTo(fixedTime.toString))
+          .withQueryParam("signature", equalTo("8a31f1e30c7c9ecd7c9b4b7e3ab6f45c8a04926af3aebed822798b9e550ac55d"))
+          .willReturn(
+            aResponse()
+              .withStatus(201)
+              .withBody("""
                         |[
                         |  {
                         |    "symbol": "BTCUSDT",
@@ -951,36 +964,32 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                         |  }
                         |]
                         """.stripMargin)
-        )
+          )
+      )
     )
-
-    val config = prepareConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
 
     implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
 
-    val result = BinanceClient
-      .createFutureClient[IO](config)
-      .use(client =>
-        for {
-          _ <- client.cancelAllOrders(
-            FutureOrderCancelAllParams(symbol = "BTCUSDT")
-          )
-        } yield "OK"
-      )
-      .unsafeRunSync()
-
-    result shouldBe "OK"
-
+    (for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+      result <- BinanceClient
+        .createFutureClient[IO](config)
+        .use(client =>
+          for {
+            _ <- client.cancelAllOrders(
+              FutureOrderCancelAllParams(symbol = "BTCUSDT")
+            )
+          } yield "OK"
+        )
+    } yield result).asserting(_ shouldBe "OK")
   }
 
-  "it should stream aggregate trade information" in new Env {
-    withWiremockServer { server =>
-      stubInfoEndpoint(server)
+  "it should stream aggregate trade information" in { server =>
 
-      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
-
-      val toClient: Stream[IO, WebSocketFrame] = Stream(
-        WebSocketFrame.Text("""{
+    val toClient: Stream[IO, WebSocketFrame] = Stream(
+      WebSocketFrame.Text("""{
                               |  "e": "aggTrade",
                               |  "E": 1623095242152,
                               |  "a": 102141499,
@@ -992,40 +1001,41 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                               |  "T": 1623095241998,
                               |  "m": true
                               |}""".stripMargin),
-        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
-      )
+      WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+    )
 
-      val test = for {
-        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
-        result <- BinanceClient
-          .createFutureClient[IO](config)
-          .use(_.aggregateTradeStreams("btcusdt").compile.toList)
-        _ <- s.cancel
-      } yield result
-
-      test.timeout(30.seconds).unsafeRunSync() should contain only AggregateTradeStream(
-        e = "aggTrade",
-        E = 1623095242152L,
-        s = "BTCUSDT",
-        a = 102141499,
-        p = 39792.73,
-        q = 10.543,
-        f = 183139249,
-        l = 183139250,
-        T = 1623095241998L,
-        m = true
+    stubInfoEndpoint(server) *> (for {
+      ws     <- testWsServer(server, toClient)
+      config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
+      result <- ws.stream.compile.drain
+        .as(ExitCode.Success)
+        .background
+        .use(_ =>
+          BinanceClient
+            .createFutureClient[IO](config)
+            .use(_.aggregateTradeStreams("btcusdt").compile.toList)
+        )
+    } yield result)
+      .asserting(
+        _ should contain only AggregateTradeStream(
+          e = "aggTrade",
+          E = 1623095242152L,
+          s = "BTCUSDT",
+          a = 102141499,
+          p = 39792.73,
+          q = 10.543,
+          f = 183139249,
+          l = 183139250,
+          T = 1623095241998L,
+          m = true
+        )
       )
-    }
   }
 
-  "it should stream KLines" in new Env {
-    withWiremockServer { server =>
-      stubInfoEndpoint(server)
+  "it should stream KLines" in { server =>
 
-      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
-
-      val toClient: Stream[IO, WebSocketFrame] = Stream(
-        WebSocketFrame.Text("""{
+    val toClient: Stream[IO, WebSocketFrame] = Stream(
+      WebSocketFrame.Text("""{
                               |  "e": "kline",
                               |  "E": 123456789,
                               |  "s": "BTCUSDT",
@@ -1049,51 +1059,55 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                               |    "B": "123456"
                               |  }
                               |}""".stripMargin),
-        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+      WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+    )
+
+    stubInfoEndpoint(server) *>
+      (
+        for {
+          ws     <- testWsServer(server, toClient)
+          config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
+          result <- ws.stream.compile.drain
+            .as(ExitCode.Success)
+            .background
+            .use(_ =>
+              BinanceClient
+                .createFutureClient[IO](config)
+                .use(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
+            )
+        } yield result
       )
-
-      val test = for {
-        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
-        result <- BinanceClient
-          .createFutureClient[IO](config)
-          .use(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
-        _ <- s.cancel
-      } yield result
-
-      test.timeout(30.seconds).unsafeRunSync() should contain only KLineStream(
-        e = "kline",
-        E = 123456789L,
-        s = "BTCUSDT",
-        k = KLineStreamPayload(
-          t = 123400000,
-          T = 123460000,
-          s = "BTCUSDT",
-          i = Interval.`1m`,
-          f = 100,
-          L = 200,
-          o = 0.0010,
-          c = 0.0020,
-          h = 0.0025,
-          l = 0.0015,
-          v = 1000,
-          n = 100,
-          x = false,
-          q = 1.0000,
-          V = 500,
-          Q = 0.500
+        .asserting(
+          _ should contain only KLineStream(
+            e = "kline",
+            E = 123456789L,
+            s = "BTCUSDT",
+            k = KLineStreamPayload(
+              t = 123400000,
+              T = 123460000,
+              s = "BTCUSDT",
+              i = Interval.`1m`,
+              f = 100,
+              L = 200,
+              o = 0.0010,
+              c = 0.0020,
+              h = 0.0025,
+              l = 0.0015,
+              v = 1000,
+              n = 100,
+              x = false,
+              q = 1.0000,
+              V = 500,
+              Q = 0.500
+            )
+          )
         )
-      )
-    }
   }
 
-  "it should stream continuous Contract KLines" in new Env {
-    withWiremockServer { server =>
-      stubInfoEndpoint(server)
+  "it should stream continuous Contract KLines" in { server =>
 
-      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
-
-      val toClient: Stream[IO, WebSocketFrame] = Stream(
-        WebSocketFrame.Text("""{
+    val toClient: Stream[IO, WebSocketFrame] = Stream(
+      WebSocketFrame.Text("""{
                               |  "e":"continuous_kline",
                               |  "E":1607443058651,
                               |  "ps":"BTCUSDT",
@@ -1117,51 +1131,53 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                               |    "B":"0"
                               |  }
                               |}""".stripMargin),
-        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
-      )
+      WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+    )
 
-      val test = for {
-        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
-        result <- BinanceClient
-          .createFutureClient[IO](config)
-          .use(_.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`).compile.toList)
-        _ <- s.cancel
-      } yield result
-
-      test.timeout(30.seconds).unsafeRunSync() should contain only ContractKLineStream(
-        e = "continuous_kline",
-        E = 1607443058651L,
-        ps = "BTCUSDT",
-        ct = FutureContractType.PERPETUAL,
-        k = ContractKLineStreamPayload(
-          t = 1607443020000L,
-          T = 1607443079999L,
-          i = Interval.`1m`,
-          f = 116467658886L,
-          L = 116468012423L,
-          o = 18787.00,
-          c = 18804.04,
-          h = 18804.04,
-          l = 18786.54,
-          v = 197.664,
-          n = 543,
-          x = false,
-          q = 3715253.19494,
-          V = 184.769,
-          Q = 3472925.84746
+    stubInfoEndpoint(server) *>
+      (for {
+        ws     <- testWsServer(server, toClient)
+        config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
+        result <- ws.stream.compile.drain
+          .as(ExitCode.Success)
+          .background
+          .use(_ =>
+            BinanceClient
+              .createFutureClient[IO](config)
+              .use(_.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`).compile.toList)
+          )
+      } yield result)
+        .asserting(
+          _ should contain only ContractKLineStream(
+            e = "continuous_kline",
+            E = 1607443058651L,
+            ps = "BTCUSDT",
+            ct = FutureContractType.PERPETUAL,
+            k = ContractKLineStreamPayload(
+              t = 1607443020000L,
+              T = 1607443079999L,
+              i = Interval.`1m`,
+              f = 116467658886L,
+              L = 116468012423L,
+              o = 18787.00,
+              c = 18804.04,
+              h = 18804.04,
+              l = 18786.54,
+              v = 197.664,
+              n = 543,
+              x = false,
+              q = 3715253.19494,
+              V = 184.769,
+              Q = 3472925.84746
+            )
+          )
         )
-      )
-    }
   }
 
-  "it should stream Mark Price updates for a given symbol" in new Env {
-    withWiremockServer { server =>
-      stubInfoEndpoint(server)
+  "it should stream Mark Price updates for a given symbol" in { server =>
 
-      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
-
-      val toClient: Stream[IO, WebSocketFrame] = Stream(
-        WebSocketFrame.Text("""{
+    val toClient: Stream[IO, WebSocketFrame] = Stream(
+      WebSocketFrame.Text("""{
                               |  "e": "markPriceUpdate",
                               |  "E": 1562305380000,
                               |  "s": "BTCUSDT",
@@ -1171,38 +1187,40 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                               |  "r": "0.00038167",
                               |  "T": 1562306400000
                               |}""".stripMargin),
-        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
-      )
+      WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+    )
 
-      val test = for {
-        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
-        result <- BinanceClient
-          .createFutureClient[IO](config)
-          .use(_.markPriceStream("btcusdt").compile.toList)
-        _ <- s.cancel
-      } yield result
-
-      test.timeout(30.seconds).unsafeRunSync() should contain only MarkPriceUpdate(
-        e = "markPriceUpdate",
-        E = 1562305380000L,
-        s = "BTCUSDT",
-        p = 11794.15000000,
-        i = 11784.62659091,
-        P = 11784.25641265,
-        r = 0.00038167,
-        T = 1562306400000L
-      )
-    }
+    stubInfoEndpoint(server) *>
+      (for {
+        ws     <- testWsServer(server, toClient)
+        config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
+        result <- ws.stream.compile.drain
+          .as(ExitCode.Success)
+          .background
+          .use(_ =>
+            BinanceClient
+              .createFutureClient[IO](config)
+              .use(_.markPriceStream("btcusdt").compile.toList)
+          )
+      } yield result)
+        .asserting(
+          _ should contain only MarkPriceUpdate(
+            e = "markPriceUpdate",
+            E = 1562305380000L,
+            s = "BTCUSDT",
+            p = 11794.15000000,
+            i = 11784.62659091,
+            P = 11784.25641265,
+            r = 0.00038167,
+            T = 1562306400000L
+          )
+        )
   }
 
-  "it should stream Mark Price for all symbols" in new Env {
-    withWiremockServer { server =>
-      stubInfoEndpoint(server)
+  "it should stream Mark Price for all symbols" in { server =>
 
-      val config = prepareConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = wsPort)
-
-      val toClient: Stream[IO, WebSocketFrame] = Stream(
-        WebSocketFrame.Text("""[{
+    val toClient: Stream[IO, WebSocketFrame] = Stream(
+      WebSocketFrame.Text("""[{
                               |  "e": "markPriceUpdate",
                               |  "E": 1562305380000,
                               |  "s": "BTCUSDT",
@@ -1212,31 +1230,37 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
                               |  "r": "0.00030000",
                               |  "T": 1562306400000
                               |}]""".stripMargin),
-        WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
-      )
+      WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+    )
 
-      val test = for {
-        s <- new TestWsServer[IO](toClient)(port = wsPort).stream.compile.drain.as(ExitCode.Success).start
-        result <- BinanceClient
-          .createFutureClient[IO](config)
-          .use(_.markPriceStream().compile.toList)
-        _ <- s.cancel
-      } yield result
-
-      test.timeout(30.seconds).unsafeRunSync() should contain only MarkPriceUpdate(
-        e = "markPriceUpdate",
-        E = 1562305380000L,
-        s = "BTCUSDT",
-        p = 11185.87786614,
-        i = 11784.62659091,
-        P = 11784.25641265,
-        r = 0.00030000,
-        T = 1562306400000L
-      )
-    }
+    stubInfoEndpoint(server) *>
+      (for {
+        ws     <- testWsServer(server, toClient)
+        config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
+        result <- ws.stream.compile.drain
+          .as(ExitCode.Success)
+          .background
+          .use(_ =>
+            BinanceClient
+              .createFutureClient[IO](config)
+              .use(_.markPriceStream().compile.toList)
+          )
+      } yield result)
+        .asserting(
+          _ should contain only MarkPriceUpdate(
+            e = "markPriceUpdate",
+            E = 1562305380000L,
+            s = "BTCUSDT",
+            p = 11185.87786614,
+            i = 11784.62659091,
+            P = 11784.25641265,
+            r = 0.00030000,
+            T = 1562306400000L
+          )
+        )
   }
 
-  private def stubInfoEndpoint(server: WireMockServer) = {
+  private def stubInfoEndpoint(server: WireMockServer) = IO.delay {
     server.stubFor(
       get("/fapi/v1/exchangeInfo")
         .willReturn(
@@ -1264,17 +1288,19 @@ class FapiClientIntegrationTest extends AnyFreeSpec with Matchers with TestClien
     )
   }
 
-  private def prepareConfiguration(
+  private def createConfiguration(
       server: WireMockServer,
       apiKey: String = "",
       apiSecret: String = "",
       wsPort: Int = 80
   ) =
-    FapiConfig.Custom[IO](
-      restBaseUrl = uri"http://localhost:${server.port}",
-      wsBaseUrl = uri"ws://localhost:$wsPort",
-      exchangeInfoUrl = uri"http://localhost:${server.port}/fapi/v1/exchangeInfo",
-      apiKey = apiKey,
-      apiSecret = apiSecret
-    )
+    FapiConfig
+      .Custom[IO](
+        restBaseUrl = uri"http://localhost:${server.port}",
+        wsBaseUrl = uri"ws://localhost:$wsPort",
+        exchangeInfoUrl = uri"http://localhost:${server.port}/fapi/v1/exchangeInfo",
+        apiKey = apiKey,
+        apiSecret = apiSecret
+      )
+      .pure[IO]
 }

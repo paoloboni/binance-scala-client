@@ -22,15 +22,11 @@
 package io.github.paoloboni
 
 import cats.effect.IO
-import cats.effect.kernel.Temporal
-import cats.effect.unsafe.IORuntime
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 trait Env {
-  implicit val runtime: IORuntime     = cats.effect.unsafe.IORuntime.global
-  implicit val temporal: Temporal[IO] = IO.asyncForIO
-  implicit val log: Logger[IO]        = Slf4jLogger.getLogger[IO]
+  implicit val log: Logger[IO] = Slf4jLogger.getLogger[IO]
 }
 
 object Env extends Env
