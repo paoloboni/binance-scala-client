@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'project/**'
       - 'build.sbt'
+      - '.github/workflows/ci.yml'
   push:
     branches: [master]
     paths:
