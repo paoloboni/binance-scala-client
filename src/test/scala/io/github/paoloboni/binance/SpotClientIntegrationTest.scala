@@ -387,9 +387,9 @@ class SpotClientIntegrationTest extends IntegrationTest {
       config <- createConfiguration(server)
       result <- BinanceClient
         .createSpotClient[IO](config)
-        .use(_.getDepth(common.parameters.Depth(symbol, limit)))
+        .use(_.getDepth(common.parameters.DepthParams(symbol, limit)))
     } yield result).asserting(
-      _ shouldBe Depth(
+      _ shouldBe DepthGetResponse(
         lastUpdateId = 1027024,
         bids = List(
           Bid(4.00000000, 431.0)

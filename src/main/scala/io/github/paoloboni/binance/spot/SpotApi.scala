@@ -71,12 +71,12 @@ final case class SpotApi[F[_]: Logger](
     * @return
     *   the orderbook depth
     */
-  def getDepth(query: common.parameters.Depth): F[Depth] = {
+  def getDepth(query: common.parameters.DepthParams): F[DepthGetResponse] = {
     val uri = depthUri.addParams(query.toQueryParams)
     for {
-      depthOrError <- client.get[CirceResponse[Depth]](
+      depthOrError <- client.get[CirceResponse[DepthGetResponse]](
         uri = uri,
-        responseAs = asJson[Depth],
+        responseAs = asJson[DepthGetResponse],
         limiters = rateLimiters.requestsOnly,
         weight = query.limit.weight
       )

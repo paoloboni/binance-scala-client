@@ -25,8 +25,8 @@ class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
   val resource: Resource[IO, SpotApi[IO]] = BinanceClient.createSpotClient[IO](config)
 
   "getDepth" in {
-    _.getDepth(common.parameters.Depth("BTCUSDT", common.parameters.DepthLimit.`500`))
-      .asserting(_ shouldBe a[Depth])
+    _.getDepth(common.parameters.DepthParams("BTCUSDT", common.parameters.DepthLimit.`500`))
+      .asserting(_ shouldBe a[DepthGetResponse])
   }
 
   "getPrices" in { _.getPrices().asserting(_ shouldNot be(empty)) }
