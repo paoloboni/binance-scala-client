@@ -355,29 +355,26 @@ class FapiClientIntegrationTest extends IntegrationTest {
 
   "it should return a list of prices" in { server =>
 
-    val responseBody =
-      """
-        |[
-        |    {
-        |        "symbol": "ETHBTC",
-        |        "price": "0.03444300"
-        |    },
-        |    {
-        |        "symbol": "LTCBTC",
-        |        "price": "0.01493000"
-        |    }
-        |]""".stripMargin
-
-      val stubResponse = IO.delay(
-        server.stubFor(
-          get("/fapi/v1/ticker/price")
-            .willReturn(
-              aResponse()
-                .withStatus(200)
-                .withBody(responseBody)
-            )
-        )
+    val stubResponse = IO.delay(
+      server.stubFor(
+        get("/fapi/v1/ticker/price")
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |[
+                          |    {
+                          |        "symbol": "ETHBTC",
+                          |        "price": "0.03444300"
+                          |    },
+                          |    {
+                          |        "symbol": "LTCBTC",
+                          |        "price": "0.01493000"
+                          |    }
+                          |]""".stripMargin)
+          )
       )
+    )
 
     (for {
       _      <- stubInfoEndpoint(server)
