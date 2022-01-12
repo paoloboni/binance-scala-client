@@ -36,7 +36,7 @@ jobs:
       - name: Setup
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: "adopt@1.${{ matrix.java }}"
+          java-version: "openjdk@1.${{ matrix.java }}"
       - name: Cache SBT
         uses: actions/cache@v2
         with:
