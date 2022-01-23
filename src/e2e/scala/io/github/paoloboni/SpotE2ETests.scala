@@ -75,7 +75,7 @@ class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         )
       )
     } yield queryResponse)
-       .asserting(_ shouldBe a[SpotOrderQueryResponse])
+      .asserting(_ shouldBe a[SpotOrderQueryResponse])
   }
 
   "cancelOrder" in { client =>
