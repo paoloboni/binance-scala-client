@@ -22,7 +22,7 @@
 package io.github.paoloboni.binance.fapi.response
 
 import cats.effect.Async
-import cats.implicits._
+import cats.syntax.all._
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.binance.fapi._

@@ -25,7 +25,7 @@ import cats.Applicative
 import cats.effect.kernel.{Async, Deferred}
 import cats.effect.std.Queue
 import cats.effect.syntax.spawn._
-import cats.implicits._
+import cats.syntax.all._
 import fs2.Stream
 import io.github.paoloboni.binance.common
 import io.github.paoloboni.binance.common.response.RateLimitType
