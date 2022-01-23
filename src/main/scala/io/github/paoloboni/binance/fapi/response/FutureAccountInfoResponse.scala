@@ -21,7 +21,6 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import io.github.paoloboni.binance.common
 import io.github.paoloboni.binance.fapi.FuturePositionSide
 
 case class FutureAccountInfoResponse(

@@ -38,11 +38,11 @@ class FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
       .asserting(_ shouldBe a[List[_]])
   }
 
-  "changePositionMode" ignore { _.changePositionMode(true).asserting(_ shouldBe ()) }
+  "changePositionMode" ignore { _.changePositionMode(true).asserting(_ shouldBe (())) }
 
   "changeInitialLeverage" in {
     _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 1))
-      .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
+      .asserting(x => (x.leverage, x.symbol) shouldBe ((1, "BTCUSDT")))
   }
 
   "createOrder" in { client =>

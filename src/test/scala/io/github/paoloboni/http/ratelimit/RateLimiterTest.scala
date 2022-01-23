@@ -39,7 +39,7 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
 
     TestControl
       .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
+        rateLimiter <- RateLimiter.make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
         startTime   <- IO.monotonic
         _           <- rateLimiter.await(IO.pure(1))
         _           <- rateLimiter.await(IO.pure(2))
@@ -57,7 +57,7 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
 
     TestControl
       .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
+        rateLimiter <- RateLimiter.make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
         startTime   <- IO.monotonic
         result      <- rateLimiter.await(IO.pure(1), weight = 10)
         endTime     <- IO.monotonic
@@ -73,7 +73,7 @@ class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with 
 
     TestControl
       .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
+        rateLimiter <- RateLimiter.make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
         startTime   <- IO.monotonic
         result      <- rateLimiter.await(IO.pure(1))
         endTime     <- IO.monotonic

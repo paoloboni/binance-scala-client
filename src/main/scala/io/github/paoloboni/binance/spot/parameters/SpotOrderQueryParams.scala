@@ -21,9 +21,6 @@
 
 package io.github.paoloboni.binance.spot.parameters
 
-import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.spot._
-
 case class SpotOrderQueryParams(
     symbol: String,
     orderId: Option[Long],

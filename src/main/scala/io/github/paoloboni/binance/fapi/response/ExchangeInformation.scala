@@ -59,7 +59,7 @@ case class Symbol(
     baseAssetPrecision: Int,
     quotePrecision: Int,
     underlyingType: String,
-    settlePlan: Int,
+    settlePlan: Long,
     triggerProtect: BigDecimal,
     orderTypes: List[FutureOrderType],
     filters: List[Filter],

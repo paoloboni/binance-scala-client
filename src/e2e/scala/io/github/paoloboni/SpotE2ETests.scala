@@ -56,43 +56,47 @@ class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
   }
 
   "queryOrder" in { client =>
+    val symbol = "LTCUSDT"
     (for {
+      orderPrice <- estimateOrderPrice(symbol)(client)
       createOrderResponse <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 10,
-          price = 1.8
+          quantity = 0.1,
+          price = orderPrice
         )
       )
 
       queryResponse <- client.queryOrder(
         SpotOrderQueryParams(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
       )
     } yield queryResponse)
-       .asserting(_ shouldBe a[SpotOrderQueryResponse])
+      .asserting(_ shouldBe a[SpotOrderQueryResponse])
   }
 
   "cancelOrder" in { client =>
+    val symbol = "LTCUSDT"
     (for {
+      orderPrice <- estimateOrderPrice(symbol)(client)
       createOrderResponse <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 10,
-          price = 1.8
+          quantity = 0.1,
+          price = orderPrice
         )
       )
 
       _ <- client.cancelOrder(
         SpotOrderCancelParams(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
@@ -102,19 +106,21 @@ class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
   }
 
   "cancelAllOrders" in { client =>
+    val symbol = "LTCUSDT"
     (for {
+      orderPrice <- estimateOrderPrice(symbol)(client)
       _ <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 10,
-          price = 1.8
+          quantity = 0.1,
+          price = orderPrice
         )
       )
 
       _ <- client.cancelAllOrders(
-        SpotOrderCancelAllParams(symbol = "XRPUSDT")
+        SpotOrderCancelAllParams(symbol = symbol)
       )
     } yield "OK")
       .asserting(_ shouldBe "OK")
@@ -167,4 +173,18 @@ class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
       .toList
       .asserting(_.loneElement shouldBe a[AggregateTradeStream])
   }
+
+  private def error(msg: String): Throwable = new RuntimeException(msg)
+
+  private def estimateOrderPrice(symbol: String)(client: FixtureParam): IO[BigDecimal] = for {
+    symbolConfig  <- IO.fromOption(client.exchangeInfo.symbols.find(_.symbol == symbol))(error("Symbol not found"))
+    currentPrices <- client.getPrices()
+    currentPrice <- IO.fromOption(currentPrices.find(_.symbol.toUpperCase == symbol))(
+      error(s"Price not found for symbol $symbol")
+    )
+    percentPriceFilter <- IO.fromOption(symbolConfig.filters.collectFirst { case f: PERCENT_PRICE => f })(
+      error("Percent price filter not available")
+    )
+  } yield (currentPrice.price * percentPriceFilter.multiplierUp * 0.99)
+    .setScale(symbolConfig.baseAssetPrecision, BigDecimal.RoundingMode.HALF_DOWN)
 }

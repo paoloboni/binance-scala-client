@@ -19,30 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.fapi.response
+package io.github.paoloboni.binance.common
 
-import io.circe.Decoder
-import io.circe.generic.semiauto._
-
-case object INF
-
-case class ChangeInitialLeverageResponse(
-    symbol: String,
-    leverage: Int,
-    maxNotionalValue: MaxNotionalValue
-)
-
-sealed trait MaxNotionalValue
-object MaxNotionalValue {
-  case class Value(value: BigDecimal) extends MaxNotionalValue
-  case object INF                     extends MaxNotionalValue
-}
-
-object ChangeInitialLeverageResponse {
-  implicit val maxNotionalValueDecoder: Decoder[MaxNotionalValue] = Decoder.decodeString.flatMap {
-    case "INF" => Decoder.const(MaxNotionalValue.INF)
-    case _     => Decoder.decodeBigDecimal.map(MaxNotionalValue.Value.apply)
-  }
-
-  implicit val decoder: Decoder[ChangeInitialLeverageResponse] = deriveDecoder
-}
+case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)

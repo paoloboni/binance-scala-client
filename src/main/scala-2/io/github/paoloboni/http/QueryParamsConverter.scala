@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.http
 
-import enumeratum.{Enum, EnumEntry}
+import enumeratum.EnumEntry
 import shapeless.labelled.FieldType
 import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, Inl, Inr, LabelledGeneric, Lazy, Witness}
 import sttp.model.QueryParams
@@ -50,7 +50,7 @@ object StringConverter {
 
   implicit val instantConverter: StringConverter[Instant] = (t: Instant) => t.toEpochMilli.toString
 
-  implicit def enumEntryConverter[T <: EnumEntry](implicit e: Enum[T]): StringConverter[T] = (obj: T) => obj.toString
+  implicit def enumEntryConverter[T <: EnumEntry]: StringConverter[T] = (obj: T) => obj.toString
 }
 
 trait QueryParamsConverter[T] {
@@ -60,7 +60,7 @@ trait QueryParamsConverter[T] {
 object QueryParamsConverter {
   def apply[T: QueryParamsConverter]: QueryParamsConverter[T] = implicitly
 
-  implicit val deriveHNil: QueryParamsConverter[HNil] = (t: HNil) => QueryParams()
+  implicit val deriveHNil: QueryParamsConverter[HNil] = (_: HNil) => QueryParams()
 
   implicit def deriveHCons[K <: Symbol, H, T <: HList](implicit
       witness: Witness.Aux[K],
