@@ -19,20 +19,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance
+package io.github.paoloboni.binance.common
 
 import enumeratum.{CirceEnum, Enum, EnumEntry}
 
-package object common {
-  case class Price(symbol: String, price: BigDecimal)
+sealed trait OrderSide extends EnumEntry
+object OrderSide extends Enum[OrderSide] with CirceEnum[OrderSide] {
+  val values = findValues
 
-  sealed trait OrderSide extends EnumEntry
-  object OrderSide extends Enum[OrderSide] with CirceEnum[OrderSide] {
-    val values = findValues
-
-    case object SELL extends OrderSide
-    case object BUY  extends OrderSide
-  }
-
-  case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)
+  case object SELL extends OrderSide
+  case object BUY  extends OrderSide
 }

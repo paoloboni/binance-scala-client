@@ -41,13 +41,13 @@ sealed class HttpClient[F[_]: Logger](implicit
     client: SttpBackend[F, Any with Fs2Streams[F] with capabilities.WebSockets]
 ) {
 
-  def get[Response](
+  def get[RESPONSE](
       uri: Uri,
-      responseAs: ResponseAs[Response, Any],
+      responseAs: ResponseAs[RESPONSE, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  ): F[Response] = {
+  ): F[RESPONSE] = {
     val httpRequest = basicRequest
       .headers(headers)
       .get(uri)
@@ -55,14 +55,14 @@ sealed class HttpClient[F[_]: Logger](implicit
     sendRequest(httpRequest, limiters, weight)
   }
 
-  def post[Request: BodySerializer, Response](
+  def post[REQUEST: BodySerializer, RESPONSE](
       uri: Uri,
-      requestBody: Option[Request],
-      responseAs: ResponseAs[Response, Any],
+      requestBody: Option[REQUEST],
+      responseAs: ResponseAs[RESPONSE, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  ): F[Response] = {
+  ): F[RESPONSE] = {
     val preparedRequest = basicRequest
       .headers(headers)
       .post(uri)
@@ -71,13 +71,13 @@ sealed class HttpClient[F[_]: Logger](implicit
     sendRequest(httpRequest, limiters, weight)
   }
 
-  def delete[Response](
+  def delete[RESPONSE](
       uri: Uri,
-      responseAs: ResponseAs[Response, Any],
+      responseAs: ResponseAs[RESPONSE, Any],
       limiters: List[RateLimiter[F]],
       headers: Map[String, String] = Map.empty,
       weight: Int = 1
-  ): F[Response] = {
+  ): F[RESPONSE] = {
     val httpRequest = basicRequest
       .headers(headers)
       .delete(uri)
@@ -122,11 +122,11 @@ sealed class HttpClient[F[_]: Logger](implicit
       .flatMap(Stream.fromQueueNoneTerminated(_))
   }
 
-  private def sendRequest[Response](
-      request: RequestT[Identity, Response, Any],
+  private def sendRequest[RESPONSE](
+      request: RequestT[Identity, RESPONSE, Any],
       limiters: List[RateLimiter[F]],
       weight: Int
-  ): F[Response] = {
+  ): F[RESPONSE] = {
     val processRequest = F.defer(for {
       _           <- Logger[F].debug(s"${request.method} ${request.uri}")
       rawResponse <- request.send(client)

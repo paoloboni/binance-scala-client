@@ -25,8 +25,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import io.circe.generic.auto._
 import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
-import io.circe.parser
-import io.circe.syntax._
 import scala.io.Source
 
 class FApiExchangeInfoJsonTest extends AnyFlatSpec with Matchers {
