@@ -34,7 +34,6 @@ import io.github.paoloboni.encryption.MkSignedUri
 import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.QueryParamsConverter._
 import io.github.paoloboni.http.ratelimit.RateLimiters
-import org.typelevel.log4cats.Logger
 import sttp.client3.circe.{asJson, circeBodySerializer}
 import sttp.client3.{ResponseAsByteArray, UriContext}
 import sttp.model.QueryParams
@@ -42,7 +41,7 @@ import sttp.model.QueryParams
 import java.time.Instant
 import scala.util.Try
 
-final case class FutureApi[F[_]: Logger](
+final case class FutureApi[F[_]](
     config: FapiConfig[F],
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
@@ -390,7 +389,7 @@ final case class FutureApi[F[_]: Logger](
 }
 
 object FutureApi {
-  implicit def factory[F[_]: Logger](implicit
+  implicit def factory[F[_]](implicit
       F: Async[F]
   ): BinanceApi.Factory[F, FutureApi[F], FapiConfig[F]] =
     (config: FapiConfig[F], client: HttpClient[F]) =>

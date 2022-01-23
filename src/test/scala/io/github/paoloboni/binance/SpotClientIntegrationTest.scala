@@ -34,7 +34,7 @@ import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
-import io.github.paoloboni.{Env, TestAsync}
+import io.github.paoloboni.TestAsync
 import org.http4s.websocket.WebSocketFrame
 import org.scalatest.EitherValues._
 import scodec.bits.ByteVector

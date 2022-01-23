@@ -16,7 +16,7 @@ abstract class BaseE2ETest[API]
     with LoneElement
     with CatsResourceIO[API] {
 
-  implicit override def executionContext = scala.concurrent.ExecutionContext.Implicits.global
+  implicit override def executionContext = cats.effect.unsafe.implicits.global.compute
 
   override protected val ResourceTimeout: Duration = 30.seconds
 
