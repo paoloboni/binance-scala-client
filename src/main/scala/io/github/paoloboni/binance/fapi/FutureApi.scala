@@ -22,7 +22,7 @@
 package io.github.paoloboni.binance.fapi
 
 import cats.effect.Async
-import cats.implicits._
+import cats.syntax.all._
 import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._

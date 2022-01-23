@@ -22,7 +22,7 @@
 package io.github.paoloboni.binance
 
 import cats.effect.{Async, Resource}
-import cats.implicits._
+import cats.syntax.all._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient

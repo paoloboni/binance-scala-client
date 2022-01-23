@@ -22,7 +22,7 @@
 package io.github.paoloboni.binance.spot.response
 
 import cats.effect.kernel.Async
-import cats.implicits._
+import cats.syntax.all._
 import io.circe.Decoder
 import io.github.paoloboni.binance.common.response.RateLimit
 import io.github.paoloboni.binance.spot.SpotOrderType

@@ -22,7 +22,7 @@
 package io.github.paoloboni.http
 
 import cats.Applicative
-import cats.implicits._
+import cats.syntax.all._
 import org.typelevel.log4cats.Logger
 
 package object ratelimit {

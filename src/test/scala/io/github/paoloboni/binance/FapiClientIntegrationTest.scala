@@ -23,7 +23,7 @@ package io.github.paoloboni.binance
 
 import cats.effect.kernel.Async
 import cats.effect.{ExitCode, IO}
-import cats.implicits._
+import cats.syntax.all._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
