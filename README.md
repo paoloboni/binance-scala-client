@@ -14,6 +14,14 @@ A functional Scala client for Binance, powered by [cats-effect](https://typeleve
 
 This client is rate limited, based on [Binance API specification](https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md).
 
+## Version compatibility table
+
+| JDK LTS version | Scala version                |
+|-----------------|------------------------------|
+| 8               | 2.12.x, 2.13.x, 3.0.x, 3.1.x |
+| 11              | 2.12.x, 2.13.x, 3.0.x, 3.1.x |
+| 17              | Currently not supported      |
+
 ## Getting started
 
 If you use sbt add the following dependency to your build file:
