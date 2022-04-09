@@ -6,11 +6,13 @@ on:
       - 'src/**'
       - 'project/**'
       - '**/*.sbt'
+      - '.scalafmt.conf'
   push:
     paths:
       - 'src/**'
       - 'project/**'
       - '**/*.sbt'
+      - '.scalafmt.conf'
   schedule:
     - cron: '0 0 * * 0'
 jobs:
