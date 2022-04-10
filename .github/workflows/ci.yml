@@ -5,13 +5,13 @@ on:
     paths:
       - 'src/**'
       - 'project/**'
-      - '**/*.sbt'
+      - '**.sbt'
       - '.scalafmt.conf'
   push:
     paths:
       - 'src/**'
       - 'project/**'
-      - '**/*.sbt'
+      - '**.sbt'
       - '.scalafmt.conf'
   schedule:
     - cron: '0 0 * * 0'
