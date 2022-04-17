@@ -47,7 +47,6 @@ jobs:
         shell: bash
         timeout-minutes: 10
   e2e:
-    if: github.actor == 'paoloboni'
     needs: test
     runs-on: ubuntu-latest
     strategy:
