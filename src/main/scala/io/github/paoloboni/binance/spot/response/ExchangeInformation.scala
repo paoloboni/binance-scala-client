@@ -42,6 +42,12 @@ case class ICEBERG_PARTS(limit: Int)                                            
 case class MAX_POSITION(maxPosition: BigDecimal)                                                  extends Filter
 case class EXCHANGE_MAX_NUM_ORDERS(maxNumOrders: Int)                                             extends Filter
 case class EXCHANGE_MAX_ALGO_ORDERS(maxNumAlgoOrders: Int)                                        extends Filter
+case class TRAILING_DELTA(
+    minTrailingAboveDelta: BigDecimal,
+    maxTrailingAboveDelta: BigDecimal,
+    minTrailingBelowDelta: BigDecimal,
+    maxTrailingBelowDelta: BigDecimal
+) extends Filter
 
 object Filter {
   implicit val decoder: Decoder[Filter] = FilterCodecs.decoder
