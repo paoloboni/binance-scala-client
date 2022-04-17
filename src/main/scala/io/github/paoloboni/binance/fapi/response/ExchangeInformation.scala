@@ -37,6 +37,12 @@ case class MAX_NUM_ORDERS(limit: Int)                                           
 case class MAX_NUM_ALGO_ORDERS(limit: Int)                                                             extends Filter
 case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, multiplierDecimal: Int) extends Filter
 case class MIN_NOTIONAL(notional: Int)                                                                 extends Filter
+case class TRAILING_DELTA(
+    minTrailingAboveDelta: BigDecimal,
+    maxTrailingAboveDelta: BigDecimal,
+    minTrailingBelowDelta: BigDecimal,
+    maxTrailingBelowDelta: BigDecimal
+) extends Filter
 
 object Filter {
   implicit val decoder: Decoder[Filter] = FilterCodecs.decoder
