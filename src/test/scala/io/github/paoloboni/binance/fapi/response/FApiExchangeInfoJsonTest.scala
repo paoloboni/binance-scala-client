@@ -21,20 +21,17 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import org.scalatest.flatspec.AnyFlatSpec
 import io.circe.generic.auto._
-import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
+import weaver.SimpleIOSuite
+
 import scala.io.Source
 
-class FApiExchangeInfoJsonTest extends AnyFlatSpec with Matchers {
+object FApiExchangeInfoJsonTest extends SimpleIOSuite {
 
-  "FApi ExchangeInfos" should "be decodeable from json" in {
+  pureTest("FApi ExchangeInfos should be decodeable from json") {
     val exchangeInfoStr = Source.fromResource("fapi/exchangeInfo.json").mkString
     val result          = decode[ExchangeInformation](exchangeInfoStr)
-
-    withClue(result.left.map(error => Console.err.println("error: " + error))) {
-      result.isRight shouldBe true
-    }
+    assert(result.isRight)
   }
 }

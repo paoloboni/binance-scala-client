@@ -21,32 +21,16 @@
 
 package io.github.paoloboni.binance
 
-import cats.effect.testing.scalatest.{AsyncIOSpec, CatsResourceIO}
 import cats.effect.{IO, Resource}
 import com.github.tomakehurst.wiremock.WireMockServer
 import fs2.Stream
 import io.github.paoloboni.binance.IntegrationTest.port
 import org.http4s.websocket.WebSocketFrame
-import org.scalactic.{TypeCheckedTripleEquals, source}
-import org.scalatest.compatible
-import org.scalatest.freespec.FixtureAsyncFreeSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
+import weaver.{Expectations, SimpleIOSuite, TestName}
 
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.Duration
 
-abstract class IntegrationTest
-    extends FixtureAsyncFreeSpec
-    with AsyncIOSpec
-    with Matchers
-    with TypeCheckedTripleEquals
-    with CatsResourceIO[WireMockServer] {
-
-  implicit override def executionContext: ExecutionContext = cats.effect.unsafe.implicits.global.compute
-
-  override protected val ResourceTimeout: Duration = 10.seconds
+abstract class IntegrationTest extends SimpleIOSuite {
 
   val resource: Resource[IO, WireMockServer] = Resource.make(
     IO.delay {
@@ -57,17 +41,8 @@ abstract class IntegrationTest
     }
   )(server => IO.delay(server.stop()))
 
-  class EnhancedFreeSpecStringWrapper(string: String, pos: source.Position) {
-    val delegate = new FreeSpecStringWrapper(string, pos)
-
-    def in(testFun: FixtureParam => Future[compatible.Assertion]): Unit = {
-      delegate.in(server => IO.delay(server.resetAll()).unsafeToFuture().flatMap(_ => testFun(server)))
-    }
-  }
-
-  protected implicit def convertToEnhancedFreeSpecStringWrapper(s: String)(implicit
-      pos: source.Position
-  ): EnhancedFreeSpecStringWrapper = new EnhancedFreeSpecStringWrapper(s, pos)
+  def integrationTest(name: TestName)(expectations: WireMockServer => IO[Expectations]) =
+    test(name)(resource.use(expectations))
 
   def testWsServer(server: WireMockServer, toClient: Stream[IO, WebSocketFrame]): IO[TestWsServer[IO]] =
     IO.delay(new TestWsServer[IO](toClient)(port = server.port() - 1000))
