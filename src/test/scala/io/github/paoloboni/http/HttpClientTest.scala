@@ -28,16 +28,15 @@ import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance.IntegrationTest
 import io.github.paoloboni.binance.common.response.CirceResponse
 import org.asynchttpclient.DefaultAsyncHttpClientConfig
-import org.scalatest.EitherValues._
 import sttp.capabilities
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 import sttp.client3.circe._
 import sttp.client3.{HttpError, SttpBackend, UriContext}
 
-class HttpClientTest extends IntegrationTest {
+object HttpClientTest extends IntegrationTest {
 
-  "a bad request response should be translated into a HttpError" in { server =>
+  integrationTest("a bad request response should be translated into a HttpError") { server =>
     val responseBody = """{ "error": "bad request" }"""
 
     mkTestClient
@@ -51,12 +50,12 @@ class HttpClientTest extends IntegrationTest {
         } yield response
       }
       .attempt
-      .asserting { result =>
-        result.left.value shouldBe a[HttpError[_]]
-
-        val error = result.left.value.asInstanceOf[HttpError[String]]
-        error.statusCode.code shouldBe 400
-        error.body shouldBe responseBody
+      .map { result =>
+        val error = result.left.toOption.get.asInstanceOf[HttpError[String]]
+        expect.all(
+          error.statusCode.code == 400,
+          error.body == responseBody
+        )
       }
   }
 

@@ -23,19 +23,15 @@ package io.github.paoloboni.binance.spot.response
 
 import io.circe.generic.auto._
 import io.circe.parser.decode
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver.SimpleIOSuite
 
 import scala.io.Source
 
-class SpotExchangeInfoJsonTest extends AnyFlatSpec with Matchers {
+object SpotExchangeInfoJsonTest extends SimpleIOSuite {
 
-  "Spot ExchangeInfos" should "be decodeable from json" in {
+  pureTest("Spot ExchangeInfos should be decodeable from json") {
     val exchangeInfoStr = Source.fromResource("spot/exchangeInfo.json").mkString
     val result          = decode[ExchangeInformation](exchangeInfoStr)
-
-    withClue(result.left.map(error => Console.err.println("error: " + error))) {
-      result.isRight shouldBe true
-    }
+    assert(result.isRight)
   }
 }
