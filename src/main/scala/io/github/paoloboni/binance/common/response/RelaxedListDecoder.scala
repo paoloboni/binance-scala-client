@@ -21,25 +21,13 @@
 
 package io.github.paoloboni.binance.common.response
 
-import io.circe.Decoder
-import io.github.paoloboni.http.ratelimit.Rate
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{Decoder, Json}
 
-import scala.concurrent.duration._
+object RelaxedListDecoder {
 
-case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, intervalNum: Int, limit: Int) {
-  def toRate = Rate(
-    limit,
-    interval match {
-      case RateLimitInterval.SECOND => intervalNum.seconds
-      case RateLimitInterval.MINUTE => intervalNum.minutes
-      case RateLimitInterval.DAY    => intervalNum.days
-    },
-    rateLimitType
-  )
+  // filters out unsupported elements from the list
+  implicit def decoder[T: Decoder]: Decoder[List[T]] = Decoder
+    .decodeList[Json]
+    .map(_.map(_.as[T]))
+    .map(_.collect { case Right(filter) => filter })
 }
-object RateLimit {
-  implicit val decoder: Decoder[RateLimit] = deriveDecoder
-}
-
-case class RateLimits(rateLimits: List[RateLimit])

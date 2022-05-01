@@ -24,7 +24,8 @@ package io.github.paoloboni.binance.fapi.response
 import cats.effect.Async
 import cats.syntax.all._
 import io.circe.Decoder
-import io.github.paoloboni.binance.common.response.RateLimit
+import io.circe.generic.semiauto.deriveDecoder
+import io.github.paoloboni.binance.common.response.{RateLimit, RelaxedListDecoder}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.http.ratelimit.{RateLimiter, RateLimiters}
 
@@ -71,8 +72,15 @@ case class Symbol(
     filters: List[Filter],
     timeInForce: List[FutureTimeInForce]
 )
+object Symbol {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[Symbol]              = deriveDecoder
+}
 
 case class AssetInfo(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
+object AssetInfo {
+  implicit val decoder: Decoder[AssetInfo] = deriveDecoder
+}
 
 case class ExchangeInformation(
     timezone: String,
@@ -88,5 +96,8 @@ case class ExchangeInformation(
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))
       .map(RateLimiters.apply)
-
+}
+object ExchangeInformation {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[ExchangeInformation] = deriveDecoder
 }

@@ -24,7 +24,8 @@ package io.github.paoloboni.binance.spot.response
 import cats.effect.kernel.Async
 import cats.syntax.all._
 import io.circe.Decoder
-import io.github.paoloboni.binance.common.response.RateLimit
+import io.circe.generic.semiauto.deriveDecoder
+import io.github.paoloboni.binance.common.response.{RateLimit, RelaxedListDecoder}
 import io.github.paoloboni.binance.spot.SpotOrderType
 import io.github.paoloboni.http.ratelimit.{RateLimiter, RateLimiters}
 
@@ -72,6 +73,10 @@ case class Symbol(
     filters: List[Filter],
     permissions: List[String]
 )
+object Symbol {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[Symbol]              = deriveDecoder
+}
 
 case class ExchangeInformation(
     timezone: String,
@@ -85,5 +90,8 @@ case class ExchangeInformation(
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))
       .map(RateLimiters.apply)
-
+}
+object ExchangeInformation {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[ExchangeInformation] = deriveDecoder
 }

@@ -8,6 +8,7 @@ on:
       - '**.sbt'
       - '.scalafmt.conf'
   push:
+    branches: [master]
     paths:
       - 'src/**'
       - 'project/**'

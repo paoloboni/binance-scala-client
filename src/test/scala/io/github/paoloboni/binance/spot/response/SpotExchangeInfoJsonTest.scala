@@ -21,7 +21,6 @@
 
 package io.github.paoloboni.binance.spot.response
 
-import io.circe.generic.auto._
 import io.circe.parser.decode
 import weaver.SimpleIOSuite
 
@@ -33,5 +32,57 @@ object SpotExchangeInfoJsonTest extends SimpleIOSuite {
     val exchangeInfoStr = Source.fromResource("spot/exchangeInfo.json").mkString
     val result          = decode[ExchangeInformation](exchangeInfoStr)
     assert(result.isRight)
+  }
+
+  pureTest("should ignore unsupported filters when decoding json") {
+    val encoded =
+      """
+        |{
+        |  "timezone": "UTC",
+        |  "serverTime": 1650215125188,
+        |  "rateLimits": [],
+        |  "exchangeFilters": [],
+        |  "symbols": [
+        |    {
+        |      "symbol": "BNBBUSD",
+        |      "status": "TRADING",
+        |      "baseAsset": "BNB",
+        |      "baseAssetPrecision": 8,
+        |      "quoteAsset": "BUSD",
+        |      "quotePrecision": 8,
+        |      "quoteAssetPrecision": 8,
+        |      "baseCommissionPrecision": 8,
+        |      "quoteCommissionPrecision": 8,
+        |      "orderTypes": [
+        |        "LIMIT",
+        |        "LIMIT_MAKER",
+        |        "MARKET",
+        |        "STOP_LOSS_LIMIT",
+        |        "TAKE_PROFIT_LIMIT"
+        |      ],
+        |      "icebergAllowed": true,
+        |      "ocoAllowed": true,
+        |      "quoteOrderQtyMarketAllowed": true,
+        |      "allowTrailingStop": true,
+        |      "isSpotTradingAllowed": true,
+        |      "isMarginTradingAllowed": false,
+        |      "filters": [
+        |        {
+        |          "filterType": "UNKNOWN"
+        |        }
+        |      ],
+        |      "permissions": [
+        |        "SPOT"
+        |      ]
+        |    }
+        |  ]
+        |}
+        |""".stripMargin
+    val result = decode[ExchangeInformation](encoded)
+    assert.all(
+      result.isRight,
+      result.toOption.get.exchangeFilters.isEmpty,
+      result.toOption.get.symbols.head.filters.isEmpty
+    )
   }
 }
