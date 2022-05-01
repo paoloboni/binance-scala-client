@@ -23,9 +23,9 @@ package io.github.paoloboni.binance.spot.response
 
 import cats.effect.kernel.Async
 import cats.syntax.all._
+import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import io.circe.{Decoder, Json}
-import io.github.paoloboni.binance.common.response.RateLimit
+import io.github.paoloboni.binance.common.response.{RateLimit, RelaxedListDecoder}
 import io.github.paoloboni.binance.spot.SpotOrderType
 import io.github.paoloboni.http.ratelimit.{RateLimiter, RateLimiters}
 
@@ -74,7 +74,7 @@ case class Symbol(
     permissions: List[String]
 )
 object Symbol {
-  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedFilterListDecoder.decoder
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
   implicit val decoder: Decoder[Symbol]              = deriveDecoder
 }
 
@@ -92,18 +92,6 @@ case class ExchangeInformation(
       .map(RateLimiters.apply)
 }
 object ExchangeInformation {
-  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedFilterListDecoder.decoder
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
   implicit val decoder: Decoder[ExchangeInformation] = deriveDecoder
-}
-
-object RelaxedFilterListDecoder {
-  implicit val decoder: Decoder[List[Filter]] = Decoder
-    .decodeList[Json]
-    .map(_.collect { case ValidFilter(filter) =>
-      filter
-    })
-}
-
-object ValidFilter {
-  def unapply(json: Json): Option[Filter] = json.as[Filter].toOption
 }
