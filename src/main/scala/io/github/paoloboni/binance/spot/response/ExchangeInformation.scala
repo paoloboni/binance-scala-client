@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.binance.spot.response
 
-import cats.effect.kernel.Async
+import cats.effect.kernel.{Async, Resource}
 import cats.syntax.all._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -85,7 +85,7 @@ case class ExchangeInformation(
     exchangeFilters: List[Filter],
     symbols: List[Symbol]
 ) {
-  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): F[RateLimiters[F]] =
+  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): Resource[F, RateLimiters[F]] =
     rateLimits
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))

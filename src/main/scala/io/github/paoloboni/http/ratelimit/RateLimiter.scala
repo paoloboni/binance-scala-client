@@ -22,10 +22,11 @@
 package io.github.paoloboni.http.ratelimit
 
 import cats.Applicative
-import cats.effect.kernel.{Async, Deferred}
+import cats.effect.kernel.{Async, Deferred, Resource}
 import cats.effect.std.Queue
-import cats.effect.syntax.spawn._
 import cats.syntax.all._
+import cats.effect.syntax.all._
+
 import fs2.Stream
 import io.github.paoloboni.binance.common
 import io.github.paoloboni.binance.common.response.RateLimitType
@@ -37,14 +38,16 @@ object RateLimiter {
       perSecond: Double,
       bufferSize: Int,
       `type`: RateLimitType
-  )(implicit F: Async[F]): F[RateLimiter[F]] = {
-    F.unlessA(perSecond > 0 && bufferSize > 0)(
-      F.raiseError(new IllegalArgumentException("perSecond and buffer size must be strictly positive"))
+  )(implicit F: Async[F]): Resource[F, RateLimiter[F]] = {
+    Resource.eval(
+      F.unlessA(perSecond > 0 && bufferSize > 0)(
+        F.raiseError(new IllegalArgumentException("perSecond and buffer size must be strictly positive"))
+      )
     ) *>
       (for {
-        queue <- Queue.bounded[F, F[Unit]](bufferSize)
+        queue <- Queue.bounded[F, F[Unit]](bufferSize).toResource
         period = periodFrom(perSecond)
-        _ <- Stream.awakeDelay(period).evalMap(_ => queue.take.flatten).repeat.compile.drain.start.void
+        _ <- Stream.awakeDelay[F](period).evalMap(_ => queue.take.flatten).repeat.compile.drain.background
       } yield {
         new RateLimiter[F] {
           override def rateLimit[T](effect: => F[T]): F[T] = Deferred[F, T].flatMap { p =>
