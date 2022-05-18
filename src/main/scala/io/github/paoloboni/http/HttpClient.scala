@@ -91,17 +91,18 @@ sealed class HttpClient[F[_]: Logger](implicit
     def webSocketFramePipe(
         q: Queue[F, Option[DataFrame]]
     ): Pipe[F, WebSocketFrame.Data[_], WebSocketFrame] = { input =>
-      input.evalMapFilter[F, WebSocketFrame] {
-        case WebSocketFrame.Text(payload, _, _) =>
-          (decode[DataFrame](payload) match {
-            case Left(ex) =>
-              Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(None) // stopping
-            case Right(decoded) =>
-              q.offer(Some(decoded))
-          }) *> F.pure(None)
-        case _ =>
-          q.offer(None).map(_ => None) // stopping
-      }
+      input
+        .evalMapFilter[F, WebSocketFrame] {
+          case WebSocketFrame.Text(payload, _, _) =>
+            (decode[DataFrame](payload) match {
+              case Left(ex) =>
+                Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(None) // stopping
+              case Right(decoded) =>
+                q.offer(Some(decoded))
+            }) *> F.pure(None)
+          case _ =>
+            q.offer(None).map(_ => None) // stopping
+        }
     }
 
     Stream
@@ -116,6 +117,7 @@ sealed class HttpClient[F[_]: Logger](implicit
             .flatMap { response =>
               Logger[F].debug("response: " + response)
             }
+            .onError { case _ => queue.offer(None) }
             .background
         } yield queue
       }
