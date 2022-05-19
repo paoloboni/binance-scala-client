@@ -21,10 +21,11 @@
 
 package io.github.paoloboni.binance.spot.response
 
-import cats.effect.kernel.Async
-import cats.implicits._
+import cats.effect.kernel.{Async, Resource}
+import cats.syntax.all._
 import io.circe.Decoder
-import io.github.paoloboni.binance.common.response.RateLimit
+import io.circe.generic.semiauto.deriveDecoder
+import io.github.paoloboni.binance.common.response.{RateLimit, RelaxedListDecoder}
 import io.github.paoloboni.binance.spot.SpotOrderType
 import io.github.paoloboni.http.ratelimit.{RateLimiter, RateLimiters}
 
@@ -42,6 +43,12 @@ case class ICEBERG_PARTS(limit: Int)                                            
 case class MAX_POSITION(maxPosition: BigDecimal)                                                  extends Filter
 case class EXCHANGE_MAX_NUM_ORDERS(maxNumOrders: Int)                                             extends Filter
 case class EXCHANGE_MAX_ALGO_ORDERS(maxNumAlgoOrders: Int)                                        extends Filter
+case class TRAILING_DELTA(
+    minTrailingAboveDelta: BigDecimal,
+    maxTrailingAboveDelta: BigDecimal,
+    minTrailingBelowDelta: BigDecimal,
+    maxTrailingBelowDelta: BigDecimal
+) extends Filter
 
 object Filter {
   implicit val decoder: Decoder[Filter] = FilterCodecs.decoder
@@ -66,6 +73,10 @@ case class Symbol(
     filters: List[Filter],
     permissions: List[String]
 )
+object Symbol {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[Symbol]              = deriveDecoder
+}
 
 case class ExchangeInformation(
     timezone: String,
@@ -74,10 +85,13 @@ case class ExchangeInformation(
     exchangeFilters: List[Filter],
     symbols: List[Symbol]
 ) {
-  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): F[RateLimiters[F]] =
+  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): Resource[F, RateLimiters[F]] =
     rateLimits
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))
       .map(RateLimiters.apply)
-
+}
+object ExchangeInformation {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[ExchangeInformation] = deriveDecoder
 }

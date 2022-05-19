@@ -2,18 +2,18 @@
 name: CI
 on:
   pull_request:
-    branches: [master, staging]
     paths:
       - 'src/**'
       - 'project/**'
-      - 'build.sbt'
-      - '.github/workflows/ci.yml'
+      - '**.sbt'
+      - '.scalafmt.conf'
   push:
     branches: [master]
     paths:
       - 'src/**'
       - 'project/**'
-      - 'build.sbt'
+      - '**.sbt'
+      - '.scalafmt.conf'
   schedule:
     - cron: '0 0 * * 0'
 jobs:
@@ -49,7 +49,6 @@ jobs:
         shell: bash
         timeout-minutes: 10
   e2e:
-    if: github.actor == 'paoloboni'
     needs: test
     runs-on: ubuntu-latest
     strategy:

@@ -23,7 +23,6 @@ package io.github.paoloboni.binance.fapi.response
 
 import io.circe.Decoder
 import io.circe.generic.semiauto._
-import io.github.paoloboni.binance.fapi._
 
 case object INF
 

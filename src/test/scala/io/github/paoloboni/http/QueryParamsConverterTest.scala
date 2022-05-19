@@ -22,14 +22,12 @@
 package io.github.paoloboni.http
 
 import io.github.paoloboni.http.QueryParamsConverter._
-import org.scalactic.TypeCheckedTripleEquals
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 import sttp.client3.UriContext
+import weaver.SimpleIOSuite
 
-class QueryParamsConverterTest extends AnyFreeSpec with Matchers with TypeCheckedTripleEquals {
+object QueryParamsConverterTest extends SimpleIOSuite {
 
-  "it should convert a query string to an object" in {
+  pureTest("it should convert a query string to an object") {
 
     case class TestClass(quantity: Int, price: BigDecimal, recvWindow: Int, timestamp: Long)
 
@@ -37,10 +35,10 @@ class QueryParamsConverterTest extends AnyFreeSpec with Matchers with TypeChecke
 
     val params = uri"http://whatever.com?quantity=1&price=0.1&recvWindow=5000&timestamp=1499827319559".paramsMap
 
-    obj.toQueryParams.toMap should ===(params)
+    expect(obj.toQueryParams.toMap == params)
   }
 
-  "it should convert sum types" in {
+  pureTest("it should convert sum types") {
 
     sealed trait Test
     case class Test1(quantity: Int, price: BigDecimal) extends Test
@@ -52,7 +50,9 @@ class QueryParamsConverterTest extends AnyFreeSpec with Matchers with TypeChecke
     val q1 = uri"http://whatever.com?quantity=1&price=0.1&type=Test1".paramsMap
     val q2 = uri"http://whatever.com?recvWindow=5000&timestamp=1499827319559&type=Test2".paramsMap
 
-    obj1.toQueryParams.toMap should ===(q1)
-    obj2.toQueryParams.toMap should ===(q2)
+    expect.all(
+      obj1.toQueryParams.toMap == q1,
+      obj2.toQueryParams.toMap == q2
+    )
   }
 }

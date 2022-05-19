@@ -22,28 +22,27 @@
 package io.github.paoloboni.binance.spot
 
 import cats.effect.Async
-import cats.implicits._
+import cats.effect.syntax.all._
+import cats.syntax.all._
 import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.parameters.TimeParams
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
-import io.github.paoloboni.encryption.{HMAC, MkSignedUri}
+import io.github.paoloboni.encryption.MkSignedUri
+import io.github.paoloboni.http.HttpClient
 import io.github.paoloboni.http.QueryParamsConverter._
 import io.github.paoloboni.http.ratelimit.RateLimiters
-import io.github.paoloboni.http.{HttpClient, UriOps}
-import org.typelevel.log4cats.Logger
 import sttp.client3.UriContext
 import sttp.client3.circe.{asJson, _}
 
 import java.time.Instant
 import scala.util.Try
 
-final case class SpotApi[F[_]: Logger](
+final case class SpotApi[F[_]](
     config: SpotConfig[F],
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
@@ -162,17 +161,6 @@ final case class SpotApi[F[_]: Logger](
     *   The id of the order created
     */
   def createOrder(orderCreate: SpotOrderCreateParams): F[SpotOrderCreateResponse] = {
-
-    def url(currentMillis: Long) = {
-      val timeParams = TimeParams(config.recvWindow, currentMillis).toQueryParams
-      val query = orderCreate.toQueryParams
-        .param(timeParams.toMap)
-        .param("newOrderRespType", SpotOrderCreateResponseType.FULL.toString)
-      for {
-        uri <- Try(uri"${config.restBaseUrl}/api/v3/order").map(_.addParams(query)).toEither
-        signature = HMAC.sha256(config.apiSecret, uri.queryString)
-      } yield uri.addParam("signature", signature)
-    }
 
     val params = orderCreate.toQueryParams.param("newOrderRespType", SpotOrderCreateResponseType.FULL.toString).toSeq
     for {
@@ -350,7 +338,7 @@ final case class SpotApi[F[_]: Logger](
 }
 
 object SpotApi {
-  implicit def factory[F[_]: Logger](implicit
+  implicit def factory[F[_]](implicit
       F: Async[F]
   ): BinanceApi.Factory[F, SpotApi[F], SpotConfig[F]] =
     (config: SpotConfig[F], client: HttpClient[F]) =>
@@ -361,7 +349,8 @@ object SpotApi {
             responseAs = asJson[spot.response.ExchangeInformation],
             limiters = List.empty
           )
-        exchangeInfo <- F.fromEither(exchangeInfoEither)
+          .toResource
+        exchangeInfo <- F.fromEither(exchangeInfoEither).toResource
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
       } yield SpotApi.apply(config, client, exchangeInfo, rateLimiters)
 }

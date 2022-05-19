@@ -22,65 +22,83 @@
 package io.github.paoloboni.http.ratelimit
 
 import cats.effect.IO
-import cats.effect.testing.scalatest.AsyncIOSpec
 import cats.effect.testkit.TestControl
 import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance.common.response.RateLimitType
-import org.scalactic.TypeCheckedTripleEquals
-import org.scalatest.freespec.AsyncFreeSpec
-import org.scalatest.matchers.should.Matchers
+import weaver.SimpleIOSuite
 
 import scala.concurrent.duration.DurationInt
 
-class RateLimiterTest extends AsyncFreeSpec with AsyncIOSpec with Matchers with TypeCheckedTripleEquals {
+object RateLimiterTest extends SimpleIOSuite {
 
-  "it should rate limit when frequency is greater than limit" in {
+  test("it should rate limit when frequency is greater than limit") {
     val perSecond = 10 // period = 100.millis
 
     TestControl
-      .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
-        startTime   <- IO.monotonic
-        _           <- rateLimiter.await(IO.pure(1))
-        _           <- rateLimiter.await(IO.pure(2))
-        result      <- rateLimiter.await(IO.pure(3))
-        endTime     <- IO.monotonic
-      } yield (result, startTime, endTime))
-      .asserting { case (res, start, end) =>
-        (end - start) should ===(300.millis)
-        res should ===(3)
+      .executeEmbed(
+        RateLimiter
+          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            (for {
+              startTime <- IO.monotonic
+              _         <- rateLimiter.await(IO.pure(1))
+              _         <- rateLimiter.await(IO.pure(2))
+              result    <- rateLimiter.await(IO.pure(3))
+              endTime   <- IO.monotonic
+            } yield (result, startTime, endTime))
+          )
+      )
+      .map { case (res, start, end) =>
+        expect.all(
+          (end - start) == 300.millis,
+          res == 3
+        )
       }
   }
 
-  "it should rate limit when frequency is greater than limit and weight > 1" in {
+  test("it should rate limit when frequency is greater than limit and weight > 1") {
     val perSecond = 10 // period = 100.millis
 
     TestControl
-      .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
-        startTime   <- IO.monotonic
-        result      <- rateLimiter.await(IO.pure(1), weight = 10)
-        endTime     <- IO.monotonic
-      } yield (result, startTime, endTime))
-      .asserting { case (res, start, end) =>
-        (end - start) should ===(1.second)
-        res should ===(1)
+      .executeEmbed(
+        RateLimiter
+          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            (for {
+              startTime <- IO.monotonic
+              result    <- rateLimiter.await(IO.pure(1), weight = 10)
+              endTime   <- IO.monotonic
+            } yield (result, startTime, endTime))
+          )
+      )
+      .map { case (res, start, end) =>
+        expect.all(
+          (end - start) == 1.second,
+          res == 1
+        )
       }
   }
 
-  "it should not rate limit when frequency is lower than limit" in {
+  test("it should not rate limit when frequency is lower than limit") {
     val perSecond = 1 // period = 1.second
 
     TestControl
-      .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond, 1, RateLimitType.NONE)
-        startTime   <- IO.monotonic
-        result      <- rateLimiter.await(IO.pure(1))
-        endTime     <- IO.monotonic
-      } yield (result, startTime, endTime))
-      .asserting { case (res, start, end) =>
-        (end - start) should ===(1.second)
-        res should ===(1)
+      .executeEmbed(
+        RateLimiter
+          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            for {
+              startTime <- IO.monotonic
+              result    <- rateLimiter.await(IO.pure(1))
+              endTime   <- IO.monotonic
+            } yield (result, startTime, endTime)
+          )
+      )
+      .map { case (res, start, end) =>
+        expect.all(
+          (end - start) == 1.seconds,
+          res == 1
+        )
       }
   }
 }

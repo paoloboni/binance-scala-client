@@ -19,20 +19,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance
+package io.github.paoloboni.binance.common.response
 
-import enumeratum.{CirceEnum, Enum, EnumEntry}
+import io.circe.{Decoder, Json}
 
-package object common {
-  case class Price(symbol: String, price: BigDecimal)
+object RelaxedListDecoder {
 
-  sealed trait OrderSide extends EnumEntry
-  object OrderSide extends Enum[OrderSide] with CirceEnum[OrderSide] {
-    val values = findValues
-
-    case object SELL extends OrderSide
-    case object BUY  extends OrderSide
-  }
-
-  case class BinanceBalance(asset: String, free: BigDecimal, locked: BigDecimal)
+  // filters out unsupported elements from the list
+  implicit def decoder[T: Decoder]: Decoder[List[T]] = Decoder
+    .decodeList[Json]
+    .map(_.map(_.as[T]))
+    .map(_.collect { case Right(filter) => filter })
 }

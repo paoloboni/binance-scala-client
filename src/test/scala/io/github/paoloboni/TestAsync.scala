@@ -24,7 +24,7 @@ package io.github.paoloboni
 import cats.StackSafeMonad
 import cats.effect.kernel.Sync
 import cats.effect._
-import cats.implicits._
+import cats.syntax.all._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext

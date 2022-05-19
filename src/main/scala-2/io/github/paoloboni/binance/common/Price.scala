@@ -19,14 +19,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.encryption
+package io.github.paoloboni.binance.common
 
-import weaver.SimpleIOSuite
-
-object HMACTest extends SimpleIOSuite {
-  pureTest("it should generate a valid SHA-256 HMAC signature for a given plain text") {
-    val hmac = HMAC.sha256("1234567890", "plain text")
-
-    expect(hmac == "0f0b538bb6eee67396e6de8901920b76035a1c22168394a3b51e1458b1c9434e")
-  }
-}
+case class Price(symbol: String, price: BigDecimal)

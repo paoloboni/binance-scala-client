@@ -22,20 +22,19 @@
 package io.github.paoloboni.binance.spot.response
 
 import io.circe.parser.decode
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import weaver.SimpleIOSuite
 
-class FilterTypeJsonTest extends AnyFlatSpec with Matchers {
+object FilterTypeJsonTest extends SimpleIOSuite {
 
-  "PERCENT_PRICE" should "be able to being decoded from json" in {
+  pureTest("PERCENT_PRICE should be able to being decoded from json") {
 
     val actual = decode[Filter]("""
-                   |{
-                   |  "filterType": "PERCENT_PRICE",
-                   |  "multiplierUp": "1.1500",
-                   |  "multiplierDown": "0.8500",
-                   |  "avgPriceMins": 4
-                   |}
+          |{
+          |  "filterType": "PERCENT_PRICE",
+          |  "multiplierUp": "1.1500",
+          |  "multiplierDown": "0.8500",
+          |  "avgPriceMins": 4
+          |}
                    """.stripMargin)
 
     val expected = Right(
@@ -46,34 +45,34 @@ class FilterTypeJsonTest extends AnyFlatSpec with Matchers {
       )
     )
 
-    actual shouldBe expected
+    assert(actual == expected)
   }
 
-  "MAX_NUM_ALGO_ORDERS" should "be able to being decoded from json" in {
+  pureTest("MAX_NUM_ALGO_ORDERS should be able to being decoded from json") {
 
     val actual = decode[Filter]("""
-                   |{
-                   |  "filterType": "MAX_NUM_ALGO_ORDERS",
-                   |  "maxNumAlgoOrders": 100
-                   |}
+          |{
+          |  "filterType": "MAX_NUM_ALGO_ORDERS",
+          |  "maxNumAlgoOrders": 100
+          |}
                    """.stripMargin)
 
     val expected = Right(MAX_NUM_ALGO_ORDERS(100))
 
-    actual shouldBe expected
+    assert(actual == expected)
   }
 
-  "MAX_NUM_ORDERS" should "be able to being decoded from json" in {
+  pureTest("MAX_NUM_ORDERS should be able to being decoded from json") {
 
     val actual = decode[Filter]("""
-                   |{
-                   |  "filterType": "MAX_NUM_ORDERS",
-                   |  "maxNumOrders": 100
-                   |}
+          |{
+          |  "filterType": "MAX_NUM_ORDERS",
+          |  "maxNumOrders": 100
+          |}
                    """.stripMargin)
 
     val expected = Right(MAX_NUM_ORDERS(100))
 
-    actual shouldBe expected
+    assert(actual == expected)
   }
 }

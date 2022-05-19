@@ -21,7 +21,9 @@
 
 package io.github.paoloboni.binance.common.response
 
+import io.circe.Decoder
 import io.github.paoloboni.http.ratelimit.Rate
+import io.circe.generic.semiauto.deriveDecoder
 
 import scala.concurrent.duration._
 
@@ -35,6 +37,9 @@ case class RateLimit(rateLimitType: RateLimitType, interval: RateLimitInterval, 
     },
     rateLimitType
   )
+}
+object RateLimit {
+  implicit val decoder: Decoder[RateLimit] = deriveDecoder
 }
 
 case class RateLimits(rateLimits: List[RateLimit])

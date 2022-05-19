@@ -21,10 +21,11 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import cats.effect.Async
-import cats.implicits._
+import cats.effect.{Async, Resource}
+import cats.syntax.all._
 import io.circe.Decoder
-import io.github.paoloboni.binance.common.response.RateLimit
+import io.circe.generic.semiauto.deriveDecoder
+import io.github.paoloboni.binance.common.response.{RateLimit, RelaxedListDecoder}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.http.ratelimit.{RateLimiter, RateLimiters}
 
@@ -37,6 +38,12 @@ case class MAX_NUM_ORDERS(limit: Int)                                           
 case class MAX_NUM_ALGO_ORDERS(limit: Int)                                                             extends Filter
 case class PERCENT_PRICE(multiplierUp: BigDecimal, multiplierDown: BigDecimal, multiplierDecimal: Int) extends Filter
 case class MIN_NOTIONAL(notional: Int)                                                                 extends Filter
+case class TRAILING_DELTA(
+    minTrailingAboveDelta: BigDecimal,
+    maxTrailingAboveDelta: BigDecimal,
+    minTrailingBelowDelta: BigDecimal,
+    maxTrailingBelowDelta: BigDecimal
+) extends Filter
 
 object Filter {
   implicit val decoder: Decoder[Filter] = FilterCodecs.decoder
@@ -59,14 +66,21 @@ case class Symbol(
     baseAssetPrecision: Int,
     quotePrecision: Int,
     underlyingType: String,
-    settlePlan: Int,
+    settlePlan: Long,
     triggerProtect: BigDecimal,
     orderTypes: List[FutureOrderType],
     filters: List[Filter],
     timeInForce: List[FutureTimeInForce]
 )
+object Symbol {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[Symbol]              = deriveDecoder
+}
 
 case class AssetInfo(asset: String, marginAvailable: Boolean, autoAssetExchange: BigDecimal)
+object AssetInfo {
+  implicit val decoder: Decoder[AssetInfo] = deriveDecoder
+}
 
 case class ExchangeInformation(
     timezone: String,
@@ -77,10 +91,13 @@ case class ExchangeInformation(
     assets: List[AssetInfo],
     symbols: List[Symbol]
 ) {
-  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): F[RateLimiters[F]] =
+  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): Resource[F, RateLimiters[F]] =
     rateLimits
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))
       .map(RateLimiters.apply)
-
+}
+object ExchangeInformation {
+  implicit val filtersDecoder: Decoder[List[Filter]] = RelaxedListDecoder.decoder
+  implicit val decoder: Decoder[ExchangeInformation] = deriveDecoder
 }

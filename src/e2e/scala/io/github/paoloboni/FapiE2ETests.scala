@@ -5,47 +5,46 @@ import cats.implicits._
 import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.{ContractKLineStream, KLineStream}
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
-import io.github.paoloboni.binance.fapi.response._
 
 import java.time.Instant
 import scala.util.Random
 
-class FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
+object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
 
   val config: FapiConfig[IO] = FapiConfig.Default(
     apiKey = sys.env("FAPI_API_KEY"),
     apiSecret = sys.env("FAPI_SECRET_KEY"),
-    testnet = true
+    testnet = true,
+    recvWindow = 20000
   )
 
-  val resource: Resource[IO, FutureApi[IO]] = BinanceClient.createFutureClient[IO](config)
+  val sharedResource: Resource[IO, FutureApi[IO]] = BinanceClient.createFutureClient[IO](config)
 
-  "getPrices" in { _.getPrices().asserting(_ shouldNot be(empty)) }
+  test("getPrices") { _.getPrices().map(res => expect(res.nonEmpty)) }
 
-  "getPrice" in { _.getPrice(symbol = "BTCUSDT").asserting(_ shouldBe a[Price]) }
+  test("getPrice") { _.getPrice(symbol = "BTCUSDT").map(succeed) }
 
-  "getBalance" in { _.getBalance().asserting(_ shouldBe a[FutureAccountInfoResponse]) }
+  test("getBalance") { _.getBalance().map(succeed) }
 
-  "getKLines" in { client =>
+  test("getKLines") { client =>
     val now = Instant.now()
     client
       .getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100))
       .compile
       .toList
-      .asserting(_ shouldBe a[List[_]])
+      .map(succeed)
   }
 
-  "changePositionMode" ignore { _.changePositionMode(true).asserting(_ shouldBe ()) }
+  test("changePositionMode") { _ => ignore("not testable") }
 
-  "changeInitialLeverage" in {
+  test("changeInitialLeverage") {
     _.changeInitialLeverage(ChangeInitialLeverageParams(symbol = "BTCUSDT", leverage = 1))
-      .asserting(x => (x.leverage, x.symbol) shouldBe (1, "BTCUSDT"))
+      .map(x => expect((x.leverage, x.symbol) == ((1, "BTCUSDT"))))
   }
 
-  "createOrder" in { client =>
+  test("createOrder") { client =>
     val side = Random.shuffle(OrderSide.values).head
     client
       .createOrder(
@@ -56,12 +55,12 @@ class FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
           quantity = 10
         )
       )
-      .asserting(_ shouldBe a[FutureOrderCreateResponse])
+      .map(succeed)
   }
 
-  "getOrder" in { client =>
+  test("getOrder") { client =>
     val side = Random.shuffle(OrderSide.values).head
-    val result = for {
+    for {
       orderCreated <- client
         .createOrder(
           FutureOrderCreateParams.MARKET(
@@ -71,19 +70,18 @@ class FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
             quantity = 10
           )
         )
-      orderFetched <- client
+      _ <- client
         .getOrder(
           FutureGetOrderParams.OrderId(
             symbol = "LTCUSDT",
             orderId = orderCreated.orderId
           )
         )
-    } yield orderFetched
-    result.asserting(_ shouldBe a[FutureOrderGetResponse])
+    } yield success
   }
 
-  "cancelOrder" in { client =>
-    (for {
+  test("cancelOrder") { client =>
+    for {
       createOrderResponse <- client.createOrder(
         FutureOrderCreateParams.STOP(
           symbol = "XRPUSDT",
@@ -103,12 +101,11 @@ class FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
           origClientOrderId = None
         )
       )
-    } yield "OK")
-      .asserting(_ shouldBe "OK")
+    } yield success
   }
 
-  "cancelAllOrders" in { client =>
-    (for {
+  test("cancelAllOrders") { client =>
+    for {
       _ <- client.createOrder(
         FutureOrderCreateParams.LIMIT(
           symbol = "XRPUSDT",
@@ -123,47 +120,46 @@ class FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
       _ <- client.cancelAllOrders(
         FutureOrderCancelAllParams(symbol = "XRPUSDT")
       )
-    } yield "OK")
-      .asserting(_ shouldBe "OK")
+    } yield success
   }
 
-  "aggregateTradeStreams" in {
+  test("aggregateTradeStreams") {
     _.aggregateTradeStreams("btcusdt")
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[AggregateTradeStream])
+      .map(l => expect(l.size == 1))
   }
 
-  "kLineStreams" in {
+  test("kLineStreams") {
     _.kLineStreams("btcusdt", Interval.`1m`)
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[KLineStream])
+      .map(l => expect(l.size == 1))
   }
 
-  "contractKLineStreams" in {
+  test("contractKLineStreams") {
     _.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`)
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[ContractKLineStream])
+      .map(l => expect(l.size == 1))
   }
 
-  "markPriceStream" in {
+  test("markPriceStream") {
     _.markPriceStream("btcusdt")
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[MarkPriceUpdate])
+      .map(l => expect(l.size == 1))
   }
 
-  "markPriceStream all symbols" in {
+  test("markPriceStream all symbols") {
     _.markPriceStream()
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[MarkPriceUpdate])
+      .map(l => expect(l.size == 1))
   }
 }

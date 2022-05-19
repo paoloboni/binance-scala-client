@@ -22,7 +22,7 @@
 package io.github.paoloboni.binance
 
 import cats.effect.{Async, Resource}
-import cats.implicits._
+import cats.effect.syntax.all._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
@@ -53,9 +53,9 @@ object BinanceClient {
         .build()
     AsyncHttpClientFs2Backend
       .resourceUsingConfig(conf)
-      .evalMap { implicit c =>
+      .flatMap { implicit c =>
         for {
-          client  <- HttpClient.make[F]
+          client  <- HttpClient.make[F].toResource
           spotApi <- BinanceApi.Factory[F, API, Config].apply(config, client)
         } yield spotApi
       }

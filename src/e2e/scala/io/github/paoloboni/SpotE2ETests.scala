@@ -6,165 +6,165 @@ import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
-import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
-import io.github.paoloboni.binance.spot.response._
 
 import java.time.Instant
 import scala.util.Random
 
-class SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
+object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   val config: SpotConfig[IO] = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
     apiSecret = sys.env("SPOT_SECRET_KEY"),
-    testnet = true
+    testnet = true,
+    recvWindow = 20000
   )
 
-  val resource: Resource[IO, SpotApi[IO]] = BinanceClient.createSpotClient[IO](config)
+  val sharedResource: Resource[IO, SpotApi[IO]] = BinanceClient.createSpotClient[IO](config)
 
-  "getDepth" in {
+  test("getDepth") {
     _.getDepth(common.parameters.DepthParams("BTCUSDT", common.parameters.DepthLimit.`500`))
-      .asserting(_ shouldBe a[DepthGetResponse])
+      .map(succeed)
   }
 
-  "getPrices" in { _.getPrices().asserting(_ shouldNot be(empty)) }
+  test("getPrices") { _.getPrices().map(res => expect(res.nonEmpty)) }
 
-  "getBalance" in { _.getBalance().asserting(_ shouldBe a[SpotAccountInfoResponse]) }
+  test("getBalance") { _.getBalance().map(succeed) }
 
-  "getKLines" in { client =>
+  test("getKLines") { client =>
     val now = Instant.now()
     client
       .getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100))
       .compile
       .toList
-      .asserting(_ shouldNot be(empty))
+      .map(res => expect(res.nonEmpty))
   }
 
-  "createOrder" in { client =>
+  test("createOrder") { client =>
     val side = Random.shuffle(OrderSide.values).head
     client
       .createOrder(
         SpotOrderCreateParams.MARKET(
           symbol = "TRXUSDT",
           side = side,
-          quantity = BigDecimal(200).some
+          quantity = BigDecimal(1000).some
         )
       )
-      .asserting(_ shouldBe a[SpotOrderCreateResponse])
+      .map(succeed)
   }
 
-  "queryOrder" in { client =>
-    (for {
+  test("queryOrder") { client =>
+    val symbol = "TRXUSDT"
+    for {
       createOrderResponse <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 10,
-          price = 1.8
+          quantity = 1000,
+          price = 0.08
         )
       )
 
-      queryResponse <- client.queryOrder(
+      _ <- client.queryOrder(
         SpotOrderQueryParams(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
       )
-    } yield queryResponse)
-       .asserting(_ shouldBe a[SpotOrderQueryResponse])
+    } yield success
   }
 
-  "cancelOrder" in { client =>
-    (for {
+  test("cancelOrder") { client =>
+    val symbol = "TRXUSDT"
+    for {
       createOrderResponse <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 10,
-          price = 1.8
+          quantity = 1000,
+          price = 0.08
         )
       )
 
       _ <- client.cancelOrder(
         SpotOrderCancelParams(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
       )
-    } yield "OK")
-      .asserting(_ shouldBe "OK")
+    } yield success
   }
 
-  "cancelAllOrders" in { client =>
-    (for {
+  test("cancelAllOrders") { client =>
+    val symbol = "TRXUSDT"
+    for {
       _ <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
-          symbol = "XRPUSDT",
+          symbol = symbol,
           side = OrderSide.SELL,
           timeInForce = SpotTimeInForce.GTC,
-          quantity = 10,
-          price = 1.8
+          quantity = 1000,
+          price = 0.08
         )
       )
 
       _ <- client.cancelAllOrders(
-        SpotOrderCancelAllParams(symbol = "XRPUSDT")
+        SpotOrderCancelAllParams(symbol = symbol)
       )
-    } yield "OK")
-      .asserting(_ shouldBe "OK")
+    } yield success
   }
 
-  "tradeStreams" in {
+  test("tradeStreams") {
     _.tradeStreams("btcusdt")
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[TradeStream])
+      .map(l => expect(l.size == 1))
   }
 
-  "kLineStreams" in {
+  test("kLineStreams") {
     _.kLineStreams("btcusdt", Interval.`1m`)
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[KLineStream])
+      .map(l => expect(l.size == 1))
   }
 
-  "diffDepthStream" in {
+  test("diffDepthStream") {
     _.diffDepthStream("btcusdt")
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[DiffDepthStream])
+      .map(l => expect(l.size == 1))
   }
 
-  "partialBookDepthStream" in {
+  test("partialBookDepthStream") {
     _.partialBookDepthStream("btcusdt", Level.`5`)
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[PartialDepthStream])
+      .map(l => expect(l.size == 1))
   }
 
-  "allBookTickersStream" in {
+  test("allBookTickersStream") {
     _.allBookTickersStream()
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[BookTicker])
+      .map(l => expect(l.size == 1))
   }
 
-  "aggregateTradeStreams" in {
+  test("aggregateTradeStreams") {
     _.aggregateTradeStreams("btcusdt")
       .take(1)
       .compile
       .toList
-      .asserting(_.loneElement shouldBe a[AggregateTradeStream])
+      .map(l => expect(l.size == 1))
   }
+
 }

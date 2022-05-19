@@ -21,22 +21,21 @@
 
 package io.github.paoloboni.binance
 
-import cats.effect.{Async, ExitCode, IO}
-import cats.implicits._
+import cats.effect.{ExitCode, IO}
+import cats.syntax.all._
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
 import io.circe.parser._
 import io.github.paoloboni.Env.log
+import io.github.paoloboni.TestAsync
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
-import io.github.paoloboni.{Env, TestAsync}
 import org.http4s.websocket.WebSocketFrame
-import org.scalatest.EitherValues._
 import scodec.bits.ByteVector
 import sttp.client3.UriContext
 
@@ -44,96 +43,97 @@ import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class SpotClientIntegrationTest extends IntegrationTest {
+object SpotClientIntegrationTest extends IntegrationTest {
 
-  "it should fire multiple requests when expected number of elements returned is above threshold" in { server =>
+  integrationTest("it should fire multiple requests when expected number of elements returned is above threshold") {
+    server =>
 
-    val from      = 1548806400000L
-    val to        = 1548866280000L
-    val symbol    = "ETHUSDT"
-    val interval  = Interval.`1m`
-    val threshold = 2
+      val from      = 1548806400000L
+      val to        = 1548866280000L
+      val symbol    = "ETHUSDT"
+      val interval  = Interval.`1m`
+      val threshold = 2
 
-    val stubResponse1 = IO.delay(
-      server.stubFor(
-        get(urlPathEqualTo("/api/v3/klines"))
-          .withQueryParams(
-            Map(
-              "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.toString),
-              "startTime" -> equalTo(from.toString),
-              "endTime"   -> equalTo(to.toString),
-              "limit"     -> equalTo(threshold.toString)
-            ).asJava
-          )
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withBody("""
+      val stubResponse1 = IO.delay(
+        server.stubFor(
+          get(urlPathEqualTo("/api/v3/klines"))
+            .withQueryParams(
+              Map(
+                "symbol"    -> equalTo(symbol),
+                "interval"  -> equalTo(interval.toString),
+                "startTime" -> equalTo(from.toString),
+                "endTime"   -> equalTo(to.toString),
+                "limit"     -> equalTo(threshold.toString)
+              ).asJava
+            )
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody("""
                           |[
                           |  [1548806400000, "104.41000000", "104.43000000", "104.27000000", "104.37000000", "185.23745000", 1548806459999, "19328.98599530", 80, "62.03712000", "6475.81062590", "0"],
                           |  [1548806460000, "104.38000000", "104.40000000", "104.33000000", "104.36000000", "211.54271000", 1548806519999, "22076.70809650", 68, "175.75948000", "18342.53313250", "0"],
                           |  [1548806520000, "104.36000000", "104.39000000", "104.36000000", "104.38000000", "59.74736000", 1548806579999, "6235.56895740", 28, "37.98161000", "3963.95268370", "0"]
                           |]
               """.stripMargin)
-          )
+            )
+        )
       )
-    )
 
-    val stubResponse2 = IO.delay(
-      server.stubFor(
-        get(urlPathEqualTo("/api/v3/klines"))
-          .withQueryParams(
-            Map(
-              "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.toString),
-              "startTime" -> equalTo("1548806520000"),
-              "endTime"   -> equalTo(to.toString),
-              "limit"     -> equalTo(threshold.toString)
-            ).asJava
-          )
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withBody("""
+      val stubResponse2 = IO.delay(
+        server.stubFor(
+          get(urlPathEqualTo("/api/v3/klines"))
+            .withQueryParams(
+              Map(
+                "symbol"    -> equalTo(symbol),
+                "interval"  -> equalTo(interval.toString),
+                "startTime" -> equalTo("1548806520000"),
+                "endTime"   -> equalTo(to.toString),
+                "limit"     -> equalTo(threshold.toString)
+              ).asJava
+            )
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody("""
                           |[
                           |  [1548806520000, "104.36000000", "104.39000000", "104.36000000", "104.38000000", "59.74736000", 1548806579999, "6235.56895740", 28, "37.98161000", "3963.95268370", "0"],
                           |  [1548836340000, "105.13000000", "105.16000000", "105.07000000", "105.10000000", "201.06821000", 1548836399999, "21139.17349190", 55, "35.40525000", "3722.13452500", "0"],
                           |  [1548836400000, "105.13000000", "105.14000000", "105.05000000", "105.09000000", "70.72517000", 1548836459999, "7432.93828700", 45, "36.68194000", "3855.32695710", "0"]
                           |]
               """.stripMargin)
-          )
+            )
+        )
       )
-    )
 
-    // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
-    val stubResponse3 = IO.delay(
-      server.stubFor(
-        get(urlPathEqualTo("/api/v3/klines"))
-          .withQueryParams(
-            Map(
-              "symbol"    -> equalTo(symbol),
-              "interval"  -> equalTo(interval.toString),
-              "startTime" -> equalTo("1548836400000"),
-              "endTime"   -> equalTo(to.toString),
-              "limit"     -> equalTo(threshold.toString)
-            ).asJava
-          )
-          .willReturn(
-            aResponse()
-              .withStatus(200)
-              .withBody("""
+      // NOTE: the last element in this response has timestamp equal to `to` time (from query) minus 1 second, so no further query should be performed
+      val stubResponse3 = IO.delay(
+        server.stubFor(
+          get(urlPathEqualTo("/api/v3/klines"))
+            .withQueryParams(
+              Map(
+                "symbol"    -> equalTo(symbol),
+                "interval"  -> equalTo(interval.toString),
+                "startTime" -> equalTo("1548836400000"),
+                "endTime"   -> equalTo(to.toString),
+                "limit"     -> equalTo(threshold.toString)
+              ).asJava
+            )
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody("""
                           |[
                           |  [1548836400000, "105.13000000", "105.14000000", "105.05000000", "105.09000000", "70.72517000", 1548836459999, "7432.93828700", 45, "36.68194000", "3855.32695710", "0"],
                           |  [1548866279000, "108.39000000", "108.39000000", "108.15000000", "108.22000000", "327.08359000", 1548866339999, "35415.40478090", 129, "163.42355000", "17699.38253540", "0"]
                           |]
               """.stripMargin)
-          )
+            )
+        )
       )
-    )
 
-    val responseFullJson = parse(
-      """
+      val responseFullJson = parse(
+        """
           |[
           |  [1548806400000, "104.41000000", "104.43000000", "104.27000000", "104.37000000", "185.23745000", 1548806459999, "19328.98599530", 80, "62.03712000", "6475.81062590", "0"],
           |  [1548806460000, "104.38000000", "104.40000000", "104.33000000", "104.36000000", "211.54271000", 1548806519999, "22076.70809650", 68, "175.75948000", "18342.53313250", "0"],
@@ -143,40 +143,36 @@ class SpotClientIntegrationTest extends IntegrationTest {
           |  [1548866279000, "108.39000000", "108.39000000", "108.15000000", "108.22000000", "327.08359000", 1548866339999, "35415.40478090", 129, "163.42355000", "17699.38253540", "0"]
           |]
         """.stripMargin
-    ).value
-    val expected = responseFullJson.as[List[KLine]].value
+      ).toOption.get
+      val expected = responseFullJson.as[List[KLine]].toOption.get
 
-    (for {
-      _      <- stubInfoEndpoint(server)
-      _      <- stubResponse1
-      _      <- stubResponse2
-      _      <- stubResponse3
-      config <- createConfiguration(server)
-      result <- BinanceClient
-        .createSpotClient[IO](config)
-        .use { gw =>
-          gw
-            .getKLines(
-              common.parameters.KLines(
-                symbol = symbol,
-                interval = interval,
-                startTime = Instant.ofEpochMilli(from),
-                endTime = Instant.ofEpochMilli(to),
-                limit = threshold
+      for {
+        _      <- stubInfoEndpoint(server)
+        _      <- stubResponse1
+        _      <- stubResponse2
+        _      <- stubResponse3
+        config <- createConfiguration(server)
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use { gw =>
+            gw
+              .getKLines(
+                common.parameters.KLines(
+                  symbol = symbol,
+                  interval = interval,
+                  startTime = Instant.ofEpochMilli(from),
+                  endTime = Instant.ofEpochMilli(to),
+                  limit = threshold
+                )
               )
-            )
-            .compile
-            .toList
-        }
-    } yield result).asserting { result =>
-      server.verify(3, getRequestedFor(urlMatching("/api/v3/klines.*")))
-
-      result should have size 6
-      result should contain theSameElementsInOrderAs expected
-    }
+              .compile
+              .toList
+          }
+        _ <- IO.delay(server.verify(3, getRequestedFor(urlMatching("/api/v3/klines.*"))))
+      } yield expect(result == expected)
   }
 
-  "it should be able to stream klines even with a threshold of 1" in { server =>
+  integrationTest("it should be able to stream klines even with a threshold of 1") { server =>
 
     val from      = 1548806400000L
     val to        = 1548806640000L
@@ -314,10 +310,10 @@ class SpotClientIntegrationTest extends IntegrationTest {
         | [1548806580000,"104.37000000","104.37000000","104.11000000","104.30000000","503.86391000",1548806639999,"52516.17118740",150,"275.42894000","28709.15114540","0"]
         |]
       """.stripMargin
-    ).value
-    val expected = responseFullJson.as[List[KLine]].value
+    ).toOption.get
+    val expected = responseFullJson.as[List[KLine]].toOption.get
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       _      <- stubResponse1
       _      <- stubResponse2
@@ -341,15 +337,11 @@ class SpotClientIntegrationTest extends IntegrationTest {
             .compile
             .toList
         }
-    } yield result).asserting { result =>
-      server.verify(4, getRequestedFor(urlMatching("/api/v3/klines.*")))
-
-      result should have size 4
-      result should contain theSameElementsInOrderAs expected
-    }
+      _ <- IO.delay(server.verify(4, getRequestedFor(urlMatching("/api/v3/klines.*"))))
+    } yield expect(result == expected)
   }
 
-  "it should return the orderbook depth" in { server =>
+  integrationTest("it should return the orderbook depth") { server =>
 
     val symbol = "ETHUSDT"
     val limit  = common.parameters.DepthLimit.`5`
@@ -381,15 +373,15 @@ class SpotClientIntegrationTest extends IntegrationTest {
       )
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       _      <- stubResponse
       config <- createConfiguration(server)
       result <- BinanceClient
         .createSpotClient[IO](config)
         .use(_.getDepth(common.parameters.DepthParams(symbol, limit)))
-    } yield result).asserting(
-      _ shouldBe DepthGetResponse(
+    } yield expect(
+      result == DepthGetResponse(
         lastUpdateId = 1027024,
         bids = List(
           Bid(4.00000000, 431.0)
@@ -401,7 +393,7 @@ class SpotClientIntegrationTest extends IntegrationTest {
     )
   }
 
-  "it should return a list of prices" in { server =>
+  integrationTest("it should return a list of prices") { server =>
 
     val stubResponse = IO.delay(
       server.stubFor(
@@ -425,22 +417,22 @@ class SpotClientIntegrationTest extends IntegrationTest {
       )
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       _      <- stubResponse
       config <- createConfiguration(server)
       result <- BinanceClient
         .createSpotClient[IO](config)
         .use(_.getPrices())
-    } yield result).asserting(
-      _ should contain theSameElementsInOrderAs List(
+    } yield expect(
+      result == List(
         Price("ETHBTC", BigDecimal(0.03444300)),
         Price("LTCBTC", BigDecimal(0.01493000))
       )
     )
   }
 
-  "it should return the balance" in { server =>
+  integrationTest("it should return the balance") { server =>
 
     val fixedTime = 1499827319559L
 
@@ -489,36 +481,36 @@ class SpotClientIntegrationTest extends IntegrationTest {
       )
     )
 
-    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
-
-    (for {
-      _      <- stubInfoEndpoint(server)
-      _      <- stubResponse
-      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-      result <- BinanceClient
-        .createSpotClient[IO](config)
-        .use(_.getBalance())
-    } yield result).asserting(
-      _ shouldBe SpotAccountInfoResponse(
-        balances = List(
-          BinanceBalance("BTC", BigDecimal("4723846.89208129"), BigDecimal("0.00000000")),
-          BinanceBalance("LTC", BigDecimal("4763368.68006011"), BigDecimal("0.00000001"))
-        ),
-        makerCommission = 15,
-        takerCommission = 15,
-        buyerCommission = 0,
-        sellerCommission = 0,
-        canTrade = true,
-        canWithdraw = true,
-        canDeposit = true,
-        updateTime = 123456789L,
-        accountType = "SPOT",
-        permissions = List("SPOT")
+    IO.pure(new TestAsync(onRealtime = fixedTime.millis)).flatMap { implicit async =>
+      for {
+        _      <- stubInfoEndpoint(server)
+        _      <- stubResponse
+        config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(_.getBalance())
+      } yield expect(
+        result == SpotAccountInfoResponse(
+          balances = List(
+            BinanceBalance("BTC", BigDecimal("4723846.89208129"), BigDecimal("0.00000000")),
+            BinanceBalance("LTC", BigDecimal("4763368.68006011"), BigDecimal("0.00000001"))
+          ),
+          makerCommission = 15,
+          takerCommission = 15,
+          buyerCommission = 0,
+          sellerCommission = 0,
+          canTrade = true,
+          canWithdraw = true,
+          canDeposit = true,
+          updateTime = 123456789L,
+          accountType = "SPOT",
+          permissions = List("SPOT")
+        )
       )
-    )
+    }
   }
 
-  "it should create an order" in { server =>
+  integrationTest("it should create an order") { server =>
 
     val fixedTime = 1499827319559L
 
@@ -563,26 +555,24 @@ class SpotClientIntegrationTest extends IntegrationTest {
       )
     )
 
-    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
-
-    (for {
-      _      <- stubInfoEndpoint(server)
-      _      <- stubResponse
-      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-      result <- BinanceClient
-        .createSpotClient[IO](config)
-        .use(
-          _.createOrder(
-            SpotOrderCreateParams.MARKET(
-              symbol = "BTCUSDT",
-              side = OrderSide.BUY,
-              quantity = BigDecimal(10.5).some
+    IO.pure(new TestAsync(onRealtime = fixedTime.millis)).flatMap { implicit async =>
+      for {
+        _      <- stubInfoEndpoint(server)
+        _      <- stubResponse
+        config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(
+            _.createOrder(
+              SpotOrderCreateParams.MARKET(
+                symbol = "BTCUSDT",
+                side = OrderSide.BUY,
+                quantity = BigDecimal(10.5).some
+              )
             )
           )
-        )
-    } yield result).asserting(
-      _ should ===(
-        SpotOrderCreateResponse(
+      } yield expect(
+        result == SpotOrderCreateResponse(
           orderId = 28L,
           symbol = "BTCUSDT",
           orderListId = -1,
@@ -601,9 +591,9 @@ class SpotClientIntegrationTest extends IntegrationTest {
           )
         )
       )
-    )
+    }
   }
-  "it should query an order" in { server =>
+  integrationTest("it should query an order") { server =>
 
     val fixedTime = 1499827319559L
 
@@ -646,25 +636,23 @@ class SpotClientIntegrationTest extends IntegrationTest {
       )
     )
 
-    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
-
-    (for {
-      _      <- stubInfoEndpoint(server)
-      _      <- stubResponse
-      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-      result <- BinanceClient
-        .createSpotClient[IO](config)
-        .use(
-          _.queryOrder(
-            SpotOrderQueryParams(
-              symbol = "BTCUSDT",
-              orderId = Option(28L)
+    IO.pure(new TestAsync(onRealtime = fixedTime.millis)).flatMap { implicit async =>
+      for {
+        _      <- stubInfoEndpoint(server)
+        _      <- stubResponse
+        config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+        result <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(
+            _.queryOrder(
+              SpotOrderQueryParams(
+                symbol = "BTCUSDT",
+                orderId = Option(28L)
+              )
             )
           )
-        )
-    } yield result).asserting(
-      _ should ===(
-        SpotOrderQueryResponse(
+      } yield expect(
+        result == SpotOrderQueryResponse(
           symbol = "BTCUSDT",
           orderId = 28L,
           orderListId = -1,
@@ -685,10 +673,10 @@ class SpotClientIntegrationTest extends IntegrationTest {
           origQuoteOrderQty = BigDecimal("0.0")
         )
       )
-    )
+    }
   }
 
-  "it should cancel an order" in { server =>
+  integrationTest("it should cancel an order") { server =>
 
     val fixedTime = 1499827319559L
 
@@ -726,25 +714,23 @@ class SpotClientIntegrationTest extends IntegrationTest {
       )
     )
 
-    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
-
-    (for {
-      _      <- stubInfoEndpoint(server)
-      _      <- stubResponse
-      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-      result <- BinanceClient
-        .createSpotClient[IO](config)
-        .use(client =>
-          for {
-            _ <- client.cancelOrder(
+    IO.pure(new TestAsync(onRealtime = fixedTime.millis)).flatMap { implicit async =>
+      for {
+        _      <- stubInfoEndpoint(server)
+        _      <- stubResponse
+        config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+        _ <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(
+            _.cancelOrder(
               SpotOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
             )
-          } yield "OK"
-        )
-    } yield result).asserting(_ shouldBe "OK")
+          )
+      } yield success
+    }
   }
 
-  "it should cancel all orders" in { server =>
+  integrationTest("it should cancel all orders") { server =>
 
     val fixedTime = 1499827319559L
 
@@ -855,25 +841,23 @@ class SpotClientIntegrationTest extends IntegrationTest {
       )
     )
 
-    implicit val async: Async[IO] = new TestAsync(onRealtime = fixedTime.millis)
-
-    (for {
-      _      <- stubInfoEndpoint(server)
-      _      <- stubResponse
-      config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-      result <- BinanceClient
-        .createSpotClient[IO](config)
-        .use(client =>
-          for {
-            _ <- client.cancelAllOrders(
+    IO.pure(new TestAsync(onRealtime = fixedTime.millis)).flatMap { implicit async =>
+      for {
+        _      <- stubInfoEndpoint(server)
+        _      <- stubResponse
+        config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+        _ <- BinanceClient
+          .createSpotClient[IO](config)
+          .use(
+            _.cancelAllOrders(
               SpotOrderCancelAllParams(symbol = "BTCUSDT")
             )
-          } yield "OK"
-        )
-    } yield result).asserting(_ shouldBe "OK")
+          )
+      } yield success
+    }
   }
 
-  "it should stream trades" in { server =>
+  integrationTest("it should stream trades") { server =>
 
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
@@ -892,7 +876,7 @@ class SpotClientIntegrationTest extends IntegrationTest {
       WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
@@ -904,24 +888,26 @@ class SpotClientIntegrationTest extends IntegrationTest {
             .createSpotClient[IO](config)
             .use(_.tradeStreams("btcusdt").compile.toList)
         )
-    } yield result).asserting(
-      _ should contain only TradeStream(
-        e = "trade",
-        E = 123456789,
-        s = "BNBBTC",
-        t = 12345,
-        p = 0.001,
-        q = 100,
-        b = 88,
-        a = 50,
-        T = 123456785,
-        m = true,
-        M = true
+    } yield expect(
+      result == List(
+        TradeStream(
+          e = "trade",
+          E = 123456789,
+          s = "BNBBTC",
+          t = 12345,
+          p = 0.001,
+          q = 100,
+          b = 88,
+          a = 50,
+          T = 123456785,
+          m = true,
+          M = true
+        )
       )
     )
   }
 
-  "it should stream KLines" in { server =>
+  integrationTest("it should stream KLines") { server =>
 
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
@@ -951,7 +937,7 @@ class SpotClientIntegrationTest extends IntegrationTest {
       WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
@@ -963,34 +949,36 @@ class SpotClientIntegrationTest extends IntegrationTest {
             .createSpotClient[IO](config)
             .use(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
         )
-    } yield result).asserting(
-      _ should contain only KLineStream(
-        e = "kline",
-        E = 123456789L,
-        s = "BTCUSDT",
-        k = KLineStreamPayload(
-          t = 123400000,
-          T = 123460000,
+    } yield expect(
+      result == List(
+        KLineStream(
+          e = "kline",
+          E = 123456789L,
           s = "BTCUSDT",
-          i = Interval.`1m`,
-          f = 100,
-          L = 200,
-          o = 0.0010,
-          c = 0.0020,
-          h = 0.0025,
-          l = 0.0015,
-          v = 1000,
-          n = 100,
-          x = false,
-          q = 1.0000,
-          V = 500,
-          Q = 0.500
+          k = KLineStreamPayload(
+            t = 123400000,
+            T = 123460000,
+            s = "BTCUSDT",
+            i = Interval.`1m`,
+            f = 100,
+            L = 200,
+            o = 0.0010,
+            c = 0.0020,
+            h = 0.0025,
+            l = 0.0015,
+            v = 1000,
+            n = 100,
+            x = false,
+            q = 1.0000,
+            V = 500,
+            Q = 0.500
+          )
         )
       )
     )
   }
 
-  "it should stream Diff. Depth" in { server =>
+  integrationTest("it should stream Diff. Depth") { server =>
 
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
@@ -1002,20 +990,20 @@ class SpotClientIntegrationTest extends IntegrationTest {
                               |  "b": [
                               |    [
                               |      "0.0024",
-                              |      "10"           
+                              |      "10"
                               |    ]
                               |  ],
                               |  "a": [
                               |    [
                               |      "0.0026",
-                              |      "100"          
+                              |      "100"
                               |    ]
                               |  ]
                               |}""".stripMargin),
       WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
@@ -1027,20 +1015,22 @@ class SpotClientIntegrationTest extends IntegrationTest {
             .createSpotClient[IO](config)
             .use(_.diffDepthStream("bnbbtc").compile.toList)
         )
-    } yield result).asserting(
-      _ should contain only DiffDepthStream(
-        e = "depthUpdate",
-        E = 123456789L,
-        s = "BNBBTC",
-        U = 157L,
-        u = 160L,
-        b = Seq(Bid(0.0024, 10)),
-        a = Seq(Ask(0.0026, 100))
+    } yield expect(
+      result == List(
+        DiffDepthStream(
+          e = "depthUpdate",
+          E = 123456789L,
+          s = "BNBBTC",
+          U = 157L,
+          u = 160L,
+          b = Seq(Bid(0.0024, 10)),
+          a = Seq(Ask(0.0026, 100))
+        )
       )
     )
   }
 
-  "it should stream Book Tickers" in { server =>
+  integrationTest("it should stream Book Tickers") { server =>
 
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
@@ -1066,19 +1056,21 @@ class SpotClientIntegrationTest extends IntegrationTest {
             .createSpotClient[IO](config)
             .use(_.allBookTickersStream().compile.toList)
         )
-    } yield result).asserting(
-      _ should contain only BookTicker(
-        u = 400900217L,
-        s = "BNBUSDT",
-        b = 25.35190000,
-        B = 31.21000000,
-        a = 25.36520000,
-        A = 40.66000000
+    } yield expect(
+      result == List(
+        BookTicker(
+          u = 400900217L,
+          s = "BNBUSDT",
+          b = 25.35190000,
+          B = 31.21000000,
+          a = 25.36520000,
+          A = 40.66000000
+        )
       )
-    )
+    ))
   }
 
-  "it should stream Partial Book Depth streams" in { server =>
+  integrationTest("it should stream Partial Book Depth streams") { server =>
 
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
@@ -1099,7 +1091,7 @@ class SpotClientIntegrationTest extends IntegrationTest {
       WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
@@ -1111,16 +1103,18 @@ class SpotClientIntegrationTest extends IntegrationTest {
             .createSpotClient[IO](config)
             .use(_.partialBookDepthStream("btcusdt", Level.`5`).compile.toList)
         )
-    } yield result).asserting(
-      _ should contain only PartialDepthStream(
-        lastUpdateId = 160L,
-        bids = Seq(Bid(0.0024, 10)),
-        asks = Seq(Ask(0.0026, 100))
+    } yield expect(
+      result == List(
+        PartialDepthStream(
+          lastUpdateId = 160L,
+          bids = Seq(Bid(0.0024, 10)),
+          asks = Seq(Ask(0.0026, 100))
+        )
       )
     )
   }
 
-  "it should stream aggregate trade information" in { server =>
+  integrationTest("it should stream aggregate trade information") { server =>
 
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
@@ -1138,7 +1132,7 @@ class SpotClientIntegrationTest extends IntegrationTest {
       WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
@@ -1150,18 +1144,20 @@ class SpotClientIntegrationTest extends IntegrationTest {
             .createSpotClient[IO](config)
             .use(_.aggregateTradeStreams("btcusdt").compile.toList)
         )
-    } yield result).asserting(
-      _ should contain only AggregateTradeStream(
-        e = "aggTrade",
-        E = 1623095242152L,
-        s = "BTCUSDT",
-        a = 102141499,
-        p = 39792.73,
-        q = 10.543,
-        f = 183139249,
-        l = 183139250,
-        T = 1623095241998L,
-        m = true
+    } yield expect(
+      result == List(
+        AggregateTradeStream(
+          e = "aggTrade",
+          E = 1623095242152L,
+          s = "BTCUSDT",
+          a = 102141499,
+          p = 39792.73,
+          q = 10.543,
+          f = 183139249,
+          l = 183139250,
+          T = 1623095241998L,
+          m = true
+        )
       )
     )
   }
