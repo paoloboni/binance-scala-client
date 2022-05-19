@@ -36,7 +36,7 @@ import sttp.client3.{HttpError, SttpBackend, UriContext}
 
 object HttpClientTest extends IntegrationTest {
 
-  integrationTest("a bad request response should be translated into a HttpError") { server =>
+  integrationTest("a bad request response should be translated into a HttpError") { case WebServer(server, _) =>
     val responseBody = """{ "error": "bad request" }"""
 
     mkTestClient

@@ -22,7 +22,9 @@
 package io.github.paoloboni.binance
 
 import cats.effect._
-import fs2.{Pipe, Stream}
+import cats.effect.implicits.effectResourceOps
+import fs2.concurrent.SignallingRef
+import fs2.{Pipe, Stream, concurrent}
 import org.http4s._
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.dsl.Http4sDsl
@@ -30,17 +32,31 @@ import org.http4s.implicits._
 import org.http4s.server.websocket._
 import org.http4s.websocket.WebSocketFrame
 
-class TestWsServer[F[_]](toClient: Stream[F, WebSocketFrame])(val port: Int)(implicit F: Async[F])
+class TestWsServer[F[_]] private (
+    val port: Int,
+    terminateWhen: concurrent.Signal[F, Boolean]
+)(implicit F: Async[F])
     extends Http4sDsl[F] {
-  def routes(wsb: WebSocketBuilder[F]): HttpRoutes[F] =
+  private def routes(toClient: Stream[F, WebSocketFrame])(wsb: WebSocketBuilder[F]): HttpRoutes[F] =
     HttpRoutes.of[F] { case GET -> Root / "ws" / _ =>
       val fromClient: Pipe[F, WebSocketFrame, Unit] = _.evalMap(message => F.delay(println("received: " + message)))
       wsb.build(toClient, fromClient)
     }
 
-  def stream: Stream[F, ExitCode] =
-    BlazeServerBuilder[F]
-      .bindHttp(port)
-      .withHttpWebSocketApp(routes(_).orNotFound)
-      .serve
+  def stream(toClient: Stream[F, WebSocketFrame]): Stream[F, ExitCode] =
+    Stream
+      .eval(Ref.of[F, ExitCode](ExitCode.Success))
+      .flatMap { exitWith =>
+        BlazeServerBuilder[F]
+          .bindHttp(port)
+          .withHttpWebSocketApp(routes(toClient)(_).orNotFound)
+          .serveWhile(terminateWhen, exitWith)
+      }
+}
+
+object TestWsServer {
+  def apply[F[_]](port: Int)(implicit F: Async[F]): Resource[F, TestWsServer[F]] =
+    SignallingRef.of[F, Boolean](false).toResource.flatMap { stopSignal =>
+      Resource.make[F, TestWsServer[F]](F.delay(new TestWsServer[F](port, stopSignal)))(_ => stopSignal.set(true))
+    }
 }

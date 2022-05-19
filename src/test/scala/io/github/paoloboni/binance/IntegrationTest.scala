@@ -23,29 +23,33 @@ package io.github.paoloboni.binance
 
 import cats.effect.{IO, Resource}
 import com.github.tomakehurst.wiremock.WireMockServer
-import fs2.Stream
 import io.github.paoloboni.binance.IntegrationTest.port
-import org.http4s.websocket.WebSocketFrame
 import weaver.{Expectations, SimpleIOSuite, TestName}
 
 import java.util.concurrent.atomic.AtomicInteger
 
 abstract class IntegrationTest extends SimpleIOSuite {
 
-  val resource: Resource[IO, WireMockServer] = Resource.make(
-    IO.delay {
-      val p      = port.decrementAndGet()
-      val server = new WireMockServer(p)
-      server.start()
-      server
-    }
-  )(server => IO.delay(server.stop()))
+  case class WebServer(http: WireMockServer, ws: TestWsServer[IO])
 
-  def integrationTest(name: TestName)(expectations: WireMockServer => IO[Expectations]) =
+  val resource: Resource[IO, WebServer] = Resource
+    .make(
+      IO.delay {
+        val p      = port.decrementAndGet()
+        val server = new WireMockServer(p)
+        server.start()
+        server
+      }
+    )(server => IO.delay(server.stop()))
+    .flatMap { http =>
+      testWsServer(http).map(ws => WebServer(http, ws))
+    }
+
+  def integrationTest(name: TestName)(expectations: WebServer => IO[Expectations]) =
     test(name)(resource.use(expectations))
 
-  def testWsServer(server: WireMockServer, toClient: Stream[IO, WebSocketFrame]): IO[TestWsServer[IO]] =
-    IO.delay(new TestWsServer[IO](toClient)(port = server.port() - 1000))
+  private def testWsServer(server: WireMockServer): Resource[IO, TestWsServer[IO]] =
+    TestWsServer[IO](port = server.port() - 1000)
 }
 
 object IntegrationTest {
