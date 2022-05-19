@@ -38,12 +38,13 @@ import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTim
 import org.http4s.websocket.WebSocketFrame
 import scodec.bits.ByteVector
 import sttp.client3.UriContext
+import weaver.GlobalRead
 
 import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-object SpotClientIntegrationTest extends IntegrationTest {
+class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(global) {
 
   integrationTest("it should fire multiple requests when expected number of elements returned is above threshold") {
     case WebServer(server, _) =>

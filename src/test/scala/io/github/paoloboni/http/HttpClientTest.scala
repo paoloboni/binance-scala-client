@@ -33,8 +33,9 @@ import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 import sttp.client3.circe._
 import sttp.client3.{HttpError, SttpBackend, UriContext}
+import weaver.GlobalRead
 
-object HttpClientTest extends IntegrationTest {
+class HttpClientTest(global: GlobalRead) extends IntegrationTest(global) {
 
   integrationTest("a bad request response should be translated into a HttpError") { case WebServer(server, _) =>
     val responseBody = """{ "error": "bad request" }"""
