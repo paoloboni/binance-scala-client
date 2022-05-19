@@ -103,28 +103,20 @@ object RateLimiterTest extends SimpleIOSuite {
   }
 
   test("it should allow error to be bubble up back to the caller") {
-    val perSecond     = 1 // period = 1.second
     val testThrowable = new Throwable("Request Error")
 
     TestControl
       .executeEmbed(
         RateLimiter
-          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .make[IO](1.toDouble, 1, RateLimitType.NONE)
           .use(rateLimiter =>
-            for {
-              startTime <- IO.monotonic
-              result <- rateLimiter
-                .await(IO.raiseError[Throwable](testThrowable))
-                .handleErrorWith(IO.pure)
-              endTime <- IO.monotonic
-            } yield (result, startTime, endTime)
+            rateLimiter
+              .await(IO.raiseError[Throwable](testThrowable))
+              .handleErrorWith(IO.pure)
           )
       )
-      .map { case (res, start, end) =>
-        expect.all(
-          (end - start) == 1.seconds,
-          res == testThrowable
-        )
+      .map { case (res) =>
+        expect.same(res, testThrowable)
       }
   }
 }
