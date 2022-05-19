@@ -21,7 +21,7 @@
 
 package io.github.paoloboni.binance.fapi.response
 
-import cats.effect.Async
+import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -91,7 +91,7 @@ case class ExchangeInformation(
     assets: List[AssetInfo],
     symbols: List[Symbol]
 ) {
-  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): F[RateLimiters[F]] =
+  def createRateLimiters[F[_]: Async](rateLimiterBufferSize: Int): Resource[F, RateLimiters[F]] =
     rateLimits
       .map(_.toRate)
       .traverse(limit => RateLimiter.make[F](limit.perSecond, rateLimiterBufferSize, limit.limitType))

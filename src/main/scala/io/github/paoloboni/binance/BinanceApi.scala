@@ -21,13 +21,15 @@
 
 package io.github.paoloboni.binance
 
+import cats.effect.Resource
 import io.github.paoloboni.binance.common.BinanceConfig
 import io.github.paoloboni.http.HttpClient
 
 trait BinanceApi[F[_]]
 
 object BinanceApi {
-  type Factory[F[_], API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]] = (Config, HttpClient[F]) => F[API]
+  type Factory[F[_], API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]] =
+    (Config, HttpClient[F]) => Resource[F, API]
 
   object Factory {
     def apply[F[_], API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]](implicit
