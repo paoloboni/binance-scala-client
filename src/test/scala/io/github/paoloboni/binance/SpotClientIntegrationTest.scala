@@ -46,8 +46,7 @@ import scala.jdk.CollectionConverters._
 object SpotClientIntegrationTest extends IntegrationTest {
 
   integrationTest("it should fire multiple requests when expected number of elements returned is above threshold") {
-    server =>
-
+    case WebServer(server, _) =>
       val from      = 1548806400000L
       val to        = 1548866280000L
       val symbol    = "ETHUSDT"
@@ -172,8 +171,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
       } yield expect(result == expected)
   }
 
-  integrationTest("it should be able to stream klines even with a threshold of 1") { server =>
-
+  integrationTest("it should be able to stream klines even with a threshold of 1") { case WebServer(server, _) =>
     val from      = 1548806400000L
     val to        = 1548806640000L
     val symbol    = "ETHUSDT"
@@ -341,8 +339,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     } yield expect(result == expected)
   }
 
-  integrationTest("it should return the orderbook depth") { server =>
-
+  integrationTest("it should return the orderbook depth") { case WebServer(server, _) =>
     val symbol = "ETHUSDT"
     val limit  = common.parameters.DepthLimit.`5`
 
@@ -393,8 +390,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     )
   }
 
-  integrationTest("it should return a list of prices") { server =>
-
+  integrationTest("it should return a list of prices") { case WebServer(server, _) =>
     val stubResponse = IO.delay(
       server.stubFor(
         get("/api/v3/ticker/price")
@@ -432,8 +428,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     )
   }
 
-  integrationTest("it should return the balance") { server =>
-
+  integrationTest("it should return the balance") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -510,8 +505,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should create an order") { server =>
-
+  integrationTest("it should create an order") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -593,8 +587,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
       )
     }
   }
-  integrationTest("it should query an order") { server =>
-
+  integrationTest("it should query an order") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -676,8 +669,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should cancel an order") { server =>
-
+  integrationTest("it should cancel an order") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -730,8 +722,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should cancel all orders") { server =>
-
+  integrationTest("it should cancel all orders") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -857,8 +848,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should stream trades") { server =>
-
+  integrationTest("it should stream trades") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "e": "trade",
@@ -878,9 +868,11 @@ object SpotClientIntegrationTest extends IntegrationTest {
 
     for {
       _      <- stubInfoEndpoint(server)
-      ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws.stream.compile.drain
+      result <- ws
+        .stream(toClient)
+        .compile
+        .drain
         .as(ExitCode.Success)
         .background
         .use(_ =>
@@ -907,8 +899,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     )
   }
 
-  integrationTest("it should stream KLines") { server =>
-
+  integrationTest("it should stream KLines") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "e": "kline",
@@ -939,9 +930,11 @@ object SpotClientIntegrationTest extends IntegrationTest {
 
     for {
       _      <- stubInfoEndpoint(server)
-      ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws.stream.compile.drain
+      result <- ws
+        .stream(toClient)
+        .compile
+        .drain
         .as(ExitCode.Success)
         .background
         .use(_ =>
@@ -978,8 +971,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     )
   }
 
-  integrationTest("it should stream Diff. Depth") { server =>
-
+  integrationTest("it should stream Diff. Depth") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "e": "depthUpdate",
@@ -1005,9 +997,11 @@ object SpotClientIntegrationTest extends IntegrationTest {
 
     for {
       _      <- stubInfoEndpoint(server)
-      ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws.stream.compile.drain
+      result <- ws
+        .stream(toClient)
+        .compile
+        .drain
         .as(ExitCode.Success)
         .background
         .use(_ =>
@@ -1030,8 +1024,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     )
   }
 
-  integrationTest("it should stream Book Tickers") { server =>
-
+  integrationTest("it should stream Book Tickers") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "u":400900217,
@@ -1046,9 +1039,11 @@ object SpotClientIntegrationTest extends IntegrationTest {
 
     (for {
       _      <- stubInfoEndpoint(server)
-      ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws.stream.compile.drain
+      result <- ws
+        .stream(toClient)
+        .compile
+        .drain
         .as(ExitCode.Success)
         .background
         .use(_ =>
@@ -1070,8 +1065,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     ))
   }
 
-  integrationTest("it should stream Partial Book Depth streams") { server =>
-
+  integrationTest("it should stream Partial Book Depth streams") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "lastUpdateId": 160,
@@ -1093,9 +1087,11 @@ object SpotClientIntegrationTest extends IntegrationTest {
 
     for {
       _      <- stubInfoEndpoint(server)
-      ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws.stream.compile.drain
+      result <- ws
+        .stream(toClient)
+        .compile
+        .drain
         .as(ExitCode.Success)
         .background
         .use(_ =>
@@ -1114,8 +1110,7 @@ object SpotClientIntegrationTest extends IntegrationTest {
     )
   }
 
-  integrationTest("it should stream aggregate trade information") { server =>
-
+  integrationTest("it should stream aggregate trade information") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                             |  "e": "aggTrade",
@@ -1134,9 +1129,11 @@ object SpotClientIntegrationTest extends IntegrationTest {
 
     for {
       _      <- stubInfoEndpoint(server)
-      ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws.stream.compile.drain
+      result <- ws
+        .stream(toClient)
+        .compile
+        .drain
         .as(ExitCode.Success)
         .background
         .use(_ =>
