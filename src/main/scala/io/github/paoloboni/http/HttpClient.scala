@@ -117,12 +117,12 @@ sealed class HttpClient[F[_]: Logger](implicit
             .flatMap { response =>
               Logger[F].debug("response: " + response)
             }
-            .onError { case err => queue.offer(Some(Left(err))) }
+            .onError { case err => queue.offer(err.asLeft.some) }
             .background
         } yield queue
       }
       .flatMap(Stream.fromQueueNoneTerminated(_))
-      .evalMap(_.liftTo[F])
+      .rethrow
   }
 
   private def sendRequest[RESPONSE](

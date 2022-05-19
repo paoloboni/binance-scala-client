@@ -51,7 +51,7 @@ object RateLimiter {
       } yield {
         new RateLimiter[F] {
           override def rateLimit[T](effect: => F[T]): F[T] = Deferred[F, Either[Throwable, T]].flatMap { p =>
-            queue.offer(effect.attempt.flatMap(p.complete).void) *> p.get.flatMap(_.liftTo[F])
+            queue.offer(effect.attempt.flatMap(p.complete).void) *> p.get.rethrow
           }
           override val limitType: RateLimitType = `type`
         }
