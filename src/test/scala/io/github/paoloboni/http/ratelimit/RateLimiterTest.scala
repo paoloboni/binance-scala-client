@@ -102,7 +102,7 @@ object RateLimiterTest extends SimpleIOSuite {
       }
   }
 
-  test("it should allow error to be propagated back to the caller".only) {
+  test("it should allow error to be bubble up back to the caller") {
     val perSecond     = 1 // period = 1.second
     val testThrowable = new Throwable("Request Error")
 
