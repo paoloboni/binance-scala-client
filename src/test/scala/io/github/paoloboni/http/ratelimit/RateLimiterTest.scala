@@ -101,4 +101,22 @@ object RateLimiterTest extends SimpleIOSuite {
         )
       }
   }
+
+  test("it should allow error to be bubble up back to the caller") {
+    val testThrowable = new Throwable("Request Error")
+
+    TestControl
+      .executeEmbed(
+        RateLimiter
+          .make[IO](1.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            rateLimiter
+              .await(IO.raiseError[Throwable](testThrowable))
+              .attempt
+          )
+      )
+      .map { case (res) =>
+        expect(res == Left(testThrowable))
+      }
+  }
 }
