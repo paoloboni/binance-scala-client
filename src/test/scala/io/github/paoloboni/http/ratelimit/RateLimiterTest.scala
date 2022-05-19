@@ -112,11 +112,11 @@ object RateLimiterTest extends SimpleIOSuite {
           .use(rateLimiter =>
             rateLimiter
               .await(IO.raiseError[Throwable](testThrowable))
-              .handleErrorWith(IO.pure)
+              .attempt
           )
       )
       .map { case (res) =>
-        expect.same(res, testThrowable)
+        expect(res == Left(testThrowable))
       }
   }
 }
