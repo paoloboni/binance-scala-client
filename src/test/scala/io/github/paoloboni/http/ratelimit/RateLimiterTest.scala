@@ -101,4 +101,30 @@ object RateLimiterTest extends SimpleIOSuite {
         )
       }
   }
+
+  test("it should allow error to be propagated back to the caller".only) {
+    val perSecond     = 1 // period = 1.second
+    val testThrowable = new Throwable("Request Error")
+
+    TestControl
+      .executeEmbed(
+        RateLimiter
+          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            for {
+              startTime <- IO.monotonic
+              result <- rateLimiter
+                .await(IO.raiseError[Throwable](testThrowable))
+                .handleErrorWith(IO.pure)
+              endTime <- IO.monotonic
+            } yield (result, startTime, endTime)
+          )
+      )
+      .map { case (res, start, end) =>
+        expect.all(
+          (end - start) == 1.seconds,
+          res == testThrowable
+        )
+      }
+  }
 }

@@ -96,7 +96,7 @@ sealed class HttpClient[F[_]: Logger](implicit
           case WebSocketFrame.Text(payload, _, _) =>
             (decode[DataFrame](payload) match {
               case Left(ex) =>
-                Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(None) // stopping
+                Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(Some(Left(ex))) // stopping
               case Right(decoded) =>
                 q.offer(Some(Right(decoded)))
             }) *> F.pure(None)
