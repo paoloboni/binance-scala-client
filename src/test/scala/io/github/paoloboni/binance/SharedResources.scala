@@ -23,35 +23,16 @@ package io.github.paoloboni.binance
 
 import cats.effect.implicits.effectResourceOps
 import cats.effect.{IO, Ref, Resource}
-import com.github.tomakehurst.wiremock.WireMockServer
-import io.github.paoloboni.binance.SharedResources.rTag
-import weaver.{Expectations, GlobalRead, SimpleIOSuite, TestName}
+import weaver._
 
-abstract class IntegrationTest(global: GlobalRead) extends SimpleIOSuite {
+object SharedResources extends GlobalResource {
 
-  case class WebServer(http: WireMockServer, ws: TestWsServer[IO])
+  implicit val rTag: ResourceTag[Ref[IO, Int]] = ResourceTag.classBasedInstance[Ref[IO, Int]]
 
-  def portResource: Resource[IO, Ref[IO, Int]] = global.getOrFailR[Ref[IO, Int]]()
-
-  val resource: Resource[IO, WebServer] = {
+  override def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
-      portRef <- portResource
-      port    <- portRef.updateAndGet(_ - 1).toResource
-      http <- Resource
-        .make(
-          IO.delay {
-            val server = new WireMockServer(port)
-            server.start()
-            server
-          }
-        )(http => IO.delay(http.stop()))
-      server <- testWsServer(http).map(ws => WebServer(http, ws))
-    } yield server
-  }
-
-  def integrationTest(name: TestName)(expectations: WebServer => IO[Expectations]) =
-    test(name)(resource.use(expectations))
-
-  private def testWsServer(server: WireMockServer): Resource[IO, TestWsServer[IO]] =
-    TestWsServer[IO](port = server.port() - 1000)
+      ref <- Ref.of[IO, Int](9000).toResource
+      res <- Resource.pure[IO, Ref[IO, Int]](ref)
+      _   <- global.putR(res)
+    } yield ()
 }

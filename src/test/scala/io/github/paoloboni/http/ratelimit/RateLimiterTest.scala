@@ -35,14 +35,19 @@ object RateLimiterTest extends SimpleIOSuite {
     val perSecond = 10 // period = 100.millis
 
     TestControl
-      .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
-        startTime   <- IO.monotonic
-        _           <- rateLimiter.await(IO.pure(1))
-        _           <- rateLimiter.await(IO.pure(2))
-        result      <- rateLimiter.await(IO.pure(3))
-        endTime     <- IO.monotonic
-      } yield (result, startTime, endTime))
+      .executeEmbed(
+        RateLimiter
+          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            (for {
+              startTime <- IO.monotonic
+              _         <- rateLimiter.await(IO.pure(1))
+              _         <- rateLimiter.await(IO.pure(2))
+              result    <- rateLimiter.await(IO.pure(3))
+              endTime   <- IO.monotonic
+            } yield (result, startTime, endTime))
+          )
+      )
       .map { case (res, start, end) =>
         expect.all(
           (end - start) == 300.millis,
@@ -55,12 +60,17 @@ object RateLimiterTest extends SimpleIOSuite {
     val perSecond = 10 // period = 100.millis
 
     TestControl
-      .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
-        startTime   <- IO.monotonic
-        result      <- rateLimiter.await(IO.pure(1), weight = 10)
-        endTime     <- IO.monotonic
-      } yield (result, startTime, endTime))
+      .executeEmbed(
+        RateLimiter
+          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            (for {
+              startTime <- IO.monotonic
+              result    <- rateLimiter.await(IO.pure(1), weight = 10)
+              endTime   <- IO.monotonic
+            } yield (result, startTime, endTime))
+          )
+      )
       .map { case (res, start, end) =>
         expect.all(
           (end - start) == 1.second,
@@ -73,17 +83,40 @@ object RateLimiterTest extends SimpleIOSuite {
     val perSecond = 1 // period = 1.second
 
     TestControl
-      .executeEmbed(for {
-        rateLimiter <- RateLimiter.make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
-        startTime   <- IO.monotonic
-        result      <- rateLimiter.await(IO.pure(1))
-        endTime     <- IO.monotonic
-      } yield (result, startTime, endTime))
+      .executeEmbed(
+        RateLimiter
+          .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            for {
+              startTime <- IO.monotonic
+              result    <- rateLimiter.await(IO.pure(1))
+              endTime   <- IO.monotonic
+            } yield (result, startTime, endTime)
+          )
+      )
       .map { case (res, start, end) =>
         expect.all(
           (end - start) == 1.seconds,
           res == 1
         )
+      }
+  }
+
+  test("it should allow error to be bubble up back to the caller") {
+    val testThrowable = new Throwable("Request Error")
+
+    TestControl
+      .executeEmbed(
+        RateLimiter
+          .make[IO](1.toDouble, 1, RateLimitType.NONE)
+          .use(rateLimiter =>
+            rateLimiter
+              .await(IO.raiseError[Throwable](testThrowable))
+              .attempt
+          )
+      )
+      .map { case (res) =>
+        expect(res == Left(testThrowable))
       }
   }
 }

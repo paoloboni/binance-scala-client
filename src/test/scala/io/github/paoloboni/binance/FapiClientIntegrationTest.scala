@@ -42,15 +42,16 @@ import io.github.paoloboni.binance.fapi.response._
 import org.http4s.websocket.WebSocketFrame
 import scodec.bits.ByteVector
 import sttp.client3.UriContext
+import weaver.GlobalRead
 
 import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-object FapiClientIntegrationTest extends IntegrationTest {
+class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(global) {
 
   integrationTest("it should fire multiple requests when expected number of elements returned is above threshold") {
-    server =>
+    case WebServer(server, _) =>
       val from      = 1548806400000L
       val to        = 1548866280000L
       val symbol    = "ETHUSDT"
@@ -177,7 +178,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
       }
   }
 
-  integrationTest("it should be able to stream klines even with a threshold of 1") { server =>
+  integrationTest("it should be able to stream klines even with a threshold of 1") { case WebServer(server, _) =>
     val from      = 1548806400000L
     val to        = 1548806640000L
     val symbol    = "ETHUSDT"
@@ -348,8 +349,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
 
   }
 
-  integrationTest("it should return a list of prices") { server =>
-
+  integrationTest("it should return a list of prices") { case WebServer(server, _) =>
     val stubResponse = IO.delay(
       server.stubFor(
         get("/fapi/v1/ticker/price")
@@ -387,7 +387,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
 
   }
 
-  integrationTest("it should return a single price") { server =>
+  integrationTest("it should return a single price") { case WebServer(server, _) =>
     for {
       _ <- stubInfoEndpoint(server)
       _ <- IO.delay(
@@ -412,8 +412,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     } yield expect(result == Price("ETHBTC", BigDecimal(0.03444300)))
   }
 
-  integrationTest("it should return the balance") { server =>
-
+  integrationTest("it should return the balance") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -552,8 +551,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should be able to change the position mode") { server =>
-
+  integrationTest("it should be able to change the position mode") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -595,8 +593,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should be able to change the initial leverage") { server =>
-
+  integrationTest("it should be able to change the initial leverage") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -644,8 +641,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should create an order") { server =>
-
+  integrationTest("it should create an order") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -720,8 +716,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should get an order details") { server =>
-
+  integrationTest("it should get an order details") { case WebServer(server, _) =>
     val orderId   = 22542179L
     val fixedTime = 1499827319559L
 
@@ -791,8 +786,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should cancel an order") { server =>
-
+  integrationTest("it should cancel an order") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -845,8 +839,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should cancel all orders") { server =>
-
+  integrationTest("it should cancel all orders") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
     val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
@@ -972,8 +965,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     }
   }
 
-  integrationTest("it should stream aggregate trade information") { server =>
-
+  integrationTest("it should stream aggregate trade information") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "e": "aggTrade",
@@ -991,9 +983,11 @@ object FapiClientIntegrationTest extends IntegrationTest {
     )
 
     stubInfoEndpoint(server) *> (for {
-      ws     <- testWsServer(server, toClient)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws.stream.compile.drain
+      result <- ws
+        .stream(toClient)
+        .compile
+        .drain
         .as(ExitCode.Success)
         .background
         .use(_ =>
@@ -1019,8 +1013,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
     ))
   }
 
-  integrationTest("it should stream KLines") { server =>
-
+  integrationTest("it should stream KLines") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "e": "kline",
@@ -1052,9 +1045,11 @@ object FapiClientIntegrationTest extends IntegrationTest {
     stubInfoEndpoint(server) *>
       (
         for {
-          ws     <- testWsServer(server, toClient)
           config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-          result <- ws.stream.compile.drain
+          result <- ws
+            .stream(toClient)
+            .compile
+            .drain
             .as(ExitCode.Success)
             .background
             .use(_ =>
@@ -1092,8 +1087,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
       )
   }
 
-  integrationTest("it should stream continuous Contract KLines") { server =>
-
+  integrationTest("it should stream continuous Contract KLines") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "e":"continuous_kline",
@@ -1124,9 +1118,11 @@ object FapiClientIntegrationTest extends IntegrationTest {
 
     stubInfoEndpoint(server) *>
       (for {
-        ws     <- testWsServer(server, toClient)
         config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-        result <- ws.stream.compile.drain
+        result <- ws
+          .stream(toClient)
+          .compile
+          .drain
           .as(ExitCode.Success)
           .background
           .use(_ =>
@@ -1163,8 +1159,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
       ))
   }
 
-  integrationTest("it should stream Mark Price updates for a given symbol") { server =>
-
+  integrationTest("it should stream Mark Price updates for a given symbol") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""{
                               |  "e": "markPriceUpdate",
@@ -1181,9 +1176,11 @@ object FapiClientIntegrationTest extends IntegrationTest {
 
     stubInfoEndpoint(server) *>
       (for {
-        ws     <- testWsServer(server, toClient)
         config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-        result <- ws.stream.compile.drain
+        result <- ws
+          .stream(toClient)
+          .compile
+          .drain
           .as(ExitCode.Success)
           .background
           .use(_ =>
@@ -1207,8 +1204,7 @@ object FapiClientIntegrationTest extends IntegrationTest {
       ))
   }
 
-  integrationTest("it should stream Mark Price for all symbols") { server =>
-
+  integrationTest("it should stream Mark Price for all symbols") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
       WebSocketFrame.Text("""[{
                               |  "e": "markPriceUpdate",
@@ -1225,9 +1221,11 @@ object FapiClientIntegrationTest extends IntegrationTest {
 
     stubInfoEndpoint(server) *>
       (for {
-        ws     <- testWsServer(server, toClient)
         config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-        result <- ws.stream.compile.drain
+        result <- ws
+          .stream(toClient)
+          .compile
+          .drain
           .as(ExitCode.Success)
           .background
           .use(_ =>

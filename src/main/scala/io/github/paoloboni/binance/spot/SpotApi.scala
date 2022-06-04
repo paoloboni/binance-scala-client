@@ -22,6 +22,7 @@
 package io.github.paoloboni.binance.spot
 
 import cats.effect.Async
+import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.Stream
 import io.circe.generic.auto._
@@ -348,7 +349,8 @@ object SpotApi {
             responseAs = asJson[spot.response.ExchangeInformation],
             limiters = List.empty
           )
-        exchangeInfo <- F.fromEither(exchangeInfoEither)
+          .toResource
+        exchangeInfo <- F.fromEither(exchangeInfoEither).toResource
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
       } yield SpotApi.apply(config, client, exchangeInfo, rateLimiters)
 }
