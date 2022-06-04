@@ -18,7 +18,6 @@ This client is rate limited, based on [Binance API specification](https://github
 
 | JDK LTS version | Scala version                |
 |-----------------|------------------------------|
-| 8               | 2.12.x, 2.13.x, 3.0.x, 3.1.x |
 | 11              | 2.12.x, 2.13.x, 3.0.x, 3.1.x |
 | 17              | 2.12.x, 2.13.x, 3.0.x, 3.1.x |
 

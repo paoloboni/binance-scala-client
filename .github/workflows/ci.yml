@@ -23,7 +23,6 @@ jobs:
       fail-fast: false
       matrix:
         java:
-          - adopt@1.8
           - openjdk@1.11
           - openjdk@1.17
         scala:
