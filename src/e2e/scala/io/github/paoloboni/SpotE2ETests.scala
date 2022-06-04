@@ -90,13 +90,15 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         )
       )
 
-      _ <- client.cancelOrder(
-        SpotOrderCancelParams(
-          symbol = symbol,
-          orderId = createOrderResponse.orderId.some,
-          origClientOrderId = None
+      _ <- client
+        .cancelOrder(
+          SpotOrderCancelParams(
+            symbol = symbol,
+            orderId = createOrderResponse.orderId.some,
+            origClientOrderId = None
+          )
         )
-      )
+        .retryWithBackoff()
     } yield success
   }
 
@@ -113,9 +115,11 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         )
       )
 
-      _ <- client.cancelAllOrders(
-        SpotOrderCancelAllParams(symbol = symbol)
-      )
+      _ <- client
+        .cancelAllOrders(
+          SpotOrderCancelAllParams(symbol = symbol)
+        )
+        .retryWithBackoff()
     } yield success
   }
 
