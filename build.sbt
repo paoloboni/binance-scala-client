@@ -20,7 +20,7 @@ lazy val e2eSettings =
 lazy val circeV             = "0.14.1"
 lazy val fs2V               = "3.2.7"
 lazy val catsCoreV          = "2.7.0"
-lazy val catsEffectV        = "3.3.11"
+lazy val catsEffectV        = "3.3.12"
 lazy val log4CatsV          = "2.3.1"
 lazy val slf4jV             = "1.7.36"
 lazy val sttpV              = "3.6.2"
@@ -30,7 +30,7 @@ lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.4.0"
 lazy val http4sV            = "1.0.0-M30"
 lazy val http4sBlazeV       = "0.15.3"
-lazy val weaverV            = "0.7.11"
+lazy val weaverV            = "0.7.12"
 
 lazy val root = (project in file("."))
   .configs(EndToEndTest)
