@@ -2,19 +2,8 @@
 name: CI
 on:
   pull_request:
-    paths:
-      - 'src/**'
-      - 'project/**'
-      - '**.sbt'
-      - '.scalafmt.conf'
-      - '.github/workflows/ci.yml'
   push:
     branches: [master]
-    paths:
-      - 'src/**'
-      - 'project/**'
-      - '**.sbt'
-      - '.scalafmt.conf'
   schedule:
     - cron: '0 0 * * 0'
 jobs:
