@@ -134,7 +134,7 @@ object PriceMonitor extends IOApp {
   )
 
   override def run(args: List[String]): IO[ExitCode] = {
-    implicit def log: Logger[IO] = Slf4jLogger.getLogger[IO]
+    val log: Logger[IO] = Slf4jLogger.getLogger[IO]
 
     BinanceClient
       .createSpotClient[IO](config)

@@ -23,7 +23,6 @@ package io.github.paoloboni.http.ratelimit
 
 import cats.effect.IO
 import cats.effect.testkit.TestControl
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance.common.response.RateLimitType
 import weaver.SimpleIOSuite
 
@@ -39,13 +38,13 @@ object RateLimiterTest extends SimpleIOSuite {
         RateLimiter
           .make[IO](perSecond.toDouble, 1, RateLimitType.NONE)
           .use(rateLimiter =>
-            (for {
+            for {
               startTime <- IO.monotonic
               _         <- rateLimiter.await(IO.pure(1))
               _         <- rateLimiter.await(IO.pure(2))
               result    <- rateLimiter.await(IO.pure(3))
               endTime   <- IO.monotonic
-            } yield (result, startTime, endTime))
+            } yield (result, startTime, endTime)
           )
       )
       .map { case (res, start, end) =>

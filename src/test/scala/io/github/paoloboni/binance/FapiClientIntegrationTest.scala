@@ -27,7 +27,6 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
 import io.circe.parser._
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.TestAsync
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response.{

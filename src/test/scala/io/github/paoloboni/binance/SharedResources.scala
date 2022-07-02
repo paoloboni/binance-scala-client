@@ -27,12 +27,16 @@ import weaver._
 
 object SharedResources extends GlobalResource {
 
-  implicit val rTag: ResourceTag[Ref[IO, Int]] = ResourceTag.classBasedInstance[Ref[IO, Int]]
+  implicit val rTag: ResourceTag[ServerPort] = ResourceTag.classBasedInstance[ServerPort]
 
   override def sharedResources(global: GlobalWrite): Resource[IO, Unit] =
     for {
       ref <- Ref.of[IO, Int](9000).toResource
-      res <- Resource.pure[IO, Ref[IO, Int]](ref)
+      res <- Resource.pure[IO, ServerPort](new ServerPort(ref) {})
       _   <- global.putR(res)
     } yield ()
+
+  sealed abstract class ServerPort(value: Ref[IO, Int]) {
+    def get: IO[Int] = value.updateAndGet(_ - 1)
+  }
 }
