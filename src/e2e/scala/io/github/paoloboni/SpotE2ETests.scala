@@ -2,7 +2,6 @@ package io.github.paoloboni
 
 import cats.effect.{IO, Resource}
 import cats.implicits._
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
