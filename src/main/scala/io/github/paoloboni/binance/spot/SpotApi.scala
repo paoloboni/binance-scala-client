@@ -264,7 +264,9 @@ final case class SpotApi[F[_]](
       stream <- client.ws[TradeStream](uri)
     } yield stream
 
-  /** The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
+  /** The Kline/Candlestick Stream push updates to the current klines/candlestick periodically. 
+  In an actively traded symbol, the stream seems to push updates every two seconds. In a less actively traded symbol,
+  there may be longer gaps of 10 secs or more between updates, and updates intervals will not be regularly spaced.
     *
     * @param symbol
     *   the symbol
