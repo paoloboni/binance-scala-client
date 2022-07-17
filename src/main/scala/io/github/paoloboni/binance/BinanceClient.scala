@@ -36,26 +36,26 @@ object BinanceClient {
 
   def defaultLogger[F[_]: Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  def createSpotClient[F[_]: Async](config: SpotConfig[F])(implicit
-      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig[F]]
+  def createSpotClient[F[_]: Async](config: SpotConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig]
   ): Resource[F, SpotApi[F]] = createSpotClient(config, defaultLogger[F])
 
-  def createSpotClient[F[_]: Async](config: SpotConfig[F], logger: Logger[F])(implicit
-      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig[F]]
+  def createSpotClient[F[_]: Async](config: SpotConfig, logger: Logger[F])(implicit
+      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig]
   ): Resource[F, SpotApi[F]] =
-    apply[F, spot.SpotApi[F], SpotConfig[F]](config, logger)
+    apply[F, spot.SpotApi[F], SpotConfig](config, logger)
 
-  def createFutureClient[F[_]: Async](config: FapiConfig[F])(implicit
-      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig[F]]
+  def createFutureClient[F[_]: Async](config: FapiConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig]
   ): Resource[F, fapi.FutureApi[F]] =
     createFutureClient(config, defaultLogger[F])
 
-  def createFutureClient[F[_]: Async](config: FapiConfig[F], logger: Logger[F])(implicit
-      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig[F]]
+  def createFutureClient[F[_]: Async](config: FapiConfig, logger: Logger[F])(implicit
+      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig]
   ): Resource[F, fapi.FutureApi[F]] =
-    apply[F, fapi.FutureApi[F], FapiConfig[F]](config, logger)
+    apply[F, fapi.FutureApi[F], FapiConfig](config, logger)
 
-  def apply[F[_]: Async, API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]](
+  def apply[F[_]: Async, API <: BinanceApi.Aux[F, Config], Config <: BinanceConfig](
       config: Config,
       logger: Logger[F]
   )(implicit apiFactory: BinanceApi.Factory[F, API, Config]): Resource[F, API] = {

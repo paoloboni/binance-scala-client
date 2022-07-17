@@ -43,12 +43,14 @@ import java.time.Instant
 import scala.util.Try
 
 final case class SpotApi[F[_]](
-    config: SpotConfig[F],
+    config: SpotConfig,
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: RateLimiters[F]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
+
+  override type Config = SpotConfig
 
   private val mkSignedUri = new MkSignedUri[F](
     recvWindow = config.recvWindow,
@@ -342,8 +344,8 @@ final case class SpotApi[F[_]](
 object SpotApi {
   implicit def factory[F[_]](implicit
       F: Async[F]
-  ): BinanceApi.Factory[F, SpotApi[F], SpotConfig[F]] =
-    (config: SpotConfig[F], client: HttpClient[F]) =>
+  ): BinanceApi.Factory[F, SpotApi[F], SpotConfig] =
+    (config: SpotConfig, client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[spot.response.ExchangeInformation]](

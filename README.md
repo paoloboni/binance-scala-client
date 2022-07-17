@@ -86,7 +86,7 @@ import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.SpotConfig
 import io.github.paoloboni.binance.spot.SpotApi
 
-val config = SpotConfig.Default[IO](
+val config = SpotConfig.Default(
   apiKey = "***",     // your api key
   apiSecret = "***"   // your api secret
 )
@@ -101,7 +101,7 @@ import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.FapiConfig
 import io.github.paoloboni.binance.fapi.FutureApi
 
-val config = FapiConfig.Default[IO](
+val config = FapiConfig.Default(
   apiKey = "***",     // your api key
   apiSecret = "***"   // your api secret
 )
@@ -128,7 +128,7 @@ import scala.concurrent.duration.DurationInt
 
 object PriceMonitor extends IOApp {
 
-  val config = SpotConfig.Default[IO](
+  val config = SpotConfig.Default(
     apiKey = "***",
     apiSecret = "***"
   )

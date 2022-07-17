@@ -14,7 +14,7 @@ import scala.util.Random
 
 object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
-  val config: SpotConfig[IO] = SpotConfig.Default(
+  val config: SpotConfig = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
     apiSecret = sys.env("SPOT_SECRET_KEY"),
     testnet = true,

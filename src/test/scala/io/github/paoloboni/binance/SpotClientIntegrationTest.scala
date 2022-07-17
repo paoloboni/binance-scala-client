@@ -1192,7 +1192,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       wsPort: Int = 80
   ) =
     SpotConfig
-      .Custom[IO](
+      .Custom(
         restBaseUrl = uri"http://localhost:${server.port}",
         wsBaseUrl = uri"ws://localhost:$wsPort",
         exchangeInfoUrl = uri"http://localhost:${server.port}/api/v3/exchangeInfo",
