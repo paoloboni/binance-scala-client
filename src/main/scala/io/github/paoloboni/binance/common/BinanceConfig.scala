@@ -21,28 +21,18 @@
 
 package io.github.paoloboni.binance.common
 
-import io.github.paoloboni.binance.BinanceApi
-import io.github.paoloboni.binance.fapi.FutureApi
-import io.github.paoloboni.binance.spot.SpotApi
 import sttp.client3.UriContext
 import sttp.model.Uri
 
 import scala.concurrent.duration._
 
-sealed trait BinanceConfig[F[_]] {
-  type API <: BinanceApi[F]
+sealed trait BinanceConfig {
   def responseHeaderTimeout: Duration
   def maxTotalConnections: Int
   def rateLimiterBufferSize: Int
 }
 
-object BinanceConfig {
-  type Aux[F[_], API0] = BinanceConfig[F] { type API = API0 }
-}
-
-sealed trait FapiConfig[F[_]] extends BinanceConfig[F] {
-
-  override type API = FutureApi[F]
+sealed trait FapiConfig extends BinanceConfig {
 
   def restBaseUrl: Uri
   def wsBaseUrl: Uri
@@ -64,7 +54,7 @@ object FapiConfig {
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends FapiConfig[F] {
+  ) extends FapiConfig {
     lazy val restBaseUrl: Uri =
       if (testnet) uri"https://testnet.binancefuture.com"
       else uri"https://fapi.binance.com"
@@ -84,12 +74,10 @@ object FapiConfig {
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends FapiConfig[F]
+  ) extends FapiConfig
 }
 
-sealed trait SpotConfig[F[_]] extends BinanceConfig[F] {
-
-  override type API = SpotApi[F]
+sealed trait SpotConfig extends BinanceConfig {
 
   def restBaseUrl: Uri
   def wsBaseUrl: Uri
@@ -111,7 +99,7 @@ object SpotConfig {
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends SpotConfig[F] {
+  ) extends SpotConfig {
     lazy val restBaseUrl: Uri =
       if (testnet) uri"https://testnet.binance.vision"
       else uri"https://api.binance.com"
@@ -120,7 +108,7 @@ object SpotConfig {
       else uri"wss://stream.binance.com:9443"
     lazy val exchangeInfoUrl: Uri = uri"$restBaseUrl/api/v3/exchangeInfo"
   }
-  final case class Custom[F[_]](
+  final case class Custom(
       restBaseUrl: Uri,
       wsBaseUrl: Uri,
       exchangeInfoUrl: Uri,
@@ -131,5 +119,5 @@ object SpotConfig {
       maxTotalConnections: Int = 20,
       rateLimiterBufferSize: Int = 1000,
       testnet: Boolean = false
-  ) extends SpotConfig[F]
+  ) extends SpotConfig
 }
