@@ -12,7 +12,7 @@ import scala.util.Random
 
 object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
 
-  val config: FapiConfig[IO] = FapiConfig.Default(
+  val config: FapiConfig = FapiConfig.Default(
     apiKey = sys.env("FAPI_API_KEY"),
     apiSecret = sys.env("FAPI_SECRET_KEY"),
     testnet = true,
