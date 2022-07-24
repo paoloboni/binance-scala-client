@@ -2,7 +2,6 @@ package io.github.paoloboni
 
 import cats.effect.{IO, Resource}
 import cats.implicits._
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
@@ -15,7 +14,7 @@ import scala.util.Random
 
 object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
-  val config: SpotConfig[IO] = SpotConfig.Default(
+  val config: SpotConfig = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
     apiSecret = sys.env("SPOT_SECRET_KEY"),
     testnet = true,

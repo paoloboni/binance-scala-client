@@ -24,10 +24,10 @@ package io.github.paoloboni.http
 import cats.effect.{IO, Resource}
 import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.Json
-import io.github.paoloboni.Env.log
-import io.github.paoloboni.binance.IntegrationTest
+import io.github.paoloboni.binance.{BinanceClient, IntegrationTest}
 import io.github.paoloboni.binance.common.response.CirceResponse
 import org.asynchttpclient.DefaultAsyncHttpClientConfig
+import org.typelevel.log4cats.Logger
 import sttp.capabilities
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
@@ -36,6 +36,8 @@ import sttp.client3.{HttpError, SttpBackend, UriContext}
 import weaver.GlobalRead
 
 class HttpClientTest(global: GlobalRead) extends IntegrationTest(global) {
+
+  private implicit val log: Logger[IO] = BinanceClient.defaultLogger[IO]
 
   integrationTest("a bad request response should be translated into a HttpError") { case WebServer(server, _) =>
     val responseBody = """{ "error": "bad request" }"""

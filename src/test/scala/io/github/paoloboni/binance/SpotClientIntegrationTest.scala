@@ -27,7 +27,6 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
 import fs2.Stream
 import io.circe.parser._
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.TestAsync
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response._
@@ -1193,7 +1192,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       wsPort: Int = 80
   ) =
     SpotConfig
-      .Custom[IO](
+      .Custom(
         restBaseUrl = uri"http://localhost:${server.port}",
         wsBaseUrl = uri"ws://localhost:$wsPort",
         exchangeInfoUrl = uri"http://localhost:${server.port}/api/v3/exchangeInfo",
