@@ -23,16 +23,15 @@ package io.github.paoloboni.http
 
 import cats.Applicative
 import cats.syntax.all._
-import org.typelevel.log4cats.Logger
 
 package object ratelimit {
-  implicit class LimiterOps[F[_]: Applicative: Logger](limiter: RateLimiter[F]) {
+  implicit class LimiterOps[F[_]: Applicative](limiter: RateLimiter[F]) {
     def await[A](
         job: => F[A],
         weight: Int = 1
     ): F[A] =
       List
-        .fill(weight - 1)(Logger[F].debug("Waiting"))
+        .fill(weight - 1)(Applicative[F].unit)
         .traverse(limiter.rateLimit(_)) *> limiter.rateLimit(job)
   }
 }

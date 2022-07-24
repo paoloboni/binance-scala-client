@@ -2,7 +2,6 @@ package io.github.paoloboni
 
 import cats.effect.{IO, Resource}
 import cats.implicits._
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi._
@@ -13,7 +12,7 @@ import scala.util.Random
 
 object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
 
-  val config: FapiConfig[IO] = FapiConfig.Default(
+  val config: FapiConfig = FapiConfig.Default(
     apiKey = sys.env("FAPI_API_KEY"),
     apiSecret = sys.env("FAPI_SECRET_KEY"),
     testnet = true,

@@ -21,29 +21,43 @@
 
 package io.github.paoloboni.binance
 
-import cats.effect.{Async, Resource}
+import cats.effect.kernel.Sync
 import cats.effect.syntax.all._
+import cats.effect.{Async, Resource}
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
 import org.asynchttpclient.{AsyncHttpClientConfig, DefaultAsyncHttpClientConfig}
 import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 
 object BinanceClient {
 
-  def createSpotClient[F[_]: Logger: Async](config: SpotConfig[F])(implicit
-      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig[F]]
+  def defaultLogger[F[_]: Sync]: Logger[F] = Slf4jLogger.getLogger[F]
+
+  def createSpotClient[F[_]: Async](config: SpotConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig]
+  ): Resource[F, SpotApi[F]] = createSpotClient(config, defaultLogger[F])
+
+  def createSpotClient[F[_]: Async](config: SpotConfig, logger: Logger[F])(implicit
+      apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig]
   ): Resource[F, SpotApi[F]] =
-    apply[F, spot.SpotApi[F], SpotConfig[F]](config)
+    apply[F, spot.SpotApi[F], SpotConfig](config, logger)
 
-  def createFutureClient[F[_]: Logger: Async](config: FapiConfig[F])(implicit
-      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig[F]]
+  def createFutureClient[F[_]: Async](config: FapiConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig]
   ): Resource[F, fapi.FutureApi[F]] =
-    apply[F, fapi.FutureApi[F], FapiConfig[F]](config)
+    createFutureClient(config, defaultLogger[F])
 
-  def apply[F[_]: Logger: Async, API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]](
-      config: Config
+  def createFutureClient[F[_]: Async](config: FapiConfig, logger: Logger[F])(implicit
+      apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig]
+  ): Resource[F, fapi.FutureApi[F]] =
+    apply[F, fapi.FutureApi[F], FapiConfig](config, logger)
+
+  def apply[F[_]: Async, API <: BinanceApi.Aux[F, Config], Config <: BinanceConfig](
+      config: Config,
+      logger: Logger[F]
   )(implicit apiFactory: BinanceApi.Factory[F, API, Config]): Resource[F, API] = {
     val conf: AsyncHttpClientConfig =
       new DefaultAsyncHttpClientConfig.Builder()
@@ -51,6 +65,7 @@ object BinanceClient {
         .setRequestTimeout(config.responseHeaderTimeout.toMillis.toInt)
         .setWebSocketMaxFrameSize(61440)
         .build()
+    implicit val log: Logger[F] = logger
     AsyncHttpClientFs2Backend
       .resourceUsingConfig(conf)
       .flatMap { implicit c =>

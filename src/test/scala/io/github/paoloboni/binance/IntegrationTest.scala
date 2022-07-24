@@ -22,21 +22,21 @@
 package io.github.paoloboni.binance
 
 import cats.effect.implicits.effectResourceOps
-import cats.effect.{IO, Ref, Resource}
+import cats.effect.{IO, Resource}
 import com.github.tomakehurst.wiremock.WireMockServer
-import io.github.paoloboni.binance.SharedResources.rTag
+import io.github.paoloboni.binance.SharedResources.{ServerPort, rTag}
 import weaver.{Expectations, GlobalRead, SimpleIOSuite, TestName}
 
 abstract class IntegrationTest(global: GlobalRead) extends SimpleIOSuite {
 
   case class WebServer(http: WireMockServer, ws: TestWsServer[IO])
 
-  def portResource: Resource[IO, Ref[IO, Int]] = global.getOrFailR[Ref[IO, Int]]()
+  def portResource: Resource[IO, ServerPort] = global.getOrFailR[ServerPort]()
 
   val resource: Resource[IO, WebServer] = {
     for {
-      portRef <- portResource
-      port    <- portRef.updateAndGet(_ - 1).toResource
+      serverPort <- portResource
+      port       <- serverPort.get.toResource
       http <- Resource
         .make(
           IO.delay {
