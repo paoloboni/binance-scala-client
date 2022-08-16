@@ -51,7 +51,7 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
           symbol = "LTCUSDT",
           side = side,
           positionSide = FuturePositionSide.BOTH,
-          quantity = 10
+          quantity = 1
         )
       )
       .map(succeed)
@@ -66,7 +66,7 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
             symbol = "LTCUSDT",
             side = side,
             positionSide = FuturePositionSide.BOTH,
-            quantity = 10
+            quantity = 1
           )
         )
       _ <- client
@@ -87,7 +87,7 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
           side = OrderSide.BUY,
           positionSide = FuturePositionSide.BOTH,
           timeInForce = FutureTimeInForce.GTC,
-          quantity = 10,
+          quantity = 1,
           stopPrice = 2,
           price = 1.8
         )
