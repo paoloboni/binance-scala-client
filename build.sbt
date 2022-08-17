@@ -13,7 +13,7 @@ lazy val e2eSettings =
   inConfig(EndToEndTest)(Defaults.testSettings) ++
     Seq(
       EndToEndTest / fork              := true,
-      EndToEndTest / parallelExecution := false,
+      EndToEndTest / parallelExecution := true,
       EndToEndTest / scalaSource       := baseDirectory.value / "src" / "e2e" / "scala"
     )
 
