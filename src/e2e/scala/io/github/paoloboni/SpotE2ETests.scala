@@ -9,7 +9,7 @@ import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 
 import java.time.Instant
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.Duration
 import scala.util.Random
 
 object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
