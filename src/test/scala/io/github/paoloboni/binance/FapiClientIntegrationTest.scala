@@ -983,17 +983,7 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
 
     stubInfoEndpoint(server) *> (for {
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws
-        .stream(toClient)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-        .background
-        .use(_ =>
-          BinanceClient
-            .createFutureClient[IO](config)
-            .use(_.aggregateTradeStreams("btcusdt").compile.toList)
-        )
+      result <- testStream(ws, config)(toClient)(_.aggregateTradeStreams("btcusdt").compile.toList)
     } yield expect(
       result == List(
         AggregateTradeStream(
@@ -1045,17 +1035,7 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       (
         for {
           config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-          result <- ws
-            .stream(toClient)
-            .compile
-            .drain
-            .as(ExitCode.Success)
-            .background
-            .use(_ =>
-              BinanceClient
-                .createFutureClient[IO](config)
-                .use(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
-            )
+          result <- testStream(ws, config)(toClient)(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
         } yield expect(
           result == List(
             KLineStream(
@@ -1118,17 +1098,9 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     stubInfoEndpoint(server) *>
       (for {
         config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-        result <- ws
-          .stream(toClient)
-          .compile
-          .drain
-          .as(ExitCode.Success)
-          .background
-          .use(_ =>
-            BinanceClient
-              .createFutureClient[IO](config)
-              .use(_.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`).compile.toList)
-          )
+        result <- testStream(ws, config)(toClient)(
+          _.contractKLineStreams("btcusdt", FutureContractType.PERPETUAL, Interval.`1m`).compile.toList
+        )
       } yield expect(
         result == List(
           ContractKLineStream(
@@ -1176,17 +1148,7 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     stubInfoEndpoint(server) *>
       (for {
         config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-        result <- ws
-          .stream(toClient)
-          .compile
-          .drain
-          .as(ExitCode.Success)
-          .background
-          .use(_ =>
-            BinanceClient
-              .createFutureClient[IO](config)
-              .use(_.markPriceStream("btcusdt").compile.toList)
-          )
+        result <- testStream(ws, config)(toClient)(_.markPriceStream("btcusdt").compile.toList)
       } yield expect(
         result == List(
           MarkPriceUpdate(
@@ -1221,17 +1183,7 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     stubInfoEndpoint(server) *>
       (for {
         config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-        result <- ws
-          .stream(toClient)
-          .compile
-          .drain
-          .as(ExitCode.Success)
-          .background
-          .use(_ =>
-            BinanceClient
-              .createFutureClient[IO](config)
-              .use(_.markPriceStream().compile.toList)
-          )
+        result <- testStream(ws, config)(toClient)(_.markPriceStream().compile.toList)
       } yield expect(
         result == List(
           MarkPriceUpdate(
@@ -1291,4 +1243,16 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         apiSecret = apiSecret
       )
       .pure[IO]
+
+  private def testStream[T](ws: TestWsServer[IO], config: FapiConfig)(
+      toClient: Stream[IO, WebSocketFrame]
+  )(f: FutureApi[IO] => IO[T]) = (for {
+    client <- BinanceClient.createFutureClient[IO](config)
+    _ <- ws
+      .stream(toClient)
+      .compile
+      .drain
+      .as(ExitCode.Success)
+      .background
+  } yield client).use(f)
 }
