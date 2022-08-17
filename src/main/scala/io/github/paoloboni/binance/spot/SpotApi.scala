@@ -43,12 +43,14 @@ import java.time.Instant
 import scala.util.Try
 
 final case class SpotApi[F[_]](
-    config: SpotConfig[F],
+    config: SpotConfig,
     client: HttpClient[F],
     exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: RateLimiters[F]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
+
+  override type Config = SpotConfig
 
   private val mkSignedUri = new MkSignedUri[F](
     recvWindow = config.recvWindow,
@@ -264,7 +266,9 @@ final case class SpotApi[F[_]](
       stream <- client.ws[TradeStream](uri)
     } yield stream
 
-  /** The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
+  /** The Kline/Candlestick Stream push updates to the current klines/candlestick periodically. In an actively traded
+    * symbol, the stream seems to push updates every two seconds. In a less actively traded symbol, there may be longer
+    * gaps of 10 secs or more between updates, and updates intervals will not be regularly spaced.
     *
     * @param symbol
     *   the symbol
@@ -340,8 +344,8 @@ final case class SpotApi[F[_]](
 object SpotApi {
   implicit def factory[F[_]](implicit
       F: Async[F]
-  ): BinanceApi.Factory[F, SpotApi[F], SpotConfig[F]] =
-    (config: SpotConfig[F], client: HttpClient[F]) =>
+  ): BinanceApi.Factory[F, SpotApi[F], SpotConfig] =
+    (config: SpotConfig, client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[spot.response.ExchangeInformation]](

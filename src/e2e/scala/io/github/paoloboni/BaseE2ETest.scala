@@ -10,7 +10,7 @@ abstract class BaseE2ETest[API] extends IOSuite {
 
   override type Res = API
 
-  def config: BinanceConfig.Aux[IO, API]
+  def config: BinanceConfig
 
   implicit class RetryOps[A](ioa: IO[A]) {
     def retryWithBackoff(initialDelay: FiniteDuration = 100.millis, maxRetries: Int = 3): IO[A] = {

@@ -57,6 +57,8 @@ class TestWsServer[F[_]] private (
 object TestWsServer {
   def apply[F[_]](port: Int)(implicit F: Async[F]): Resource[F, TestWsServer[F]] =
     SignallingRef.of[F, Boolean](false).toResource.flatMap { stopSignal =>
-      Resource.make[F, TestWsServer[F]](F.delay(new TestWsServer[F](port, stopSignal)))(_ => stopSignal.set(true))
+      Resource.make[F, TestWsServer[F]](F.delay(new TestWsServer[F](port, stopSignal)))(_ =>
+        F.defer(stopSignal.set(true))
+      )
     }
 }
