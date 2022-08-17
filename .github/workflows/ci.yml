@@ -15,7 +15,7 @@ jobs:
           - openjdk@1.11
           - openjdk@1.17
         scala:
-          - 2.12.15
+          - 2.12.16
           - 2.13.8
           - 3.1.2
     runs-on: ubuntu-latest
