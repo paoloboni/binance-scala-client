@@ -13,7 +13,7 @@ lazy val e2eSettings =
   inConfig(EndToEndTest)(Defaults.testSettings) ++
     Seq(
       EndToEndTest / fork              := true,
-      EndToEndTest / parallelExecution := false,
+      EndToEndTest / parallelExecution := true,
       EndToEndTest / scalaSource       := baseDirectory.value / "src" / "e2e" / "scala"
     )
 
@@ -23,7 +23,7 @@ lazy val catsCoreV          = "2.7.0"
 lazy val catsEffectV        = "3.3.14"
 lazy val log4CatsV          = "2.3.1"
 lazy val slf4jV             = "1.7.36"
-lazy val sttpV              = "3.6.2"
+lazy val sttpV              = "3.7.4"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.9"
 lazy val wiremockV          = "2.27.2"
