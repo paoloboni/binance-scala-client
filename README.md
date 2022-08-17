@@ -45,7 +45,7 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Order book](https://binance-docs.github.io/apidocs/spot/en/#order-book): Order book depth on a symbol
 
 #### WebSocket
-* [Kline/Candlestick Streams](https://binance-docs.github.io/apidocs/spot/en/#kline-candlestick-streams): The Kline/Candlestick Stream push updates to the current klines/candlestick every second.
+* [Kline/Candlestick Streams](https://binance-docs.github.io/apidocs/spot/en/#kline-candlestick-streams): The Kline/Candlestick Stream push updates to the current klines/candlestick every two seconds.
 * [Diff. Depth Stream](https://binance-docs.github.io/apidocs/spot/en/#diff-depth-stream): Order book price and quantity depth updates used to locally manage an order book.
 * [All Book Tickers Stream](https://binance-docs.github.io/apidocs/spot/en/#all-book-tickers-stream): Pushes any update to the best bid or ask's price or quantity in real-time for all symbols.
 * [Partial Book Depth Streams](https://binance-docs.github.io/apidocs/spot/en/#partial-book-depth-streams): Top bids and asks.
@@ -86,7 +86,7 @@ import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.SpotConfig
 import io.github.paoloboni.binance.spot.SpotApi
 
-val config = SpotConfig.Default[IO](
+val config = SpotConfig.Default(
   apiKey = "***",     // your api key
   apiSecret = "***"   // your api secret
 )
@@ -101,7 +101,7 @@ import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.FapiConfig
 import io.github.paoloboni.binance.fapi.FutureApi
 
-val config = FapiConfig.Default[IO](
+val config = FapiConfig.Default(
   apiKey = "***",     // your api key
   apiSecret = "***"   // your api secret
 )
@@ -117,25 +117,22 @@ The API documentation is available [here](https://paoloboni.github.io/binance-sc
 This is a sample app to monitor the exchange prices (fetch every 5 seconds).
 
 ```scala
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.std.Console
+import cats.effect.{IO, IOApp}
 import fs2.Stream
 import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.SpotConfig
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration.DurationInt
 
-object PriceMonitor extends IOApp {
+object PriceMonitor extends IOApp.Simple {
 
-  val config = SpotConfig.Default[IO](
+  val config = SpotConfig.Default(
     apiKey = "***",
     apiSecret = "***"
   )
 
-  override def run(args: List[String]): IO[ExitCode] = {
-    implicit def log: Logger[IO] = Slf4jLogger.getLogger[IO]
-
+  override def run: IO[Unit] =
     BinanceClient
       .createSpotClient[IO](config)
       .use { client =>
@@ -143,18 +140,10 @@ object PriceMonitor extends IOApp {
           .awakeEvery[IO](5.seconds)
           .repeat
           .evalMap(_ => client.getPrices())
-          .evalMap(prices => log.info("Current prices: " + prices))
+          .evalMap(prices => Console[IO].println("Current prices: " + prices))
           .compile
           .drain
       }
-      .redeem(
-        { t =>
-          log.error(t)("Something went wrong")
-          ExitCode(1)
-        },
-        _ => ExitCode.Success
-      )
-  }
 }
 ```
 

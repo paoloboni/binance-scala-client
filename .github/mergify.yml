@@ -3,14 +3,14 @@ pull_request_rules:
     conditions:
       - author=github-actions[bot]
       - title~=^Update\s.*
-      - "status-success=test (openjdk@1.11, 2.12.15)"
+      - "status-success=test (openjdk@1.11, 2.12.16)"
       - "status-success=test (openjdk@1.11, 2.13.8)"
-      - "status-success=test (openjdk@1.11, 3.1.2)"
-      - "status-success=test (openjdk@1.11, 2.12.15)"
-      - "status-success=test (openjdk@1.11, 2.13.8)"
-      - "status-success=test (openjdk@1.11, 3.1.2)"
-      - "status-success=e2e (2.13.7)"
-      - "status-success=e2e (3.1.0)"
+      - "status-success=test (openjdk@1.11, 3.1.3)"
+      - "status-success=test (openjdk@1.17, 2.12.16)"
+      - "status-success=test (openjdk@1.17, 2.13.8)"
+      - "status-success=test (openjdk@1.17, 3.1.3)"
+      - "status-success=e2e (2.13.8)"
+      - "status-success=e2e (3.1.3)"
     actions:
       merge:
         method: squash

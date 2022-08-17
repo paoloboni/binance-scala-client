@@ -25,14 +25,20 @@ import cats.effect.Resource
 import io.github.paoloboni.binance.common.BinanceConfig
 import io.github.paoloboni.http.HttpClient
 
-trait BinanceApi[F[_]]
+trait BinanceApi[F[_]] {
+  type Config <: BinanceConfig
+  def config: Config
+}
 
 object BinanceApi {
-  type Factory[F[_], API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]] =
+
+  type Aux[F[_], Config0] = BinanceApi[F] { type Config = Config0 }
+
+  type Factory[F[_], API <: BinanceApi.Aux[F, Config], Config <: BinanceConfig] =
     (Config, HttpClient[F]) => Resource[F, API]
 
   object Factory {
-    def apply[F[_], API <: BinanceApi[F], Config <: BinanceConfig.Aux[F, API]](implicit
+    def apply[F[_], API <: BinanceApi.Aux[F, Config], Config <: BinanceConfig](implicit
         instance: Factory[F, API, Config]
     ): Factory[F, API, Config] = instance
   }

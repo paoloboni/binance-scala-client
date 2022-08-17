@@ -43,12 +43,14 @@ import java.time.Instant
 import scala.util.Try
 
 final case class FutureApi[F[_]](
-    config: FapiConfig[F],
+    config: FapiConfig,
     client: HttpClient[F],
     exchangeInfo: fapi.response.ExchangeInformation,
     rateLimiters: RateLimiters[F]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
+
+  type Config = FapiConfig
 
   private val mkSignedUri = new MkSignedUri[F](
     recvWindow = config.recvWindow,
@@ -392,8 +394,8 @@ final case class FutureApi[F[_]](
 object FutureApi {
   implicit def factory[F[_]](implicit
       F: Async[F]
-  ): BinanceApi.Factory[F, FutureApi[F], FapiConfig[F]] =
-    (config: FapiConfig[F], client: HttpClient[F]) =>
+  ): BinanceApi.Factory[F, FutureApi[F], FapiConfig] =
+    (config: FapiConfig, client: HttpClient[F]) =>
       for {
         exchangeInfoEither <- client
           .get[CirceResponse[fapi.response.ExchangeInformation]](
