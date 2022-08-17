@@ -1,8 +1,8 @@
 name := "binance-scala-client"
 
-lazy val scala212               = "2.12.15"
+lazy val scala212               = "2.12.16"
 lazy val scala213               = "2.13.8"
-lazy val scala3                 = "3.1.2"
+lazy val scala3                 = "3.1.3"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
 ThisBuild / scalafmtOnCompile := false
@@ -13,23 +13,23 @@ lazy val e2eSettings =
   inConfig(EndToEndTest)(Defaults.testSettings) ++
     Seq(
       EndToEndTest / fork              := true,
-      EndToEndTest / parallelExecution := false,
+      EndToEndTest / parallelExecution := true,
       EndToEndTest / scalaSource       := baseDirectory.value / "src" / "e2e" / "scala"
     )
 
 lazy val circeV             = "0.14.1"
-lazy val fs2V               = "3.2.7"
-lazy val catsCoreV          = "2.7.0"
+lazy val fs2V               = "3.2.12"
+lazy val catsCoreV          = "2.8.0"
 lazy val catsEffectV        = "3.3.14"
 lazy val log4CatsV          = "2.3.2"
 lazy val slf4jV             = "1.7.36"
-lazy val sttpV              = "3.6.2"
+lazy val sttpV              = "3.7.4"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.9"
 lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.4.0"
 lazy val http4sV            = "1.0.0-M30"
-lazy val http4sBlazeV       = "0.15.3"
+lazy val http4sBlazeV       = "0.23.12"
 lazy val weaverV            = "0.7.12"
 
 lazy val root = (project in file("."))
