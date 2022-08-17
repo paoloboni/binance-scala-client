@@ -117,25 +117,22 @@ The API documentation is available [here](https://paoloboni.github.io/binance-sc
 This is a sample app to monitor the exchange prices (fetch every 5 seconds).
 
 ```scala
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.std.Console
+import cats.effect.{IO, IOApp}
 import fs2.Stream
 import io.github.paoloboni.binance.BinanceClient
 import io.github.paoloboni.binance.common.SpotConfig
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import scala.concurrent.duration.DurationInt
 
-object PriceMonitor extends IOApp {
+object PriceMonitor extends IOApp.Simple {
 
   val config = SpotConfig.Default(
     apiKey = "***",
     apiSecret = "***"
   )
 
-  override def run(args: List[String]): IO[ExitCode] = {
-    val log: Logger[IO] = Slf4jLogger.getLogger[IO]
-
+  override def run: IO[Unit] =
     BinanceClient
       .createSpotClient[IO](config)
       .use { client =>
@@ -143,18 +140,10 @@ object PriceMonitor extends IOApp {
           .awakeEvery[IO](5.seconds)
           .repeat
           .evalMap(_ => client.getPrices())
-          .evalMap(prices => log.info("Current prices: " + prices))
+          .evalMap(prices => Console[IO].println("Current prices: " + prices))
           .compile
           .drain
       }
-      .redeem(
-        { t =>
-          log.error(t)("Something went wrong")
-          ExitCode(1)
-        },
-        _ => ExitCode.Success
-      )
-  }
 }
 ```
 
