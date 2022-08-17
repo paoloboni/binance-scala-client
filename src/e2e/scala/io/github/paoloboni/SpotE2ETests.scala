@@ -2,7 +2,6 @@ package io.github.paoloboni
 
 import cats.effect.{IO, Resource}
 import cats.implicits._
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
@@ -10,12 +9,12 @@ import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.Duration
 import scala.util.Random
 
 object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
-  val config: SpotConfig[IO] = SpotConfig.Default(
+  val config: SpotConfig = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
     apiSecret = sys.env("SPOT_SECRET_KEY"),
     testnet = true,
@@ -80,7 +79,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   test("cancelOrder") { client =>
     val symbol = "TRXUSDT"
-    for {
+    (for {
       createOrderResponse <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
           symbol = symbol,
@@ -99,13 +98,12 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
             origClientOrderId = None
           )
         )
-        .retryWithBackoff(initialDelay = 200.millis)
-    } yield success
+    } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
   test("cancelAllOrders") { client =>
     val symbol = "TRXUSDT"
-    for {
+    (for {
       _ <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
           symbol = symbol,
@@ -120,8 +118,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         .cancelAllOrders(
           SpotOrderCancelAllParams(symbol = symbol)
         )
-        .retryWithBackoff(initialDelay = 200.millis)
-    } yield success
+    } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
   test("tradeStreams") {

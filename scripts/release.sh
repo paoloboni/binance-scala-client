@@ -5,4 +5,4 @@
 
 export GPG_TTY=$(tty)
 sbt "release cross with-defaults skip-tests"
-sbt ++3.1.0 "doc;ghpagesPushSite"
+sbt ++3.1.2 "doc;ghpagesPushSite"

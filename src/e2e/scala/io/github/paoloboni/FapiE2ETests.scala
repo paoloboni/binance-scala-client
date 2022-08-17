@@ -2,18 +2,18 @@ package io.github.paoloboni
 
 import cats.effect.{IO, Resource}
 import cats.implicits._
-import io.github.paoloboni.Env.log
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 
 import java.time.Instant
+import scala.concurrent.duration.Duration
 import scala.util.Random
 
 object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
 
-  val config: FapiConfig[IO] = FapiConfig.Default(
+  val config: FapiConfig = FapiConfig.Default(
     apiKey = sys.env("FAPI_API_KEY"),
     apiSecret = sys.env("FAPI_SECRET_KEY"),
     testnet = true,
@@ -52,7 +52,7 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
           symbol = "LTCUSDT",
           side = side,
           positionSide = FuturePositionSide.BOTH,
-          quantity = 10
+          quantity = 1
         )
       )
       .map(succeed)
@@ -67,7 +67,7 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
             symbol = "LTCUSDT",
             side = side,
             positionSide = FuturePositionSide.BOTH,
-            quantity = 10
+            quantity = 1
           )
         )
       _ <- client
@@ -81,14 +81,14 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
   }
 
   test("cancelOrder") { client =>
-    for {
+    (for {
       createOrderResponse <- client.createOrder(
         FutureOrderCreateParams.STOP(
           symbol = "XRPUSDT",
           side = OrderSide.BUY,
           positionSide = FuturePositionSide.BOTH,
           timeInForce = FutureTimeInForce.GTC,
-          quantity = 10,
+          quantity = 1,
           stopPrice = 2,
           price = 1.8
         )
@@ -101,11 +101,11 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
           origClientOrderId = None
         )
       )
-    } yield success
+    } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
   test("cancelAllOrders") { client =>
-    for {
+    (for {
       _ <- client.createOrder(
         FutureOrderCreateParams.LIMIT(
           symbol = "XRPUSDT",
@@ -120,7 +120,7 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
       _ <- client.cancelAllOrders(
         FutureOrderCancelAllParams(symbol = "XRPUSDT")
       )
-    } yield success
+    } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
   test("aggregateTradeStreams") {

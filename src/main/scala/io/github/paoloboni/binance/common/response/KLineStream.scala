@@ -27,16 +27,16 @@ case class KLineStreamPayload(
     t: Long,       // Kline start time
     T: Long,       // Kline close time
     s: String,     // Symbol
-    i: Interval,   // Interval
+    i: Interval,   // Interval. The time period until a kline will close and next opens.
     f: Long,       // First trade ID
     L: Long,       // Last trade ID
-    o: BigDecimal, // Open price
-    c: BigDecimal, // Close price
-    h: BigDecimal, // High price
-    l: BigDecimal, // Low price
+    o: BigDecimal, // Open price. Resets each time a kline is opened but otherwise remains stable
+    c: BigDecimal, // Close price. When kline opened is same as open price, then updates progressively each stream update until close.
+    h: BigDecimal, // High price. Updates progressively each stream update until close
+    l: BigDecimal, // Low price. Updates progressively each stream update until close
     v: BigDecimal, // Base asset volume
     n: Int,        // Number of trades
-    x: Boolean,    // Is this kline closed?
+    x: Boolean, // Is this kline closed on this stream update? When closed, volume and trade counter reset to zero and a new open price is set
     q: BigDecimal, // Quote asset volume
     V: BigDecimal, // Taker buy base asset volume
     Q: BigDecimal  // Taker buy quote asset volume
