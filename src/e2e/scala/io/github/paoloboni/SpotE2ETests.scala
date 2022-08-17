@@ -9,7 +9,7 @@ import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 
 import java.time.Instant
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.util.Random
 
 object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
@@ -79,7 +79,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   test("cancelOrder") { client =>
     val symbol = "TRXUSDT"
-    for {
+    (for {
       createOrderResponse <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
           symbol = symbol,
@@ -98,13 +98,12 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
             origClientOrderId = None
           )
         )
-        .retryWithBackoff(initialDelay = 200.millis)
-    } yield success
+    } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
   test("cancelAllOrders") { client =>
     val symbol = "TRXUSDT"
-    for {
+    (for {
       _ <- client.createOrder(
         SpotOrderCreateParams.LIMIT(
           symbol = symbol,
@@ -119,8 +118,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         .cancelAllOrders(
           SpotOrderCancelAllParams(symbol = symbol)
         )
-        .retryWithBackoff(initialDelay = 200.millis)
-    } yield success
+    } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
   test("tradeStreams") {
