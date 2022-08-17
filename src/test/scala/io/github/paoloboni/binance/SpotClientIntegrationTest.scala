@@ -33,7 +33,7 @@ import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
-import io.github.paoloboni.binance.spot.{SpotOrderStatus, SpotOrderType, SpotTimeInForce}
+import io.github.paoloboni.binance.spot.{SpotApi, SpotOrderStatus, SpotOrderType, SpotTimeInForce}
 import org.http4s.websocket.WebSocketFrame
 import scodec.bits.ByteVector
 import sttp.client3.UriContext
@@ -869,17 +869,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     for {
       _      <- stubInfoEndpoint(server)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws
-        .stream(toClient)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-        .background
-        .use(_ =>
-          BinanceClient
-            .createSpotClient[IO](config)
-            .use(_.tradeStreams("btcusdt").compile.toList)
-        )
+      result <- testStream(ws, config)(toClient)(_.tradeStreams("btcusdt").compile.toList)
     } yield expect(
       result == List(
         TradeStream(
@@ -931,17 +921,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     for {
       _      <- stubInfoEndpoint(server)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws
-        .stream(toClient)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-        .background
-        .use(_ =>
-          BinanceClient
-            .createSpotClient[IO](config)
-            .use(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
-        )
+      result <- testStream(ws, config)(toClient)(_.kLineStreams("btcusdt", Interval.`1m`).compile.toList)
     } yield expect(
       result == List(
         KLineStream(
@@ -998,17 +978,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     for {
       _      <- stubInfoEndpoint(server)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws
-        .stream(toClient)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-        .background
-        .use(_ =>
-          BinanceClient
-            .createSpotClient[IO](config)
-            .use(_.diffDepthStream("bnbbtc").compile.toList)
-        )
+      result <- testStream(ws, config)(toClient)(_.diffDepthStream("bnbbtc").compile.toList)
     } yield expect(
       result == List(
         DiffDepthStream(
@@ -1037,20 +1007,10 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
     )
 
-    (for {
+    for {
       _      <- stubInfoEndpoint(server)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws
-        .stream(toClient)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-        .background
-        .use(_ =>
-          BinanceClient
-            .createSpotClient[IO](config)
-            .use(_.allBookTickersStream().compile.toList)
-        )
+      result <- testStream(ws, config)(toClient)(_.allBookTickersStream().compile.toList)
     } yield expect(
       result == List(
         BookTicker(
@@ -1062,7 +1022,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           A = 40.66000000
         )
       )
-    ))
+    )
   }
 
   integrationTest("it should stream Partial Book Depth streams") { case WebServer(server, ws) =>
@@ -1088,17 +1048,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     for {
       _      <- stubInfoEndpoint(server)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws
-        .stream(toClient)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-        .background
-        .use(_ =>
-          BinanceClient
-            .createSpotClient[IO](config)
-            .use(_.partialBookDepthStream("btcusdt", Level.`5`).compile.toList)
-        )
+      result <- testStream(ws, config)(toClient)(_.partialBookDepthStream("btcusdt", Level.`5`).compile.toList)
     } yield expect(
       result == List(
         PartialDepthStream(
@@ -1130,17 +1080,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     for {
       _      <- stubInfoEndpoint(server)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- ws
-        .stream(toClient)
-        .compile
-        .drain
-        .as(ExitCode.Success)
-        .background
-        .use(_ =>
-          BinanceClient
-            .createSpotClient[IO](config)
-            .use(_.aggregateTradeStreams("btcusdt").compile.toList)
-        )
+      result <- testStream(ws, config)(toClient)(_.aggregateTradeStreams("btcusdt").compile.toList)
     } yield expect(
       result == List(
         AggregateTradeStream(
@@ -1200,4 +1140,16 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         apiSecret = apiSecret
       )
       .pure[IO]
+
+  private def testStream[T](ws: TestWsServer[IO], config: SpotConfig)(
+      toClient: Stream[IO, WebSocketFrame]
+  )(f: SpotApi[IO] => IO[T]) = (for {
+    client <- BinanceClient.createSpotClient[IO](config)
+    _ <- ws
+      .stream(toClient)
+      .compile
+      .drain
+      .as(ExitCode.Success)
+      .background
+  } yield client).use(f)
 }
