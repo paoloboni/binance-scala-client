@@ -25,7 +25,14 @@ jobs:
         run: |
           VERSION=${{ github.ref_name }}
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_SECRET_KEY }}
+          passphrase: ${{ secrets.GPG_SECRET_KEY_PASSPHRASE }}
       - name: Release
-        run: sbt 'set version:="${{ env.VERSION }}";release cross with-defaults skip-tests'
+        run: PGP_PASSPHRASE=${{ secrets.GPG_SECRET_KEY_PASSPHRASE }} sbt 'set version:="${{ env.VERSION }}";release cross with-defaults skip-tests'
         shell: bash
         timeout-minutes: 10
+      - name: Update documentation
+        run: sbt ++3.1.3 "doc;ghpagesPushSite"
