@@ -90,15 +90,8 @@ import ReleaseTransformations._
 
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
-  inquireVersions,
   runClean,
   runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
   publishArtifacts,
-  setNextVersion,
-  commitNextVersion,
-  releaseStepCommand("sonatypeReleaseAll"),
-  pushChanges
+  releaseStepCommand("sonatypeReleaseAll")
 )
