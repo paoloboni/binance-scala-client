@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v*.*.*'
+env:
+  SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+  SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+  PGP_PASSPHRASE: ${{ secrets.GPG_SECRET_KEY_PASSPHRASE }}
+  PGP_SECRET: ${{ secrets.GPG_SECRET_KEY }}
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -31,7 +36,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_SECRET_KEY }}
           passphrase: ${{ secrets.GPG_SECRET_KEY_PASSPHRASE }}
       - name: Release
-        run: PGP_PASSPHRASE=${{ secrets.GPG_SECRET_KEY_PASSPHRASE }} sbt 'set version:="${{ env.VERSION }}";release cross with-defaults skip-tests'
+        run: sbt 'set version:="${{ env.VERSION }}";release cross with-defaults skip-tests'
         shell: bash
         timeout-minutes: 10
       - name: Update documentation
