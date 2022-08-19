@@ -32,38 +32,21 @@ import io.github.paoloboni.binance.fapi.response.AggregateTradeStream
 import io.github.paoloboni.binance.spot.parameters._
 import io.github.paoloboni.binance.spot.response._
 import io.github.paoloboni.binance.{BinanceApi, common, spot}
-import io.github.paoloboni.encryption.MkSignedUri
 import io.github.paoloboni.http.HttpClient
-import io.github.paoloboni.http.QueryParamsConverter._
 import io.github.paoloboni.http.ratelimit.RateLimiters
 import sttp.client3.UriContext
-import sttp.client3.circe.{asJson, _}
+import sttp.client3.circe.asJson
 
-import java.time.Instant
 import scala.util.Try
 
-final case class SpotApi[F[_]](
-    config: SpotConfig,
+final class SpotApi[F[_]](
+    override val config: SpotConfig,
     client: HttpClient[F],
-    exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: RateLimiters[F]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
 
   override type Config = SpotConfig
-
-  private val mkSignedUri = new MkSignedUri[F](
-    recvWindow = config.recvWindow,
-    apiSecret = config.apiSecret
-  )
-
-  private val baseUrl        = config.restBaseUrl.addPath("api", "v3")
-  private val depthUri       = baseUrl.addPath("depth")
-  private val kLinesUri      = baseUrl.addPath("klines")
-  private val tickerPriceUri = baseUrl.addPath("ticker", "price")
-  private val accountUri     = baseUrl.addPath("account")
-  private val orderUri       = baseUrl.addPath("order")
-  private val openOrdersUri  = baseUrl.addPath("openOrders")
 
   /** Returns the depth of the orderbook.
     *
@@ -72,18 +55,8 @@ final case class SpotApi[F[_]](
     * @return
     *   the orderbook depth
     */
-  def getDepth(query: common.parameters.DepthParams): F[DepthGetResponse] = {
-    val uri = depthUri.addParams(query.toQueryParams)
-    for {
-      depthOrError <- client.get[CirceResponse[DepthGetResponse]](
-        uri = uri,
-        responseAs = asJson[DepthGetResponse],
-        limiters = rateLimiters.requestsOnly,
-        weight = query.limit.weight
-      )
-      depth <- F.fromEither(depthOrError)
-    } yield depth
-  }
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.getDepth]] instead", "v1.5.2")
+  def getDepth(query: common.parameters.DepthParams): F[DepthGetResponse] = V3.getDepth(query)
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint in case the result set doesn't
     * fit in a single page.
@@ -93,66 +66,33 @@ final case class SpotApi[F[_]](
     * @return
     *   the stream of Kline objects
     */
-  def getKLines(query: common.parameters.KLines): Stream[F, KLine] = {
-    val uri = kLinesUri.addParams(query.toQueryParams)
-    for {
-      response <- Stream.eval(
-        client.get[CirceResponse[List[KLine]]](
-          uri = uri,
-          responseAs = asJson[List[KLine]],
-          limiters = rateLimiters.requestsOnly
-        )
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.getKLines]] instead", "v1.5.2")
+  def getKLines(query: common.parameters.KLines): Stream[F, KLine] =
+    V3.getKLines(
+      spot.parameters.v3.KLines(
+        symbol = query.symbol,
+        interval = query.interval,
+        startTime = query.startTime.some,
+        endTime = query.endTime.some,
+        limit = query.limit
       )
-      rawKlines <- Stream.eval(F.fromEither(response))
-      klines <- rawKlines match {
-        // check if a lone element is enough to fulfill the query. Otherwise a limit of 1 leads
-        // to a strange behaviour
-        case loneElement :: Nil
-            if (query.endTime.toEpochMilli - loneElement.openTime) > query.interval.duration.toMillis =>
-          val newQuery = query.copy(startTime = Instant.ofEpochMilli(loneElement.closeTime))
-          Stream.emit(loneElement) ++ getKLines(newQuery)
-
-        case init :+ last if (query.endTime.toEpochMilli - last.openTime) > query.interval.duration.toMillis =>
-          val newQuery = query.copy(startTime = Instant.ofEpochMilli(last.openTime))
-          Stream.emits(init) ++ getKLines(newQuery)
-
-        case list => Stream.emits(list)
-      }
-    } yield klines
-  }
+    )
 
   /** Returns a snapshot of the prices at the time the query is executed.
     *
     * @return
     *   A sequence of prices (one for each symbol)
     */
-  def getPrices(): F[Seq[Price]] = for {
-    pricesOrError <- client.get[CirceResponse[List[Price]]](
-      uri = tickerPriceUri,
-      responseAs = asJson[List[Price]],
-      limiters = rateLimiters.requestsOnly,
-      weight = 2
-    )
-    prices <- F.fromEither(pricesOrError)
-  } yield prices
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.getPrices]] instead", "v1.5.2")
+  def getPrices(): F[Seq[Price]] = V3.getPrices()
 
   /** Returns the current balance, at the time the query is executed.
     *
     * @return
     *   The account information including the balance (free and locked) for each asset
     */
-  def getBalance(): F[SpotAccountInfoResponse] =
-    for {
-      uri <- mkSignedUri(accountUri)
-      responseOrError <- client.get[CirceResponse[SpotAccountInfoResponse]](
-        uri = uri,
-        responseAs = asJson[SpotAccountInfoResponse],
-        limiters = rateLimiters.requestsOnly,
-        headers = Map("X-MBX-APIKEY" -> config.apiKey),
-        weight = 10
-      )
-      response <- F.fromEither(responseOrError)
-    } yield response
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.getBalance]] instead", "v1.5.2")
+  def getBalance(): F[SpotAccountInfoResponse] = V3.getBalance()
 
   /** Creates an order.
     *
@@ -162,25 +102,8 @@ final case class SpotApi[F[_]](
     * @return
     *   The id of the order created
     */
-  def createOrder(orderCreate: SpotOrderCreateParams): F[SpotOrderCreateResponse] = {
-
-    val params = orderCreate.toQueryParams.param("newOrderRespType", SpotOrderCreateResponseType.FULL.toString).toSeq
-    for {
-      uri <- mkSignedUri(
-        uri = orderUri,
-        params: _*
-      )
-      responseOrError <- client
-        .post[String, CirceResponse[SpotOrderCreateResponse]](
-          uri = uri,
-          responseAs = asJson[SpotOrderCreateResponse],
-          requestBody = None,
-          limiters = rateLimiters.value,
-          headers = Map("X-MBX-APIKEY" -> config.apiKey)
-        )
-      response <- F.fromEither(responseOrError)
-    } yield response
-  }
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.createOrder]] instead", "v1.5.2")
+  def createOrder(orderCreate: SpotOrderCreateParams): F[SpotOrderCreateResponse] = V3.createOrder(orderCreate)
 
   /** Queries the status and fill price of an existing order.
     *
@@ -190,21 +113,8 @@ final case class SpotApi[F[_]](
     * @return
     *   Attributes of the order including status, fill amount and filled price.
     */
-  def queryOrder(orderQuery: SpotOrderQueryParams): F[SpotOrderQueryResponse] =
-    for {
-      uri <- mkSignedUri(
-        uri = orderUri,
-        orderQuery.toQueryParams.toSeq: _*
-      )
-      responseOrError <- client.get[CirceResponse[SpotOrderQueryResponse]](
-        uri = uri,
-        responseAs = asJson[SpotOrderQueryResponse],
-        limiters = rateLimiters.requestsOnly,
-        headers = Map("X-MBX-APIKEY" -> config.apiKey),
-        weight = 2
-      )
-      response <- F.fromEither(responseOrError)
-    } yield response
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.queryOrder]] instead", "v1.5.2")
+  def queryOrder(orderQuery: SpotOrderQueryParams): F[SpotOrderQueryResponse] = V3.queryOrder(orderQuery)
 
   /** Cancels an order.
     *
@@ -214,21 +124,8 @@ final case class SpotApi[F[_]](
     * @return
     *   currently nothing
     */
-  def cancelOrder(orderCancel: SpotOrderCancelParams): F[Unit] =
-    for {
-      uri <- mkSignedUri(
-        uri = orderUri,
-        orderCancel.toQueryParams.toSeq: _*
-      )
-      res <- client
-        .delete[CirceResponse[io.circe.Json]](
-          uri = uri,
-          responseAs = asJson[io.circe.Json],
-          limiters = rateLimiters.value,
-          headers = Map("X-MBX-APIKEY" -> config.apiKey)
-        )
-      _ <- F.fromEither(res)
-    } yield ()
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.cancelOrder]] instead", "v1.5.2")
+  def cancelOrder(orderCancel: SpotOrderCancelParams): F[Unit] = V3.cancelOrder(orderCancel)
 
   /** Cancels all orders of a symbol.
     *
@@ -238,18 +135,8 @@ final case class SpotApi[F[_]](
     * @return
     *   currently nothing
     */
-  def cancelAllOrders(orderCancel: SpotOrderCancelAllParams): F[Unit] =
-    for {
-      uri <- mkSignedUri(openOrdersUri, orderCancel.toQueryParams.toSeq: _*)
-      res <- client
-        .delete[CirceResponse[io.circe.Json]](
-          uri = uri,
-          responseAs = asJson[io.circe.Json],
-          limiters = rateLimiters.value,
-          headers = Map("X-MBX-APIKEY" -> config.apiKey)
-        )
-      _ <- F.fromEither(res)
-    } yield ()
+  @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.cancelAllOrders]] instead", "v1.5.2")
+  def cancelAllOrders(orderCancel: SpotOrderCancelAllParams): F[Unit] = V3.cancelAllOrders(orderCancel)
 
   /** The Trade Streams push raw trade information; each trade has a unique buyer and seller.
     *
@@ -339,6 +226,8 @@ final case class SpotApi[F[_]](
       uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@aggTrade").toEither))
       stream <- client.ws[AggregateTradeStream](uri)
     } yield stream
+
+  val V3: SpotRestApiV3[F] = new SpotRestApiV3Impl[F](config, client, rateLimiters)
 }
 
 object SpotApi {
@@ -356,5 +245,5 @@ object SpotApi {
           .toResource
         exchangeInfo <- F.fromEither(exchangeInfoEither).toResource
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
-      } yield SpotApi.apply(config, client, exchangeInfo, rateLimiters)
+      } yield new SpotApi(config, client, rateLimiters)
 }

@@ -151,10 +151,10 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         _      <- stubResponse2
         _      <- stubResponse3
         config <- createConfiguration(server)
-        result <- BinanceClient
+        results <- BinanceClient
           .createSpotClient[IO](config)
-          .use { gw =>
-            gw
+          .use { api =>
+            val legacyResult = api
               .getKLines(
                 common.parameters.KLines(
                   symbol = symbol,
@@ -165,10 +165,27 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
                 )
               )
               .compile
+              .toList: @scala.annotation.nowarn
+            val v3Result = api.V3
+              .getKLines(
+                spot.parameters.v3.KLines(
+                  symbol = symbol,
+                  interval = interval,
+                  startTime = Instant.ofEpochMilli(from).some,
+                  endTime = Instant.ofEpochMilli(to).some,
+                  limit = threshold
+                )
+              )
+              .compile
               .toList
+            (legacyResult -> v3Result).tupled
           }
-        _ <- IO.delay(server.verify(3, getRequestedFor(urlMatching("/api/v3/klines.*"))))
-      } yield expect(result == expected)
+        (legacyResult, v3Result) = results
+        _ <- IO.delay(server.verify(3 * results.productIterator.size, getRequestedFor(urlMatching("/api/v3/klines.*"))))
+      } yield expect.all(
+        legacyResult == expected,
+        v3Result == expected
+      )
   }
 
   integrationTest("it should be able to stream klines even with a threshold of 1") { case WebServer(server, _) =>
@@ -319,10 +336,10 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       _      <- stubResponse4
       _      <- stubResponse5
       config <- createConfiguration(server)
-      result <- BinanceClient
+      results <- BinanceClient
         .createSpotClient[IO](config)
-        .use { gw =>
-          gw
+        .use { api =>
+          val legacyResult = api
             .getKLines(
               common.parameters.KLines(
                 symbol = symbol,
@@ -333,10 +350,27 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
               )
             )
             .compile
+            .toList: @scala.annotation.nowarn
+          val v3Result = api.V3
+            .getKLines(
+              spot.parameters.v3.KLines(
+                symbol = symbol,
+                interval = interval,
+                startTime = Instant.ofEpochMilli(from).some,
+                endTime = Instant.ofEpochMilli(to).some,
+                limit = threshold
+              )
+            )
+            .compile
             .toList
+          (legacyResult -> v3Result).tupled
         }
-      _ <- IO.delay(server.verify(4, getRequestedFor(urlMatching("/api/v3/klines.*"))))
-    } yield expect(result == expected)
+      (legacyResult, v3Result) = results
+      _ <- IO.delay(server.verify(4 * results.productIterator.size, getRequestedFor(urlMatching("/api/v3/klines.*"))))
+    } yield expect.all(
+      legacyResult == expected,
+      v3Result == expected
+    )
   }
 
   integrationTest("it should return the orderbook depth") { case WebServer(server, _) =>
@@ -374,11 +408,15 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       _      <- stubInfoEndpoint(server)
       _      <- stubResponse
       config <- createConfiguration(server)
-      result <- BinanceClient
+      results <- BinanceClient
         .createSpotClient[IO](config)
-        .use(_.getDepth(common.parameters.DepthParams(symbol, limit)))
-    } yield expect(
-      result == DepthGetResponse(
+        .use { api =>
+          val legacyResult = api.getDepth(common.parameters.DepthParams(symbol, limit)): @scala.annotation.nowarn
+          val v3Result     = api.V3.getDepth(common.parameters.DepthParams(symbol, limit))
+          (legacyResult -> v3Result).tupled
+        }
+      (legacyResult, v3Result) = results
+      expected = DepthGetResponse(
         lastUpdateId = 1027024,
         bids = List(
           Bid(4.00000000, 431.0)
@@ -387,6 +425,9 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           Ask(4.00000200, 12.0)
         )
       )
+    } yield expect.all(
+      legacyResult == expected,
+      v3Result == expected
     )
   }
 
@@ -417,14 +458,21 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       _      <- stubInfoEndpoint(server)
       _      <- stubResponse
       config <- createConfiguration(server)
-      result <- BinanceClient
+      results <- BinanceClient
         .createSpotClient[IO](config)
-        .use(_.getPrices())
-    } yield expect(
-      result == List(
+        .use { api =>
+          val legacyResult = api.getPrices(): @scala.annotation.nowarn
+          val v3Result     = api.V3.getPrices()
+          (legacyResult -> v3Result).tupled
+        }
+      (legacyResult, v3Result) = results
+      expected = List(
         Price("ETHBTC", BigDecimal(0.03444300)),
         Price("LTCBTC", BigDecimal(0.01493000))
       )
+    } yield expect.all(
+      legacyResult == expected,
+      v3Result == expected
     )
   }
 
@@ -481,11 +529,15 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         _      <- stubInfoEndpoint(server)
         _      <- stubResponse
         config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-        result <- BinanceClient
+        results <- BinanceClient
           .createSpotClient[IO](config)
-          .use(_.getBalance())
-      } yield expect(
-        result == SpotAccountInfoResponse(
+          .use { api =>
+            val legacyResult = api.getBalance(): @scala.annotation.nowarn
+            val v3Result     = api.V3.getBalance()
+            (legacyResult -> v3Result).tupled
+          }
+        (legacyResult, v3Result) = results
+        expected = SpotAccountInfoResponse(
           balances = List(
             BinanceBalance("BTC", BigDecimal("4723846.89208129"), BigDecimal("0.00000000")),
             BinanceBalance("LTC", BigDecimal("4763368.68006011"), BigDecimal("0.00000001"))
@@ -501,6 +553,9 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           accountType = "SPOT",
           permissions = List("SPOT")
         )
+      } yield expect.all(
+        legacyResult == expected,
+        v3Result == expected
       )
     }
   }
@@ -554,19 +609,27 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         _      <- stubInfoEndpoint(server)
         _      <- stubResponse
         config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-        result <- BinanceClient
+        results <- BinanceClient
           .createSpotClient[IO](config)
-          .use(
-            _.createOrder(
+          .use { api =>
+            val legacyResult = api.createOrder(
+              SpotOrderCreateParams.MARKET(
+                symbol = "BTCUSDT",
+                side = OrderSide.BUY,
+                quantity = BigDecimal(10.5).some
+              )
+            ): @scala.annotation.nowarn
+            val v3Result = api.V3.createOrder(
               SpotOrderCreateParams.MARKET(
                 symbol = "BTCUSDT",
                 side = OrderSide.BUY,
                 quantity = BigDecimal(10.5).some
               )
             )
-          )
-      } yield expect(
-        result == SpotOrderCreateResponse(
+          (legacyResult -> v3Result).tupled
+          }
+        (legacyResult, v3Result) = results
+        expected = SpotOrderCreateResponse(
           orderId = 28L,
           symbol = "BTCUSDT",
           orderListId = -1,
@@ -584,6 +647,9 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
             SpotFill(price = 4000, qty = 1, commission = 4, commissionAsset = "USDT")
           )
         )
+      } yield expect.all(
+        legacyResult == expected,
+        v3Result == expected
       )
     }
   }
@@ -634,18 +700,25 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         _      <- stubInfoEndpoint(server)
         _      <- stubResponse
         config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
-        result <- BinanceClient
+        results <- BinanceClient
           .createSpotClient[IO](config)
-          .use(
-            _.queryOrder(
+          .use { api =>
+            val legacyResult = api.queryOrder(
+              SpotOrderQueryParams(
+                symbol = "BTCUSDT",
+                orderId = Option(28L)
+              )
+            ): @scala.annotation.nowarn
+            val v3Result = api.V3.queryOrder(
               SpotOrderQueryParams(
                 symbol = "BTCUSDT",
                 orderId = Option(28L)
               )
             )
-          )
-      } yield expect(
-        result == SpotOrderQueryResponse(
+            (legacyResult -> v3Result).tupled
+          }
+        (legacyResult, v3Result) = results
+        expected = SpotOrderQueryResponse(
           symbol = "BTCUSDT",
           orderId = 28L,
           orderListId = -1,
@@ -665,6 +738,9 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           isWorking = true,
           origQuoteOrderQty = BigDecimal("0.0")
         )
+      } yield expect.all(
+        legacyResult == expected,
+        v3Result == expected
       )
     }
   }
@@ -713,11 +789,15 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
         _ <- BinanceClient
           .createSpotClient[IO](config)
-          .use(
-            _.cancelOrder(
+          .use { api =>
+            val legacyResult = api.cancelOrder(
+              SpotOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
+            ): @scala.annotation.nowarn
+            val v3Result = api.V3.cancelOrder(
               SpotOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
             )
-          )
+            (legacyResult, v3Result).tupled
+          }
       } yield success
     }
   }
@@ -839,11 +919,15 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
         _ <- BinanceClient
           .createSpotClient[IO](config)
-          .use(
-            _.cancelAllOrders(
+          .use { api =>
+            val legacyResult = api.cancelAllOrders(
+              SpotOrderCancelAllParams(symbol = "BTCUSDT")
+            ): @scala.annotation.nowarn
+            val v3Result = api.V3.cancelAllOrders(
               SpotOrderCancelAllParams(symbol = "BTCUSDT")
             )
-          )
+            (legacyResult -> v3Result).tupled
+          }
       } yield success
     }
   }

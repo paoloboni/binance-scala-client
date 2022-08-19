@@ -8,11 +8,10 @@ import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 
-import java.time.Instant
 import scala.concurrent.duration.Duration
 import scala.util.Random
 
-object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
+object SpotV3E2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   val config: SpotConfig = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
@@ -23,27 +22,27 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   val sharedResource: Resource[IO, SpotApi[IO]] = BinanceClient.createSpotClient[IO](config)
 
-  test("getDepth") {
-    _.getDepth(common.parameters.DepthParams("BTCUSDT", common.parameters.DepthLimit.`500`))
+  test("getDepth")(
+    _.V3
+      .getDepth(common.parameters.DepthParams("BTCUSDT", common.parameters.DepthLimit.`500`))
       .map(succeed)
-  }
+  )
 
-  test("getPrices") { _.getPrices().map(res => expect(res.nonEmpty)) }
+  test("getPrices")(_.V3.getPrices().map(res => expect(res.nonEmpty)))
 
-  test("getBalance") { _.getBalance().map(succeed) }
+  test("getBalance")(_.V3.getBalance().map(succeed))
 
-  test("getKLines") { client =>
-    val now = Instant.now()
-    client
-      .getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100))
+  test("getKLines")(
+    _.V3
+      .getKLines(spot.parameters.v3.KLines("BTCUSDT", Interval.`5m`, None, None, 100))
       .compile
       .toList
       .map(res => expect(res.nonEmpty))
-  }
+  )
 
   test("createOrder") { client =>
     val side = Random.shuffle(OrderSide.values).head
-    client
+    client.V3
       .createOrder(
         SpotOrderCreateParams.MARKET(
           symbol = "TRXUSDT",
@@ -57,7 +56,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
   test("queryOrder") { client =>
     val symbol = "TRXUSDT"
     for {
-      createOrderResponse <- client.createOrder(
+      createOrderResponse <- client.V3.createOrder(
         SpotOrderCreateParams.LIMIT(
           symbol = symbol,
           side = OrderSide.SELL,
@@ -67,7 +66,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         )
       )
 
-      _ <- client.queryOrder(
+      _ <- client.V3.queryOrder(
         SpotOrderQueryParams(
           symbol = symbol,
           orderId = createOrderResponse.orderId.some,
@@ -80,7 +79,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
   test("cancelOrder") { client =>
     val symbol = "TRXUSDT"
     (for {
-      createOrderResponse <- client.createOrder(
+      createOrderResponse <- client.V3.createOrder(
         SpotOrderCreateParams.LIMIT(
           symbol = symbol,
           side = OrderSide.SELL,
@@ -90,7 +89,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         )
       )
 
-      _ <- client
+      _ <- client.V3
         .cancelOrder(
           SpotOrderCancelParams(
             symbol = symbol,
@@ -104,7 +103,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
   test("cancelAllOrders") { client =>
     val symbol = "TRXUSDT"
     (for {
-      _ <- client.createOrder(
+      _ <- client.V3.createOrder(
         SpotOrderCreateParams.LIMIT(
           symbol = symbol,
           side = OrderSide.SELL,
@@ -114,59 +113,59 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
         )
       )
 
-      _ <- client
+      _ <- client.V3
         .cancelAllOrders(
           SpotOrderCancelAllParams(symbol = symbol)
         )
     } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
-  test("tradeStreams") {
+  test("tradeStreams")(
     _.tradeStreams("btcusdt")
       .take(1)
       .compile
       .toList
       .map(l => expect(l.size == 1))
-  }
+  )
 
-  test("kLineStreams") {
+  test("kLineStreams")(
     _.kLineStreams("btcusdt", Interval.`1m`)
       .take(1)
       .compile
       .toList
       .map(l => expect(l.size == 1))
-  }
+  )
 
-  test("diffDepthStream") {
+  test("diffDepthStream")(
     _.diffDepthStream("btcusdt")
       .take(1)
       .compile
       .toList
       .map(l => expect(l.size == 1))
-  }
+  )
 
-  test("partialBookDepthStream") {
+  test("partialBookDepthStream")(
     _.partialBookDepthStream("btcusdt", Level.`5`)
       .take(1)
       .compile
       .toList
       .map(l => expect(l.size == 1))
-  }
+  )
 
-  test("allBookTickersStream") {
+  test("allBookTickersStream")(
     _.allBookTickersStream()
       .take(1)
       .compile
       .toList
       .map(l => expect(l.size == 1))
-  }
+  )
 
-  test("aggregateTradeStreams") {
+  test("aggregateTradeStreams")(
     _.aggregateTradeStreams("btcusdt")
       .take(1)
       .compile
       .toList
       .map(l => expect(l.size == 1))
-  }
+  )
 
 }
