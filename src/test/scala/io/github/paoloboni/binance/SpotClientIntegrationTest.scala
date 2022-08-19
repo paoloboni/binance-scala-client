@@ -626,7 +626,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
                 quantity = BigDecimal(10.5).some
               )
             )
-          (legacyResult -> v3Result).tupled
+            (legacyResult -> v3Result).tupled
           }
         (legacyResult, v3Result) = results
         expected = SpotOrderCreateResponse(
