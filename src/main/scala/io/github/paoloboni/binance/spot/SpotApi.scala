@@ -59,7 +59,10 @@ final class SpotApi[F[_]](
   def getDepth(query: common.parameters.DepthParams): F[DepthGetResponse] =
     V3.getDepth(
       spot.parameters.v3
-        .DepthParams(query.symbol, query.limit.toString.toIntOption.map(spot.parameters.v3.DepthLimit.apply))
+        .DepthParams(
+          query.symbol,
+          Try(Integer.parseInt(query.limit.toString)).toOption.map(spot.parameters.v3.DepthLimit(_))
+        )
     )
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint in case the result set doesn't

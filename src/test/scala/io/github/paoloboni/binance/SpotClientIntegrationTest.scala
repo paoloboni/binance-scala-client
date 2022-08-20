@@ -43,6 +43,7 @@ import java.time.Instant
 import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(global) {
 
@@ -416,7 +417,10 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           val v3Result =
             api.V3.getDepth(
               spot.parameters.v3
-                .DepthParams(symbol, limit.toString.toIntOption.map(spot.parameters.v3.DepthLimit.apply))
+                .DepthParams(
+                  symbol,
+                  Try(Integer.parseInt(limit.toString)).toOption.map(spot.parameters.v3.DepthLimit(_))
+                )
             )
           (legacyResult -> v3Result).tupled
         }
