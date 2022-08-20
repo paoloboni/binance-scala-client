@@ -414,7 +414,10 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         .use { api =>
           val legacyResult = api.getDepth(common.parameters.DepthParams(symbol, limit)): @nowarn
           val v3Result =
-            api.V3.getDepth(spot.parameters.v3.DepthParams(symbol, spot.parameters.v3.DepthLimit(limit.value).some))
+            api.V3.getDepth(
+              spot.parameters.v3
+                .DepthParams(symbol, limit.toString.toIntOption.map(spot.parameters.v3.DepthLimit.apply))
+            )
           (legacyResult -> v3Result).tupled
         }
       (legacyResult, v3Result) = results

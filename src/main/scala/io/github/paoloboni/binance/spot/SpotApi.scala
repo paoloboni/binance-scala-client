@@ -57,7 +57,10 @@ final class SpotApi[F[_]](
     */
   @deprecated("Use [[io.github.paoloboni.binance.spot.SpotApi.V3.getDepth]] instead", "v1.5.2")
   def getDepth(query: common.parameters.DepthParams): F[DepthGetResponse] =
-    V3.getDepth(spot.parameters.v3.DepthParams(query.symbol, spot.parameters.v3.DepthLimit(query.limit.value).some))
+    V3.getDepth(
+      spot.parameters.v3
+        .DepthParams(query.symbol, query.limit.toString.toIntOption.map(spot.parameters.v3.DepthLimit.apply))
+    )
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint in case the result set doesn't
     * fit in a single page.
