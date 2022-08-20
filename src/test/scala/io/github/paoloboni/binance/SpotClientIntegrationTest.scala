@@ -40,6 +40,7 @@ import sttp.client3.UriContext
 import weaver.GlobalRead
 
 import java.time.Instant
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
@@ -165,7 +166,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
                 )
               )
               .compile
-              .toList: @scala.annotation.nowarn
+              .toList: @nowarn
             val v3Result = api.V3
               .getKLines(
                 spot.parameters.v3.KLines(
@@ -350,7 +351,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
               )
             )
             .compile
-            .toList: @scala.annotation.nowarn
+            .toList: @nowarn
           val v3Result = api.V3
             .getKLines(
               spot.parameters.v3.KLines(
@@ -411,8 +412,9 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       results <- BinanceClient
         .createSpotClient[IO](config)
         .use { api =>
-          val legacyResult = api.getDepth(common.parameters.DepthParams(symbol, limit)): @scala.annotation.nowarn
-          val v3Result     = api.V3.getDepth(common.parameters.DepthParams(symbol, limit))
+          val legacyResult = api.getDepth(common.parameters.DepthParams(symbol, limit)): @nowarn
+          val v3Result =
+            api.V3.getDepth(spot.parameters.v3.DepthParams(symbol, spot.parameters.v3.DepthLimit(limit.value).some))
           (legacyResult -> v3Result).tupled
         }
       (legacyResult, v3Result) = results
@@ -461,7 +463,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       results <- BinanceClient
         .createSpotClient[IO](config)
         .use { api =>
-          val legacyResult = api.getPrices(): @scala.annotation.nowarn
+          val legacyResult = api.getPrices(): @nowarn
           val v3Result     = api.V3.getPrices()
           (legacyResult -> v3Result).tupled
         }
@@ -532,7 +534,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
         results <- BinanceClient
           .createSpotClient[IO](config)
           .use { api =>
-            val legacyResult = api.getBalance(): @scala.annotation.nowarn
+            val legacyResult = api.getBalance(): @nowarn
             val v3Result     = api.V3.getBalance()
             (legacyResult -> v3Result).tupled
           }
@@ -618,7 +620,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
                 side = OrderSide.BUY,
                 quantity = BigDecimal(10.5).some
               )
-            ): @scala.annotation.nowarn
+            ): @nowarn
             val v3Result = api.V3.createOrder(
               SpotOrderCreateParams.MARKET(
                 symbol = "BTCUSDT",
@@ -708,7 +710,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
                 symbol = "BTCUSDT",
                 orderId = Option(28L)
               )
-            ): @scala.annotation.nowarn
+            ): @nowarn
             val v3Result = api.V3.queryOrder(
               SpotOrderQueryParams(
                 symbol = "BTCUSDT",
@@ -792,7 +794,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           .use { api =>
             val legacyResult = api.cancelOrder(
               SpotOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
-            ): @scala.annotation.nowarn
+            ): @nowarn
             val v3Result = api.V3.cancelOrder(
               SpotOrderCancelParams(symbol = "BTCUSDT", orderId = 1L.some, origClientOrderId = None)
             )
@@ -922,7 +924,7 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           .use { api =>
             val legacyResult = api.cancelAllOrders(
               SpotOrderCancelAllParams(symbol = "BTCUSDT")
-            ): @scala.annotation.nowarn
+            ): @nowarn
             val v3Result = api.V3.cancelAllOrders(
               SpotOrderCancelAllParams(symbol = "BTCUSDT")
             )

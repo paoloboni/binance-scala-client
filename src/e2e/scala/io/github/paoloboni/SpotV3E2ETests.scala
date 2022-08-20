@@ -24,7 +24,7 @@ object SpotV3E2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   test("getDepth")(
     _.V3
-      .getDepth(common.parameters.DepthParams("BTCUSDT", common.parameters.DepthLimit.`500`))
+      .getDepth(spot.parameters.v3.DepthParams("BTCUSDT", None))
       .map(succeed)
   )
 

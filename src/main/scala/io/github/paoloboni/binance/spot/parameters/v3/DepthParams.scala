@@ -19,20 +19,36 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.github.paoloboni.binance.common.parameters
+package io.github.paoloboni.binance.spot.parameters.v3
 
-import scala.collection.immutable
-import enumeratum.{CirceEnum, Enum, EnumEntry}
+import scala.annotation.nowarn
 
-sealed abstract class DepthLimit(val weight: Int, val value: Int) extends EnumEntry
-object DepthLimit extends Enum[DepthLimit] with CirceEnum[DepthLimit] {
-  val values: immutable.IndexedSeq[DepthLimit] = findValues
-  case object `5`    extends DepthLimit(1, 5)
-  case object `10`   extends DepthLimit(1, 10)
-  case object `20`   extends DepthLimit(1, 20)
-  case object `50`   extends DepthLimit(1, 50)
-  case object `100`  extends DepthLimit(1, 100)
-  case object `500`  extends DepthLimit(5, 500)
-  case object `1000` extends DepthLimit(10, 1000)
-  case object `5000` extends DepthLimit(50, 5000)
+final case class DepthLimit private (value: Int) extends AnyVal {
+  @nowarn
+  def copy(value: Int): Unit = ()
 }
+
+object DepthLimit {
+  private val maxValue = 5000
+  private val minValue = 1
+
+  def apply(value: Int): DepthLimit = {
+    if (value < minValue) {
+      new DepthLimit(minValue)
+    } else if (value > maxValue) {
+      new DepthLimit(maxValue)
+    } else {
+      new DepthLimit(value)
+    }
+  }
+
+  def weight(limit: DepthLimit): Int =
+    if (limit.value <= 100) 1
+    else if (limit.value <= 500) 5
+    else if (limit.value <= 1000) 10
+    else 50
+
+  val default: DepthLimit = DepthLimit(100)
+}
+
+final case class DepthParams(symbol: String, limit: Option[DepthLimit])

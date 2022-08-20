@@ -22,10 +22,11 @@
 package io.github.paoloboni.binance.spot
 
 import cats.effect.Async
-import io.github.paoloboni.binance.{BinanceApi, spot}
-import io.github.paoloboni.binance.common.parameters.DepthParams
+import io.github.paoloboni.binance.BinanceApi
 import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{KLine, Price, SpotConfig}
+import io.github.paoloboni.binance.spot.parameters.v3.DepthLimit.weight
+import io.github.paoloboni.binance.spot.parameters.v3._
 import io.github.paoloboni.binance.spot.parameters.{
   SpotOrderCancelAllParams,
   SpotOrderCancelParams,
@@ -37,10 +38,11 @@ import io.github.paoloboni.binance.spot.response.{
   SpotOrderCreateResponse,
   SpotOrderQueryResponse
 }
-import io.github.paoloboni.http.HttpClient
+import io.github.paoloboni.http.{HttpClient, StringConverter}
 import io.github.paoloboni.http.ratelimit.RateLimiters
 
 import java.time.Instant
+import scala.annotation.nowarn
 
 trait SpotRestApiV3[F[_]] extends BinanceApi[F] {
 
@@ -63,7 +65,7 @@ trait SpotRestApiV3[F[_]] extends BinanceApi[F] {
     * @return
     *   the stream of Kline objects
     */
-  def getKLines(query: spot.parameters.v3.KLines): fs2.Stream[F, KLine]
+  def getKLines(query: KLines): fs2.Stream[F, KLine]
 
   /** Returns a snapshot of the prices at the time the query is executed.
     *
@@ -130,7 +132,6 @@ class SpotRestApiV3Impl[F[_]](
   import io.github.paoloboni.binance.common.response._
   import io.github.paoloboni.binance.spot.parameters._
   import io.github.paoloboni.binance.spot.response._
-  import io.github.paoloboni.binance.{common, spot}
   import io.github.paoloboni.encryption.MkSignedUri
   import io.github.paoloboni.http.QueryParamsConverter._
   import sttp.client3.circe.{asJson, _}
@@ -148,20 +149,24 @@ class SpotRestApiV3Impl[F[_]](
   private val orderUri       = baseUrl.addPath("order")
   private val openOrdersUri  = baseUrl.addPath("openOrders")
 
-  override def getDepth(query: common.parameters.DepthParams): F[DepthGetResponse] = {
+  @nowarn
+  private implicit val depthLimitConverter: StringConverter[DepthLimit] =
+    (limit: DepthLimit) => limit.value.toString
+
+  override def getDepth(query: DepthParams): F[DepthGetResponse] = {
     val uri = depthUri.addParams(query.toQueryParams)
     for {
       depthOrError <- client.get[CirceResponse[DepthGetResponse]](
         uri = uri,
         responseAs = asJson[DepthGetResponse],
         limiters = rateLimiters.requestsOnly,
-        weight = query.limit.weight
+        weight = query.limit.map(DepthLimit.weight).getOrElse(weight(DepthLimit.default))
       )
       depth <- F.fromEither(depthOrError)
     } yield depth
   }
 
-  override def getKLines(query: spot.parameters.v3.KLines): Stream[F, KLine] = {
+  override def getKLines(query: KLines): Stream[F, KLine] = {
     val uri = kLinesUri.addParams(query.toQueryParams)
     for {
       response <- Stream.eval(

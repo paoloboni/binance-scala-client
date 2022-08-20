@@ -8,6 +8,7 @@ import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 
 import java.time.Instant
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 import scala.util.Random
 
@@ -24,12 +25,12 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   test("getDepth") {
     _.getDepth(common.parameters.DepthParams("BTCUSDT", common.parameters.DepthLimit.`500`))
-      .map(succeed): @scala.annotation.nowarn
+      .map(succeed): @nowarn
   }
 
-  test("getPrices")(_.getPrices().map(res => expect(res.nonEmpty)): @scala.annotation.nowarn)
+  test("getPrices")(_.getPrices().map(res => expect(res.nonEmpty)): @nowarn)
 
-  test("getBalance")(_.getBalance().map(succeed): @scala.annotation.nowarn)
+  test("getBalance")(_.getBalance().map(succeed): @nowarn)
 
   test("getKLines") { client =>
     val now = Instant.now()
@@ -37,7 +38,7 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
       .getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100))
       .compile
       .toList
-      .map(res => expect(res.nonEmpty)): @scala.annotation.nowarn
+      .map(res => expect(res.nonEmpty)): @nowarn
   }
 
   test("createOrder") { client =>
@@ -50,7 +51,7 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = BigDecimal(1000).some
         )
       )
-      .map(succeed): @scala.annotation.nowarn
+      .map(succeed): @nowarn
   }
 
   test("queryOrder") { client =>
@@ -64,7 +65,7 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = 1000,
           price = 0.08
         )
-      ): @scala.annotation.nowarn
+      ): @nowarn
 
       _ <- client.queryOrder(
         SpotOrderQueryParams(
@@ -72,7 +73,7 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
-      ): @scala.annotation.nowarn
+      ): @nowarn
     } yield success
   }
 
@@ -87,7 +88,7 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = 1000,
           price = 0.08
         )
-      ): @scala.annotation.nowarn
+      ): @nowarn
 
       _ <- client
         .cancelOrder(
@@ -96,7 +97,7 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
             orderId = createOrderResponse.orderId.some,
             origClientOrderId = None
           )
-        ): @scala.annotation.nowarn
+        ): @nowarn
     } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
@@ -111,12 +112,12 @@ object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = 1000,
           price = 0.08
         )
-      ): @scala.annotation.nowarn
+      ): @nowarn
 
       _ <- client
         .cancelAllOrders(
           SpotOrderCancelAllParams(symbol = symbol)
-        ): @scala.annotation.nowarn
+        ): @nowarn
     } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
