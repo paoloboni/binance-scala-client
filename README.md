@@ -139,7 +139,7 @@ object PriceMonitor extends IOApp.Simple {
         Stream
           .awakeEvery[IO](5.seconds)
           .repeat
-          .evalMap(_ => client.getPrices())
+          .evalMap(_ => client.V3.getPrices())
           .evalMap(prices => Console[IO].println("Current prices: " + prices))
           .compile
           .drain
