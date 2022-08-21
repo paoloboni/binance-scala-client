@@ -3,16 +3,16 @@ package io.github.paoloboni
 import cats.effect.{IO, Resource}
 import cats.implicits._
 import io.github.paoloboni.binance._
-import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.common.{Interval, OrderSide, SpotConfig}
 import io.github.paoloboni.binance.spot._
 import io.github.paoloboni.binance.spot.parameters._
 
 import java.time.Instant
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 import scala.util.Random
 
-object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
+object SpotLegacyE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   val config: SpotConfig = SpotConfig.Default(
     apiKey = sys.env("SPOT_API_KEY"),
@@ -25,12 +25,12 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
 
   test("getDepth") {
     _.getDepth(common.parameters.DepthParams("BTCUSDT", common.parameters.DepthLimit.`500`))
-      .map(succeed)
+      .map(succeed): @nowarn
   }
 
-  test("getPrices") { _.getPrices().map(res => expect(res.nonEmpty)) }
+  test("getPrices")(_.getPrices().map(res => expect(res.nonEmpty)): @nowarn)
 
-  test("getBalance") { _.getBalance().map(succeed) }
+  test("getBalance")(_.getBalance().map(succeed): @nowarn)
 
   test("getKLines") { client =>
     val now = Instant.now()
@@ -38,7 +38,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
       .getKLines(common.parameters.KLines("BTCUSDT", Interval.`5m`, now.minusSeconds(3600), now, 100))
       .compile
       .toList
-      .map(res => expect(res.nonEmpty))
+      .map(res => expect(res.nonEmpty)): @nowarn
   }
 
   test("createOrder") { client =>
@@ -51,7 +51,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = BigDecimal(1000).some
         )
       )
-      .map(succeed)
+      .map(succeed): @nowarn
   }
 
   test("queryOrder") { client =>
@@ -65,7 +65,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = 1000,
           price = 0.08
         )
-      )
+      ): @nowarn
 
       _ <- client.queryOrder(
         SpotOrderQueryParams(
@@ -73,7 +73,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
           orderId = createOrderResponse.orderId.some,
           origClientOrderId = None
         )
-      )
+      ): @nowarn
     } yield success
   }
 
@@ -88,7 +88,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = 1000,
           price = 0.08
         )
-      )
+      ): @nowarn
 
       _ <- client
         .cancelOrder(
@@ -97,7 +97,7 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
             orderId = createOrderResponse.orderId.some,
             origClientOrderId = None
           )
-        )
+        ): @nowarn
     } yield success).retryWithBackoff(initialDelay = Duration.Zero)
   }
 
@@ -112,61 +112,13 @@ object SpotE2ETests extends BaseE2ETest[SpotApi[IO]] {
           quantity = 1000,
           price = 0.08
         )
-      )
+      ): @nowarn
 
       _ <- client
         .cancelAllOrders(
           SpotOrderCancelAllParams(symbol = symbol)
-        )
+        ): @nowarn
     } yield success).retryWithBackoff(initialDelay = Duration.Zero)
-  }
-
-  test("tradeStreams") {
-    _.tradeStreams("btcusdt")
-      .take(1)
-      .compile
-      .toList
-      .map(l => expect(l.size == 1))
-  }
-
-  test("kLineStreams") {
-    _.kLineStreams("btcusdt", Interval.`1m`)
-      .take(1)
-      .compile
-      .toList
-      .map(l => expect(l.size == 1))
-  }
-
-  test("diffDepthStream") {
-    _.diffDepthStream("btcusdt")
-      .take(1)
-      .compile
-      .toList
-      .map(l => expect(l.size == 1))
-  }
-
-  test("partialBookDepthStream") {
-    _.partialBookDepthStream("btcusdt", Level.`5`)
-      .take(1)
-      .compile
-      .toList
-      .map(l => expect(l.size == 1))
-  }
-
-  test("allBookTickersStream") {
-    _.allBookTickersStream()
-      .take(1)
-      .compile
-      .toList
-      .map(l => expect(l.size == 1))
-  }
-
-  test("aggregateTradeStreams") {
-    _.aggregateTradeStreams("btcusdt")
-      .take(1)
-      .compile
-      .toList
-      .map(l => expect(l.size == 1))
   }
 
 }

@@ -12,9 +12,9 @@ lazy val EndToEndTest = config("e2e") extend Test
 lazy val e2eSettings =
   inConfig(EndToEndTest)(Defaults.testSettings) ++
     Seq(
-      EndToEndTest / fork              := true,
-      EndToEndTest / parallelExecution := true,
-      EndToEndTest / scalaSource       := baseDirectory.value / "src" / "e2e" / "scala"
+      EndToEndTest / fork               := true,
+      EndToEndTest / testForkedParallel := true,
+      EndToEndTest / scalaSource        := baseDirectory.value / "src" / "e2e" / "scala"
     )
 
 lazy val circeV             = "0.14.1"
@@ -65,7 +65,8 @@ lazy val root = (project in file("."))
       "org.http4s"                    %% "http4s-blaze-server"           % http4sV      % Test,
       "org.http4s"                    %% "http4s-circe"                  % http4sV      % Test,
       "org.http4s"                    %% "blaze-http"                    % http4sBlazeV % Test,
-      "com.disneystreaming"           %% "weaver-cats"                   % weaverV      % Test
+      "com.disneystreaming"           %% "weaver-cats"                   % weaverV      % Test,
+      "com.disneystreaming"           %% "weaver-scalacheck"             % weaverV      % Test
     ) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, minor)) =>
         Seq(
