@@ -13,4 +13,5 @@ jobs:
         uses: scala-steward-org/scala-steward-action@v2
         with:
           github-token: ${{ secrets.GH_TOKEN }}
-          author-email: 4746479+paoloboni@users.noreply.github.com
+          author-email: 41898282+github-actions[bot]@users.noreply.github.com
+          author-name: github-actions[bot]
