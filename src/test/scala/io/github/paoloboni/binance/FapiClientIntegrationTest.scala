@@ -30,10 +30,13 @@ import io.circe.parser._
 import io.github.paoloboni.TestAsync
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.common.response.{
+  Ask,
+  Bid,
   ContractKLineStream,
   ContractKLineStreamPayload,
   KLineStream,
-  KLineStreamPayload
+  KLineStreamPayload,
+  Level
 }
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
@@ -175,6 +178,68 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
 
         expect(result == expected)
       }
+  }
+
+  integrationTest("it should return the orderbook depth") { case WebServer(server, _) =>
+    val symbol = "ETHUSDT"
+    val limit  = DepthLimit.`5`
+
+    val stubResponse = IO.delay(
+      server.stubFor(
+        get(urlPathEqualTo("/fapi/v1/depth"))
+          .withQueryParams(
+            Map(
+              "symbol" -> equalTo(symbol),
+              "limit"  -> equalTo(limit.toString)
+            ).asJava
+          )
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                          |{
+                          |  "lastUpdateId": 1027024,
+                          |  "E": 1589436922972,
+                          |  "T": 1589436922959,
+                          |  "bids": [
+                          |    [
+                          |      "4.00000000",
+                          |      "431.00000000"
+                          |    ]
+                          |  ],
+                          |  "asks": [
+                          |    [
+                          |      "4.00000200",
+                          |      "12.00000000"
+                          |    ]
+                          |  ]
+                          |}
+                      """.stripMargin)
+          )
+      )
+    )
+
+    for {
+      _      <- stubInfoEndpoint(server)
+      _      <- stubResponse
+      config <- createConfiguration(server)
+      result <- BinanceClient
+        .createFutureClient[IO](config)
+        .use { gw =>
+          gw.getDepth(DepthParams(symbol, limit))
+        }
+      expected = DepthGetResponse(
+        lastUpdateId = 1027024,
+        E = 1589436922972L,
+        T = 1589436922959L,
+        bids = List(
+          Bid(4.00000000, 431.0)
+        ),
+        asks = List(
+          Ask(4.00000200, 12.0)
+        )
+      )
+    } yield expect(result == expected)
   }
 
   integrationTest("it should be able to stream klines even with a threshold of 1") { case WebServer(server, _) =>
@@ -785,6 +850,70 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     }
   }
 
+  integrationTest("it should get all current open order details") { case WebServer(server, _) =>
+    val fixedTime = 1499827319559L
+
+    val apiKey    = "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A"
+    val apiSecret = "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j"
+
+    val stubResponse = IO.delay(
+      server.stubFor(
+        get(urlPathMatching("/fapi/v1/openOrders"))
+          .withHeader("X-MBX-APIKEY", equalTo(apiKey))
+          .withQueryParams(
+            Map(
+              "recvWindow" -> equalTo("5000"),
+              "timestamp"  -> equalTo(fixedTime.toString),
+              "signature"  -> equalTo("8a31f1e30c7c9ecd7c9b4b7e3ab6f45c8a04926af3aebed822798b9e550ac55d")
+            ).asJava
+          )
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody("""
+                        |[
+                        |  {
+                        |    "avgPrice": "0.00000",
+                        |    "clientOrderId": "abc",
+                        |    "cumQuote": "0",
+                        |    "executedQty": "0",
+                        |    "orderId": 1917641,
+                        |    "origQty": "0.40",
+                        |    "origType": "TRAILING_STOP_MARKET",
+                        |    "price": "0",
+                        |    "reduceOnly": false,
+                        |    "side": "BUY",
+                        |    "positionSide": "SHORT",
+                        |    "status": "NEW",
+                        |    "stopPrice": "9300",
+                        |    "closePosition": false,
+                        |    "symbol": "BTCUSDT",
+                        |    "time": 1579276756075,   
+                        |    "timeInForce": "GTC",
+                        |    "type": "TRAILING_STOP_MARKET",
+                        |    "activatePrice": "9020",  
+                        |    "priceRate": "0.3",
+                        |    "updateTime": 1579276756075,   
+                        |    "workingType": "CONTRACT_PRICE",
+                        |    "priceProtect": false    
+                        |  }
+                        |]""".stripMargin)
+          )
+      )
+    )
+
+    IO.pure(new TestAsync(onRealtime = fixedTime.millis)).flatMap { implicit async =>
+      for {
+        _      <- stubInfoEndpoint(server)
+        _      <- stubResponse
+        config <- createConfiguration(server, apiKey = apiKey, apiSecret = apiSecret)
+        result <- BinanceClient
+          .createFutureClient[IO](config)
+          .use(_.getAllOpenOrders(symbol = "BTCUSDT"))
+      } yield expect(result.isInstanceOf[List[FutureOrderGetResponse]])
+    }
+  }
+
   integrationTest("it should cancel an order") { case WebServer(server, _) =>
     val fixedTime = 1499827319559L
 
@@ -1198,6 +1327,116 @@ class FapiClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
           )
         )
       ))
+  }
+
+  integrationTest("it should stream Partial Book Depth streams") { case WebServer(server, ws) =>
+    val toClient: Stream[IO, WebSocketFrame] = Stream(
+      WebSocketFrame.Text("""{
+                              |  "e": "depthUpdate",
+                              |  "E": 1571889248277, 
+                              |  "T": 1571889248276, 
+                              |  "s": "BTCUSDT",
+                              |  "U": 390497796,
+                              |  "u": 390497878,
+                              |  "pu": 390497794,
+                              |  "b": [          
+                              |    [ "7403.89", "0.002" ],
+                              |    [ "7403.90", "3.906" ],
+                              |    [ "7404.00", "1.428" ],
+                              |    [ "7404.85", "5.239" ],
+                              |    [ "7405.43", "2.562" ]
+                              |  ],
+                              |  "a": [          
+                              |    [ "7405.96", "3.340" ],
+                              |    [ "7406.63", "4.525" ],
+                              |    [ "7407.08", "2.475" ],
+                              |    [ "7407.15", "4.800" ],
+                              |    [ "7407.20", "0.175" ]
+                              |  ] 
+                              |}""".stripMargin),
+      WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+    )
+
+    for {
+      _      <- stubInfoEndpoint(server)
+      config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
+      result <- testStream(ws, config)(toClient)(
+        _.partialBookDepthStream("btcusdt", Level.`5`, DepthUpdateSpeed.`100ms`).compile.toList
+      )
+    } yield expect(
+      result == List(
+        PartialDepthStream(
+          e = "depthUpdate",
+          E = 1571889248277L,
+          T = 1571889248276L,
+          s = "BTCUSDT",
+          U = 390497796,
+          u = 390497878,
+          pu = 390497794,
+          b = Seq(
+            Bid(7403.89, 0.002),
+            Bid(7403.90, 3.906),
+            Bid(7404.00, 1.428),
+            Bid(7404.85, 5.239),
+            Bid(7405.43, 2.562)
+          ),
+          a = Seq(
+            Ask(7405.96, 3.340),
+            Ask(7406.63, 4.525),
+            Ask(7407.08, 2.475),
+            Ask(7407.15, 4.800),
+            Ask(7407.20, 0.175)
+          )
+        )
+      )
+    )
+  }
+
+  integrationTest("it should stream Diff. Depth") { case WebServer(server, ws) =>
+    val toClient: Stream[IO, WebSocketFrame] = Stream(
+      WebSocketFrame.Text("""{
+                              |  "e": "depthUpdate", 
+                              |  "E": 123456789,
+                              |  "T": 123456788,
+                              |  "s": "BTCUSDT",
+                              |  "U": 157,      
+                              |  "u": 160,      
+                              |  "pu": 149,     
+                              |  "b": [         
+                              |    [
+                              |      "0.0024",       
+                              |      "10"       
+                              |    ]
+                              |  ],
+                              |  "a": [         
+                              |    [
+                              |      "0.0026",       
+                              |      "100"     
+                              |    ]
+                              |  ]
+                              |}""".stripMargin),
+      WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
+    )
+
+    for {
+      _      <- stubInfoEndpoint(server)
+      config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
+      result <- testStream(ws, config)(toClient)(_.diffDepthStream("btcusdt", DepthUpdateSpeed.`100ms`).compile.toList)
+    } yield expect(
+      result == List(
+        DiffDepthStream(
+          e = "depthUpdate",
+          E = 123456789,
+          T = 123456788,
+          s = "BTCUSDT",
+          U = 157,
+          u = 160,
+          pu = 149,
+          b = Seq(Bid(0.0024, 10)),
+          a = Seq(Ask(0.0026, 100))
+        )
+      )
+    )
   }
 
   private def stubInfoEndpoint(server: WireMockServer) = IO.delay {
