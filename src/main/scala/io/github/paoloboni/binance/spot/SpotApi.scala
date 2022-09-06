@@ -39,9 +39,10 @@ import sttp.client3.circe.asJson
 
 import scala.util.Try
 
-final class SpotApi[F[_]](
-    override val config: SpotConfig,
+final case class SpotApi[F[_]](
+    config: SpotConfig,
     client: HttpClient[F],
+    exchangeInfo: spot.response.ExchangeInformation,
     rateLimiters: RateLimiters[F]
 )(implicit F: Async[F])
     extends BinanceApi[F] {
@@ -254,5 +255,5 @@ object SpotApi {
           .toResource
         exchangeInfo <- F.fromEither(exchangeInfoEither).toResource
         rateLimiters <- exchangeInfo.createRateLimiters(config.rateLimiterBufferSize)
-      } yield new SpotApi(config, client, rateLimiters)
+      } yield SpotApi(config, client, exchangeInfo, rateLimiters)
 }
