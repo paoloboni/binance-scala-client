@@ -64,6 +64,7 @@ object FutureOrderCreateParams {
       symbol: String,
       side: OrderSide,
       positionSide: FuturePositionSide,
+      quantity: BigDecimal,
       stopPrice: BigDecimal,
       closePosition: Boolean,
       priceProtect: Boolean = false,

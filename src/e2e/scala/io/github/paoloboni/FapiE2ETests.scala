@@ -4,6 +4,7 @@ import cats.effect.{IO, Resource}
 import cats.implicits._
 import io.github.paoloboni.binance._
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.common.response._
 import io.github.paoloboni.binance.fapi._
 import io.github.paoloboni.binance.fapi.parameters._
 
@@ -21,6 +22,8 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
   )
 
   val sharedResource: Resource[IO, FutureApi[IO]] = BinanceClient.createFutureClient[IO](config)
+
+  test("getDepth") { _.getDepth(DepthParams("BTCUSDT", DepthLimit.`5`)).map(succeed) }
 
   test("getPrices") { _.getPrices().map(res => expect(res.nonEmpty)) }
 
@@ -77,6 +80,23 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
             orderId = orderCreated.orderId
           )
         )
+    } yield success
+  }
+
+  test("getAllOpenOrders") { client =>
+    val side = Random.shuffle(OrderSide.values).head
+    for {
+      _ <- client
+        .createOrder(
+          FutureOrderCreateParams.MARKET(
+            symbol = "LTCUSDT",
+            side = side,
+            positionSide = FuturePositionSide.BOTH,
+            quantity = 1
+          )
+        )
+      _ <- client
+        .getAllOpenOrders(symbol = "LTCUSDT")
     } yield success
   }
 
@@ -162,4 +182,20 @@ object FapiE2ETests extends BaseE2ETest[FutureApi[IO]] {
       .toList
       .map(l => expect(l.size == 1))
   }
+
+  test("diffDepthStream")(
+    _.diffDepthStream("btcusdt", DepthUpdateSpeed.`100ms`)
+      .take(1)
+      .compile
+      .toList
+      .map(l => expect(l.size == 1))
+  )
+
+  test("partialBookDepthStream")(
+    _.partialBookDepthStream("btcusdt", Level.`5`, DepthUpdateSpeed.`100ms`)
+      .take(1)
+      .compile
+      .toList
+      .map(l => expect(l.size == 1))
+  )
 }

@@ -27,7 +27,7 @@ import cats.syntax.all._
 import fs2.Stream
 import io.circe.generic.auto._
 import io.github.paoloboni.binance.common._
-import io.github.paoloboni.binance.common.response.{CirceResponse, ContractKLineStream, KLineStream}
+import io.github.paoloboni.binance.common.response.{CirceResponse, ContractKLineStream, KLineStream, Level}
 import io.github.paoloboni.binance.fapi.parameters._
 import io.github.paoloboni.binance.fapi.response._
 import io.github.paoloboni.binance.{BinanceApi, common, fapi}
@@ -58,13 +58,37 @@ final case class FutureApi[F[_]](
   )
 
   private val baseUrl             = config.restBaseUrl.addPath("fapi", "v1")
+  private val depthUri            = baseUrl.addPath("depth")
   private val kLinesUri           = baseUrl.addPath("klines")
   private val tickerPriceUri      = baseUrl.addPath("ticker", "price")
   private val positionSideDualUri = baseUrl.addPath("positionSide", "dual")
   private val leverageUri         = baseUrl.addPath("leverage")
   private val accountUri          = baseUrl.addPath("account")
   private val orderUri            = baseUrl.addPath("order")
+  private val openOrdersUri       = baseUrl.addPath("openOrders")
   private val allOpenOrdersUri    = baseUrl.addPath("allOpenOrders")
+
+  /** Returns the depth of the orderbook.
+    *
+    * @param query
+    *   an `Depth` object containing the query parameters
+    * @return
+    *   the orderbook depth
+    */
+  def getDepth(query: DepthParams): F[DepthGetResponse] = {
+    val params = query.toQueryParams
+    val uri    = depthUri.addParams(params)
+
+    for {
+      depthOrError <- client.get[CirceResponse[DepthGetResponse]](
+        uri = uri,
+        responseAs = asJson[DepthGetResponse],
+        limiters = rateLimiters.requestsOnly,
+        weight = query.limit.weight
+      )
+      depth <- F.fromEither(depthOrError)
+    } yield depth
+  }
 
   /** Returns a stream of Kline objects. It recursively and lazily invokes the endpoint in case the result set doesn't
     * fit in a single page.
@@ -256,6 +280,49 @@ final case class FutureApi[F[_]](
       response <- F.fromEither(responseOrError)
     } yield response
 
+  /** Get all open orders on a symbol.
+    *
+    * @param symbol
+    *   the symbol
+    *
+    * @return
+    *   The list of open orders for the selected symbol
+    */
+  def getAllOpenOrders(symbol: String): F[List[FutureOrderGetResponse]] =
+    for {
+      uri <- mkSignedUri(
+        uri = openOrdersUri,
+        params = "symbol" -> symbol
+      )
+      responseOrError <- client
+        .get[CirceResponse[List[FutureOrderGetResponse]]](
+          uri = uri,
+          responseAs = asJson[List[FutureOrderGetResponse]],
+          limiters = rateLimiters.value,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey)
+        )
+      response <- F.fromEither(responseOrError)
+    } yield response
+
+  /** Get all open orders
+    *
+    * @return
+    *   The list of open orders for all symbols
+    */
+  def getAllOpenOrders(): F[List[FutureOrderGetResponse]] =
+    for {
+      uri <- mkSignedUri(uri = openOrdersUri)
+      responseOrError <- client
+        .get[CirceResponse[List[FutureOrderGetResponse]]](
+          uri = uri,
+          responseAs = asJson[List[FutureOrderGetResponse]],
+          limiters = rateLimiters.value,
+          headers = Map("X-MBX-APIKEY" -> config.apiKey),
+          weight = 40
+        )
+      response <- F.fromEither(responseOrError)
+    } yield response
+
   /** Cancels an order.
     *
     * @param orderCancel
@@ -389,6 +456,62 @@ final case class FutureApi[F[_]](
       )
       stream <- client.ws[List[MarkPriceUpdate]](uri).flatMap(Stream.emits(_))
     } yield stream
+
+  /** Order book price and quantity depth updates used to locally manage an order book.
+    *
+    * @param symbol
+    *   the symbol
+    * @param depthUpdateSpeed
+    *   the depth update speed
+    * @return
+    *   a stream of order book price and quantity depth updates
+    */
+  def diffDepthStream(symbol: String, depthUpdateSpeed: DepthUpdateSpeed): Stream[F, DiffDepthStream] = {
+    val updateSpeed = depthUpdateSpeed match {
+      case DepthUpdateSpeed.`100ms` => "@100ms"
+      case DepthUpdateSpeed.`250ms` => ""
+      case DepthUpdateSpeed.`500ms` => "@500ms"
+    }
+
+    for {
+      uri <- Stream.eval(
+        F.fromEither(Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@depth${updateSpeed}").toEither)
+      )
+      stream <- client.ws[DiffDepthStream](uri)
+    } yield stream
+  }
+
+  /** Top bids and asks
+    *
+    * @param symbol
+    *   the symbol
+    * @param level
+    *   the level
+    * @param depthUpdateSpeed
+    *   the depth update speed
+    * @return
+    *   a stream of top bids and asks
+    */
+  def partialBookDepthStream(
+      symbol: String,
+      level: Level,
+      depthUpdateSpeed: DepthUpdateSpeed
+  ): Stream[F, PartialDepthStream] = {
+    val updateSpeed = depthUpdateSpeed match {
+      case DepthUpdateSpeed.`100ms` => "@100ms"
+      case DepthUpdateSpeed.`250ms` => ""
+      case DepthUpdateSpeed.`500ms` => "@500ms"
+    }
+
+    for {
+      uri <- Stream.eval(
+        F.fromEither(
+          Try(uri"${config.wsBaseUrl}/ws/${symbol.toLowerCase}@depth${level.toString}${updateSpeed}").toEither
+        )
+      )
+      stream <- client.ws[PartialDepthStream](uri)
+    } yield stream
+  }
 }
 
 object FutureApi {
