@@ -307,7 +307,7 @@ final case class FutureApi[F[_]](
   /** Get all open orders
     *
     * @return
-    *   The id of the order created
+    *   The list of open orders for all symbols
     */
   def getAllOpenOrders(): F[List[FutureOrderGetResponse]] =
     for {
