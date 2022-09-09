@@ -61,7 +61,9 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Account information](https://binance-docs.github.io/apidocs/#account-information-user_data): Get current account information
 * [New order (trade)](https://binance-docs.github.io/apidocs/futures/en/#new-order-trade): Send in a new order
 * [Query order](https://binance-docs.github.io/apidocs/futures/en/#query-order-user_data): Check an order's status
+* [Order book](https://binance-docs.github.io/apidocs/futures/en/#order-book): Get order book
 * [Cancel order](https://binance-docs.github.io/apidocs/futures/en/#cancel-order-trade): Cancel an active order
+* [All open orders](https://binance-docs.github.io/apidocs/futures/en/#current-all-open-orders-user_data): Get all open orders
 * [Cancel all open orders](https://binance-docs.github.io/apidocs/futures/en/#cancel-all-open-orders-trade): Cancel all open orders
 * [Change position mode (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-position-mode-trade): Change user's position mode (Hedge Mode or One-way Mode ) on EVERY symbol
 * [Change initial leverage (trade)](https://binance-docs.github.io/apidocs/futures/en/#change-initial-leverage-trade): Change user's initial leverage of specific symbol market
@@ -72,6 +74,8 @@ libraryDependencies += "io.github.paoloboni" %% "binance-scala-client" % "<versi
 * [Mark Price Stream](https://binance-docs.github.io/apidocs/futures/en/#mark-price-stream): Mark price and funding rate for a single symbol pushed every 3 seconds.
 * [Mark Price Stream for All market](https://binance-docs.github.io/apidocs/futures/en/#mark-price-stream-for-all-market): Mark price and funding rate for all symbols pushed every 3 seconds.
 * [Continuous Contract kline streams](https://binance-docs.github.io/apidocs/futures/en/#continuous-contract-kline-candlestick-streams): Continuous Contract Kline/Candlestick Streams of updates every 250 milliseconds.
+* [Diff. Depth Book Streams](https://binance-docs.github.io/apidocs/futures/en/#diff-book-depth-streams): Bids and asks, pushed every 250 milliseconds, 500 milliseconds, 100 milliseconds (if existing)
+* [Partial Book Depth Streams](https://binance-docs.github.io/apidocs/futures/en/#partial-book-depth-streams): Top bids and asks
 
 ## Initialise the client
 
