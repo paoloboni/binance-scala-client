@@ -45,4 +45,4 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
       - name: Update documentation
-        run: sbt ++3.1.3 "doc;ghpagesPushSite"
+        run: sbt ++3.2.0 "doc;ghpagesPushSite"
