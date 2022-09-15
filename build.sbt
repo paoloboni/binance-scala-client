@@ -18,14 +18,14 @@ lazy val e2eSettings =
     )
 
 lazy val circeV             = "0.14.1"
-lazy val fs2V               = "3.2.14"
+lazy val fs2V               = "3.3.0"
 lazy val catsCoreV          = "2.8.0"
 lazy val catsEffectV        = "3.3.14"
-lazy val log4CatsV          = "2.4.0"
+lazy val log4CatsV          = "2.5.0"
 lazy val slf4jV             = "2.0.0"
-lazy val sttpV              = "3.7.6"
+lazy val sttpV              = "3.8.0"
 lazy val enumeratumV        = "1.7.0"
-lazy val shapelessV         = "2.3.9"
+lazy val shapelessV         = "2.3.10"
 lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.4.0"
 lazy val http4sV            = "1.0.0-M30"
