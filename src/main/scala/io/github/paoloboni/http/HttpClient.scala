@@ -36,7 +36,9 @@ import sttp.client3.{BodySerializer, SttpBackend, _}
 import sttp.model.Uri
 import sttp.ws.WebSocketFrame
 
-sealed class HttpClient[F[_]: Logger](implicit
+import scala.concurrent.duration.{Duration, DurationInt}
+
+sealed class HttpClient[F[_]: Logger](requestTimeout: Duration)(implicit
     F: Async[F],
     client: SttpBackend[F, Any with Fs2Streams[F] with capabilities.WebSockets]
 ) {
@@ -112,6 +114,7 @@ sealed class HttpClient[F[_]: Logger](implicit
           queue <- Queue.unbounded[F, Option[Either[Throwable, DataFrame]]].toResource
           _ <- basicRequest
             .get(uri)
+            .readTimeout(requestTimeout)
             .response(asWebSocketStreamAlways(Fs2Streams[F])(webSocketFramePipe(queue)))
             .send(client)
             .flatMap { response =>
@@ -132,7 +135,7 @@ sealed class HttpClient[F[_]: Logger](implicit
   ): F[RESPONSE] = {
     val processRequest = F.defer(for {
       _           <- Logger[F].debug(s"${request.method} ${request.uri}")
-      rawResponse <- request.send(client)
+      rawResponse <- request.readTimeout(requestTimeout).send(client)
     } yield rawResponse.body)
     limiters.foldLeft(processRequest) { case (response, limiter) =>
       limiter.await(response, weight = weight)
@@ -141,8 +144,8 @@ sealed class HttpClient[F[_]: Logger](implicit
 }
 
 object HttpClient {
-  def make[F[_]: Async: Logger](implicit
+  def make[F[_]: Async: Logger](requestTimeout: Duration = 5.seconds)(implicit
       client: SttpBackend[F, Any with Fs2Streams[F] with capabilities.WebSockets]
   ): F[HttpClient[F]] =
-    new HttpClient[F]().pure[F]
+    new HttpClient[F](requestTimeout).pure[F]
 }
