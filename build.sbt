@@ -92,7 +92,6 @@ import ReleaseTransformations._
 releaseProcess := Seq[ReleaseStep](
   checkSnapshotDependencies,
   runClean,
-  runTest,
   publishArtifacts,
   releaseStepCommand("sonatypeReleaseAll")
 )
