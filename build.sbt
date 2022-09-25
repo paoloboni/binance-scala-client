@@ -1,7 +1,7 @@
 name := "binance-scala-client"
 
 lazy val scala212               = "2.12.16"
-lazy val scala213               = "2.13.8"
+lazy val scala213               = "2.13.9"
 lazy val scala3                 = "3.2.0"
 lazy val supportedScalaVersions = List(scala212, scala213, scala3)
 
@@ -22,7 +22,7 @@ lazy val fs2V               = "3.3.0"
 lazy val catsCoreV          = "2.8.0"
 lazy val catsEffectV        = "3.3.14"
 lazy val log4CatsV          = "2.5.0"
-lazy val slf4jV             = "2.0.1"
+lazy val slf4jV             = "2.0.2"
 lazy val sttpV              = "3.8.0"
 lazy val enumeratumV        = "1.7.0"
 lazy val shapelessV         = "2.3.10"
@@ -30,7 +30,7 @@ lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.4.0"
 lazy val http4sV            = "1.0.0-M30"
 lazy val http4sBlazeV       = "0.23.12"
-lazy val weaverV            = "0.7.15"
+lazy val weaverV            = "0.8.0"
 
 lazy val root = (project in file("."))
   .configs(EndToEndTest)
@@ -40,7 +40,7 @@ lazy val root = (project in file("."))
     releaseCrossBuild := true,
     scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((3, _)) => Seq("-Xmax-inlines", "64")
-      case _            => Seq.empty
+      case _            => Seq("-Ywarn-unused", "-nowarn")
     }),
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     crossScalaVersions            := supportedScalaVersions,
