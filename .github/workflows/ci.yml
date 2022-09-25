@@ -37,6 +37,10 @@ jobs:
         run: sbt ++${{ matrix.scala }} scalafmtCheck test:scalafmtCheck scalafmtSbtCheck headerCheck test:headerCheck test
         shell: bash
         timeout-minutes: 10
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/scala@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
   e2e:
     needs: test
     runs-on: ubuntu-latest
