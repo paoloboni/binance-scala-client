@@ -46,4 +46,8 @@ case class KLineStream(
     E: Long,   // Event time
     s: String, // Symbol
     k: KLineStreamPayload
-)
+) {
+    def eventType: String = e
+    def eventTime: Long = E
+    def symbol: String = s
+}
