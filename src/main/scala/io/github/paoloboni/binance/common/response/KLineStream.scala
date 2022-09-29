@@ -48,6 +48,6 @@ case class KLineStream(
     k: KLineStreamPayload
 ) {
     def eventType: String = e
-    def eventTime: Long = E
+    def eventTimeMillis: Long = E
     def symbol: String = s
 }
