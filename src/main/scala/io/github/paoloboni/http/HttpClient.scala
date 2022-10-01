@@ -87,6 +87,12 @@ sealed class HttpClient[F[_]: Logger](requestTimeout: Duration)(implicit
     sendRequest(httpRequest, limiters, weight)
   }
 
+  private sealed trait Control
+  private case object Init                       extends Control
+  private case class PartialFrame(value: String) extends Control
+  private case class FullFrame(value: String)    extends Control
+  private case object Stop                       extends Control
+
   def ws[DataFrame: Decoder](
       uri: Uri
   ): Stream[F, DataFrame] = {
@@ -94,8 +100,19 @@ sealed class HttpClient[F[_]: Logger](requestTimeout: Duration)(implicit
         q: Queue[F, Option[Either[Throwable, DataFrame]]]
     ): Pipe[F, WebSocketFrame.Data[_], WebSocketFrame] = { input =>
       input
+        .scan[Control](Init) {
+          case (PartialFrame(previous), WebSocketFrame.Text(payload, false, _)) => PartialFrame(previous + payload)
+          case (_, WebSocketFrame.Text(payload, false, _))                      => PartialFrame(payload)
+          case (PartialFrame(previous), WebSocketFrame.Text(payload, true, _))  => FullFrame(previous + payload)
+          case (_, WebSocketFrame.Text(payload, true, _))                       => FullFrame(payload)
+          case (_, _)                                                           => Stop
+        }
+        .collect {
+          case fullFrame: FullFrame => fullFrame
+          case Stop                 => Stop
+        }
         .evalMapFilter[F, WebSocketFrame] {
-          case WebSocketFrame.Text(payload, _, _) =>
+          case FullFrame(payload) =>
             (decode[DataFrame](payload) match {
               case Left(ex) =>
                 Logger[F].error(ex)("Failed to decode frame: " + payload) *> q.offer(Some(Left(ex))) // stopping
