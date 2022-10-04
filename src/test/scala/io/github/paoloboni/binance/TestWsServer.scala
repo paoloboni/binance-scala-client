@@ -23,7 +23,7 @@ package io.github.paoloboni.binance
 
 import cats.effect._
 import cats.effect.implicits.effectResourceOps
-import com.comcast.ip4s.{IpLiteralSyntax, Port}
+import com.comcast.ip4s.Port
 import fs2.concurrent.SignallingRef
 import fs2.{Pipe, Stream, concurrent}
 import org.http4s._
