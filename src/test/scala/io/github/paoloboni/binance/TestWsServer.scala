@@ -23,12 +23,14 @@ package io.github.paoloboni.binance
 
 import cats.effect._
 import cats.effect.implicits.effectResourceOps
+import com.comcast.ip4s.Port
 import fs2.concurrent.SignallingRef
 import fs2.{Pipe, Stream, concurrent}
 import org.http4s._
-import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.dsl.Http4sDsl
+import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits._
+import org.http4s.server.Server
 import org.http4s.server.websocket._
 import org.http4s.websocket.WebSocketFrame
 
@@ -43,15 +45,12 @@ class TestWsServer[F[_]] private (
       wsb.build(toClient, fromClient)
     }
 
-  def stream(toClient: Stream[F, WebSocketFrame]): Stream[F, ExitCode] =
-    Stream
-      .eval(Ref.of[F, ExitCode](ExitCode.Success))
-      .flatMap { exitWith =>
-        BlazeServerBuilder[F]
-          .bindHttp(port)
-          .withHttpWebSocketApp(routes(toClient)(_).orNotFound)
-          .serveWhile(terminateWhen, exitWith)
-      }
+  def create(toClient: Stream[F, WebSocketFrame]): Resource[F, Server] =
+    EmberServerBuilder
+      .default[F]
+      .withPort(Port.fromInt(port).get)
+      .withHttpWebSocketApp(routes(toClient)(_).orNotFound)
+      .build
 }
 
 object TestWsServer {

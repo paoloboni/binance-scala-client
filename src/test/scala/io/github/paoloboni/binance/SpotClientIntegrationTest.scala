@@ -1238,11 +1238,6 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
       toClient: Stream[IO, WebSocketFrame]
   )(f: SpotApi[IO] => IO[T]) = (for {
     client <- BinanceClient.createSpotClient[IO](config)
-    _ <- ws
-      .stream(toClient)
-      .compile
-      .drain
-      .as(ExitCode.Success)
-      .background
+    _      <- ws.create(toClient)
   } yield client).use(f)
 }
