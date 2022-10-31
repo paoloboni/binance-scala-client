@@ -25,6 +25,7 @@ import cats.effect.kernel.Sync
 import cats.effect.syntax.all._
 import cats.effect.{Async, Resource}
 import io.github.paoloboni.binance.common._
+import io.github.paoloboni.binance.sapi.SapiApi
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
 import org.typelevel.log4cats.Logger
@@ -43,6 +44,16 @@ object BinanceClient {
       apiFactory: BinanceApi.Factory[F, spot.SpotApi[F], SpotConfig]
   ): Resource[F, SpotApi[F]] =
     apply[F, spot.SpotApi[F], SpotConfig](config, logger)
+
+  def createSapiClient[F[_]: Async](config: SpotConfig)(implicit
+      apiFactory: BinanceApi.Factory[F, sapi.SapiApi[F], SpotConfig]
+  ): Resource[F, SapiApi[F]] =
+    apply[F, sapi.SapiApi[F], SpotConfig](config, defaultLogger[F])
+
+  def createSapiClient[F[_]: Async](config: SpotConfig, logger: Logger[F])(implicit
+      apiFactory: BinanceApi.Factory[F, sapi.SapiApi[F], SpotConfig]
+  ): Resource[F, SapiApi[F]] =
+    apply[F, sapi.SapiApi[F], SpotConfig](config, logger)
 
   def createFutureClient[F[_]: Async](config: FapiConfig)(implicit
       apiFactory: BinanceApi.Factory[F, fapi.FutureApi[F], FapiConfig]
