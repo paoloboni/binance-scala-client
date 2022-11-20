@@ -17,7 +17,7 @@ lazy val e2eSettings =
       EndToEndTest / scalaSource        := baseDirectory.value / "src" / "e2e" / "scala"
     )
 
-lazy val circeV             = "0.14.1"
+lazy val circeV             = "0.14.3"
 lazy val fs2V               = "3.4.0"
 lazy val catsCoreV          = "2.9.0"
 lazy val catsEffectV        = "3.4.1"
