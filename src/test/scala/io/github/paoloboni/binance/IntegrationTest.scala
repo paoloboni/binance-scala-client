@@ -45,13 +45,13 @@ abstract class IntegrationTest(global: GlobalRead) extends SimpleIOSuite {
             server
           }
         )(http => IO.delay(http.stop()))
-      server <- testWsServer(http).map(ws => WebServer(http, ws))
-    } yield server
+      ws = testWsServer(http)
+    } yield WebServer(http, ws)
   }
 
-  def integrationTest(name: TestName)(expectations: WebServer => IO[Expectations]) =
+  def integrationTest(name: TestName)(expectations: WebServer => IO[Expectations]): Unit =
     test(name)(resource.use(expectations))
 
-  private def testWsServer(server: WireMockServer): Resource[IO, TestWsServer[IO]] =
-    TestWsServer[IO](port = server.port() - 1000)
+  private def testWsServer(server: WireMockServer): TestWsServer[IO] =
+    new TestWsServer[IO](port = server.port() - 1000)
 }

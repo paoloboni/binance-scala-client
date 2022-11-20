@@ -26,12 +26,11 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import io.circe.Json
 import io.github.paoloboni.binance.{BinanceClient, IntegrationTest}
 import io.github.paoloboni.binance.common.response.CirceResponse
-import org.asynchttpclient.DefaultAsyncHttpClientConfig
 import org.typelevel.log4cats.Logger
 import sttp.capabilities
 import sttp.capabilities.fs2.Fs2Streams
-import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
 import sttp.client3.circe._
+import sttp.client3.httpclient.fs2.HttpClientFs2Backend
 import sttp.client3.{HttpError, SttpBackend, UriContext}
 import weaver.GlobalRead
 
@@ -46,7 +45,7 @@ class HttpClientTest(global: GlobalRead) extends IntegrationTest(global) {
       .use { implicit client =>
         for {
           _ <- IO.delay(server.stubFor(get("/test").willReturn(aResponse().withStatus(400).withBody(responseBody))))
-          httpClient <- HttpClient.make[IO]
+          httpClient <- HttpClient.make[IO]()
           url = uri"http://localhost:${server.port().toString}/test"
           responseOrError <- httpClient.get[CirceResponse[Json]](url, asJson[Json], limiters = List.empty)
           response        <- IO.fromEither(responseOrError)
@@ -63,7 +62,5 @@ class HttpClientTest(global: GlobalRead) extends IntegrationTest(global) {
   }
 
   private val mkTestClient: Resource[IO, SttpBackend[IO, Any with Fs2Streams[IO] with capabilities.WebSockets]] =
-    AsyncHttpClientFs2Backend.resourceUsingConfig[IO](
-      new DefaultAsyncHttpClientConfig.Builder().setRequestTimeout(5000).build()
-    )
+    HttpClientFs2Backend.resource[IO]()
 }

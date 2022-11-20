@@ -27,10 +27,9 @@ import cats.effect.{Async, Resource}
 import io.github.paoloboni.binance.common._
 import io.github.paoloboni.binance.spot.SpotApi
 import io.github.paoloboni.http.HttpClient
-import org.asynchttpclient.{AsyncHttpClientConfig, DefaultAsyncHttpClientConfig}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import sttp.client3.asynchttpclient.fs2.AsyncHttpClientFs2Backend
+import sttp.client3.httpclient.fs2.HttpClientFs2Backend
 
 object BinanceClient {
 
@@ -59,18 +58,12 @@ object BinanceClient {
       config: Config,
       logger: Logger[F]
   )(implicit apiFactory: BinanceApi.Factory[F, API, Config]): Resource[F, API] = {
-    val conf: AsyncHttpClientConfig =
-      new DefaultAsyncHttpClientConfig.Builder()
-        .setMaxConnections(config.maxTotalConnections)
-        .setRequestTimeout(config.responseHeaderTimeout.toMillis.toInt)
-        .setWebSocketMaxFrameSize(61440)
-        .build()
     implicit val log: Logger[F] = logger
-    AsyncHttpClientFs2Backend
-      .resourceUsingConfig(conf)
-      .flatMap { implicit c =>
+    HttpClientFs2Backend
+      .resource[F]()
+      .flatMap { implicit backend =>
         for {
-          client  <- HttpClient.make[F].toResource
+          client  <- HttpClient.make[F](config.responseHeaderTimeout).toResource
           spotApi <- BinanceApi.Factory[F, API, Config].apply(config, client)
         } yield spotApi
       }

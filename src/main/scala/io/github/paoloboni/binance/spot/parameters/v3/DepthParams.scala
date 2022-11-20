@@ -24,8 +24,7 @@ package io.github.paoloboni.binance.spot.parameters.v3
 import scala.annotation.nowarn
 
 final case class DepthLimit private (value: Int) extends AnyVal {
-  @nowarn
-  def copy(value: Int): Unit = ()
+  def copy(@nowarn value: Int): Unit = ()
 }
 
 object DepthLimit {

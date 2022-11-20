@@ -22,43 +22,27 @@
 package io.github.paoloboni.binance
 
 import cats.effect._
-import cats.effect.implicits.effectResourceOps
-import fs2.concurrent.SignallingRef
-import fs2.{Pipe, Stream, concurrent}
+import com.comcast.ip4s.Port
+import fs2.{Pipe, Stream}
 import org.http4s._
-import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.dsl.Http4sDsl
+import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.implicits._
+import org.http4s.server.Server
 import org.http4s.server.websocket._
 import org.http4s.websocket.WebSocketFrame
 
-class TestWsServer[F[_]] private (
-    val port: Int,
-    terminateWhen: concurrent.Signal[F, Boolean]
-)(implicit F: Async[F])
-    extends Http4sDsl[F] {
+class TestWsServer[F[_]](val port: Int)(implicit F: Async[F]) extends Http4sDsl[F] {
   private def routes(toClient: Stream[F, WebSocketFrame])(wsb: WebSocketBuilder[F]): HttpRoutes[F] =
     HttpRoutes.of[F] { case GET -> Root / "ws" / _ =>
       val fromClient: Pipe[F, WebSocketFrame, Unit] = _.evalMap(message => F.delay(println("received: " + message)))
       wsb.build(toClient, fromClient)
     }
 
-  def stream(toClient: Stream[F, WebSocketFrame]): Stream[F, ExitCode] =
-    Stream
-      .eval(Ref.of[F, ExitCode](ExitCode.Success))
-      .flatMap { exitWith =>
-        BlazeServerBuilder[F]
-          .bindHttp(port)
-          .withHttpWebSocketApp(routes(toClient)(_).orNotFound)
-          .serveWhile(terminateWhen, exitWith)
-      }
-}
-
-object TestWsServer {
-  def apply[F[_]](port: Int)(implicit F: Async[F]): Resource[F, TestWsServer[F]] =
-    SignallingRef.of[F, Boolean](false).toResource.flatMap { stopSignal =>
-      Resource.make[F, TestWsServer[F]](F.delay(new TestWsServer[F](port, stopSignal)))(_ =>
-        F.defer(stopSignal.set(true))
-      )
-    }
+  def create(toClient: Stream[F, WebSocketFrame]): Resource[F, Server] =
+    EmberServerBuilder
+      .default[F]
+      .withPort(Port.fromInt(port).get)
+      .withHttpWebSocketApp(routes(toClient)(_).orNotFound)
+      .build
 }
