@@ -30,7 +30,7 @@ lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.4.0"
 lazy val http4sV            = "1.0.0-M30"
 lazy val http4sBlazeV       = "0.23.12"
-lazy val weaverV            = "0.8.0"
+lazy val weaverV            = "0.8.1"
 
 lazy val root = (project in file("."))
   .configs(EndToEndTest)
