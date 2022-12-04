@@ -75,7 +75,7 @@ lazy val root = (project in file("."))
           "com.beachape" %% "enumeratum-circe"     % enumeratumV,
           "com.chuusai"  %% "shapeless"            % shapelessV
         ) ++ (minor match {
-          case 12 => Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1")
+          case 12 => Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0")
           case _  => Seq.empty
         })
       case _ =>
