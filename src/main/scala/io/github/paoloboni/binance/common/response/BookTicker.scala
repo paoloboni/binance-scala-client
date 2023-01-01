@@ -21,6 +21,8 @@
 
 package io.github.paoloboni.binance.common.response
 
+case class BookTickerStream(stream: String, data: BookTicker)
+
 case class BookTicker(
     u: Long,       // order book updateId
     s: String,     // symbol

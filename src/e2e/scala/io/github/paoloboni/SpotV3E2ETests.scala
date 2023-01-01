@@ -152,8 +152,8 @@ object SpotV3E2ETests extends BaseE2ETest[SpotApi[IO]] {
       .map(l => expect(l.size == 1))
   )
 
-  test("allBookTickersStream")(
-    _.allBookTickersStream()
+  test("bookTickersStreams")(
+    _.bookTickersStreams(List("ethusdt"))
       .take(1)
       .compile
       .toList
@@ -161,7 +161,7 @@ object SpotV3E2ETests extends BaseE2ETest[SpotApi[IO]] {
   )
 
   test("aggregateTradeStreams")(
-    _.aggregateTradeStreams("btcusdt")
+    _.aggregateTradeStreams("ethusd")
       .take(1)
       .compile
       .toList
