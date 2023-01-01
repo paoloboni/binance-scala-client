@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Paolo Boni
+ * Copyright (c) 2023 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -33,11 +33,15 @@ import org.http4s.server.websocket._
 import org.http4s.websocket.WebSocketFrame
 
 class TestWsServer[F[_]](val port: Int)(implicit F: Async[F]) extends Http4sDsl[F] {
-  private def routes(toClient: Stream[F, WebSocketFrame])(wsb: WebSocketBuilder[F]): HttpRoutes[F] =
-    HttpRoutes.of[F] { case GET -> Root / "ws" / _ =>
-      val fromClient: Pipe[F, WebSocketFrame, Unit] = _.evalMap(message => F.delay(println("received: " + message)))
-      wsb.build(toClient, fromClient)
+  private def routes(toClient: Stream[F, WebSocketFrame])(wsb: WebSocketBuilder[F]): HttpRoutes[F] = {
+    val fromClient: Pipe[F, WebSocketFrame, Unit] =
+      _.evalMap(message => F.delay(println("received: " + message)))
+    val res = wsb.build(toClient, fromClient)
+    HttpRoutes.of[F] {
+      case GET -> Root / "ws" / _ => res
+      case GET -> Root / "stream" => res
     }
+  }
 
   def create(toClient: Stream[F, WebSocketFrame]): Resource[F, Server] =
     EmberServerBuilder
