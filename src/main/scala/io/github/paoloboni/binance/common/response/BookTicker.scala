@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Paolo Boni
+ * Copyright (c) 2023 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,6 +20,8 @@
  */
 
 package io.github.paoloboni.binance.common.response
+
+case class BookTickerStream(stream: String, data: BookTicker)
 
 case class BookTicker(
     u: Long,       // order book updateId

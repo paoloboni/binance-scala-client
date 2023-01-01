@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Paolo Boni
+ * Copyright (c) 2023 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -1087,32 +1087,64 @@ class SpotClientIntegrationTest(global: GlobalRead) extends IntegrationTest(glob
     )
   }
 
-  integrationTest("it should stream Book Tickers") { case WebServer(server, ws) =>
+  integrationTest("it should stream Book Tickers for selected symbols") { case WebServer(server, ws) =>
     val toClient: Stream[IO, WebSocketFrame] = Stream(
-      WebSocketFrame.Text("""{
-                              |  "u":400900217,
-                              |  "s":"BNBUSDT",
-                              |  "b":"25.35190000",
-                              |  "B":"31.21000000",
-                              |  "a":"25.36520000",
-                              |  "A":"40.66000000"
-                              |}""".stripMargin),
+      WebSocketFrame.Text("""
+          |{
+          |  "stream":"btcusdt@bookTicker",
+          |  "data":{
+          |    "u":18171608,
+          |    "s":"BTCUSDT",
+          |    "b":"16564.79000000",
+          |    "B":"0.15816700",
+          |    "a":"16565.04000000",
+          |    "A":"0.16661600"
+          |  }
+          |}
+          |""".stripMargin),
+      WebSocketFrame.Text("""
+          |{
+          |  "stream":"ethusdt@bookTicker",
+          |  "data":{
+          |    "u":11535276,
+          |    "s":"ETHUSDT",
+          |    "b":"1197.88000000",
+          |    "B":"0.63446000",
+          |    "a":"1197.93000000",
+          |    "A":"0.57600000"
+          |  }
+          |}
+          |""".stripMargin),
       WebSocketFrame.Binary(ByteVector.empty) // force the stream to complete
     )
 
     for {
       _      <- stubInfoEndpoint(server)
       config <- createConfiguration(server, apiKey = "apiKey", apiSecret = "apiSecret", wsPort = ws.port)
-      result <- testStream(ws, config)(toClient)(_.allBookTickersStream().compile.toList)
+      result <- testStream(ws, config)(toClient)(_.bookTickersStreams(List("btcusdt")).compile.toList)
     } yield expect(
       result == List(
-        BookTicker(
-          u = 400900217L,
-          s = "BNBUSDT",
-          b = 25.35190000,
-          B = 31.21000000,
-          a = 25.36520000,
-          A = 40.66000000
+        BookTickerStream(
+          stream = "btcusdt@bookTicker",
+          data = BookTicker(
+            u = 18171608L,
+            s = "BTCUSDT",
+            b = 16564.79000000,
+            B = 0.15816700,
+            a = 16565.04000000,
+            A = 0.16661600
+          )
+        ),
+        BookTickerStream(
+          stream = "ethusdt@bookTicker",
+          data = BookTicker(
+            u = 11535276L,
+            s = "ETHUSDT",
+            b = 1197.88000000,
+            B = 0.63446000,
+            a = 1197.93000000,
+            A = 0.57600000
+          )
         )
       )
     )

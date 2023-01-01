@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Paolo Boni
+ * Copyright (c) 2023 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -210,16 +210,20 @@ final case class SpotApi[F[_]](
       stream <- client.ws[PartialDepthStream](uri)
     } yield stream
 
-  /** Pushes any update to the best bid or ask's price or quantity in real-time for all symbols.
+  /** Pushes any update to the best bid or ask's price or quantity in real-time for all selected symbols.
     *
+    * @param symbols
+    *   the symbols
     * @return
     *   a stream of best bid or ask's price or quantity for all symbols
     */
-  def allBookTickersStream(): Stream[F, BookTicker] =
+  def bookTickersStreams(symbols: List[String]): Stream[F, BookTickerStream] = {
+    val streams = symbols.map(_ + "@bookTicker").mkString("/")
     for {
-      uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/ws/!bookTicker").toEither))
-      stream <- client.ws[BookTicker](uri)
+      uri    <- Stream.eval(F.fromEither(Try(uri"${config.wsBaseUrl}/stream?streams=$streams").toEither))
+      stream <- client.ws[BookTickerStream](uri)
     } yield stream
+  }
 
   /** The Aggregate Trade Streams push trade information that is aggregated for a single taker order every 100
     * milliseconds.
