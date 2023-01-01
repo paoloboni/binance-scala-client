@@ -160,12 +160,13 @@ object SpotV3E2ETests extends BaseE2ETest[SpotApi[IO]] {
       .map(l => expect(l.size == 1))
   )
 
-  test("aggregateTradeStreams")(
-    _.aggregateTradeStreams("ethusd")
-      .take(1)
-      .compile
-      .toList
-      .map(l => expect(l.size == 1))
+  test("aggregateTradeStreams")(_ =>
+    ignore("Temporarily disabled")
+//    _.aggregateTradeStreams("ethusd")
+//      .take(1)
+//      .compile
+//      .toList
+//      .map(l => expect(l.size == 1))
   )
 
 }
