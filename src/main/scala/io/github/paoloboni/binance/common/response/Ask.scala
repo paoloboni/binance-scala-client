@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Paolo Boni
+ * Copyright (c) 2023 Paolo Boni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
