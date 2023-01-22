@@ -18,18 +18,18 @@ lazy val e2eSettings =
     )
 
 lazy val circeV             = "0.14.1"
-lazy val fs2V               = "3.4.0"
+lazy val fs2V               = "3.5.0"
 lazy val catsCoreV          = "2.9.0"
-lazy val catsEffectV        = "3.4.1"
+lazy val catsEffectV        = "3.4.5"
 lazy val log4CatsV          = "2.5.0"
-lazy val slf4jV             = "2.0.4"
-lazy val sttpV              = "3.8.3"
-lazy val enumeratumV        = "1.7.0"
+lazy val slf4jV             = "2.0.6"
+lazy val sttpV              = "3.8.8"
+lazy val enumeratumV        = "1.7.2"
 lazy val shapelessV         = "2.3.10"
 lazy val wiremockV          = "2.27.2"
 lazy val catsEffectTestingV = "1.4.0"
 lazy val http4sV            = "1.0.0-M30"
-lazy val http4sBlazeV       = "0.23.12"
+lazy val http4sBlazeV       = "0.23.13"
 lazy val weaverV            = "0.8.1"
 
 lazy val root = (project in file("."))
@@ -75,7 +75,7 @@ lazy val root = (project in file("."))
           "com.beachape" %% "enumeratum-circe"     % enumeratumV,
           "com.chuusai"  %% "shapeless"            % shapelessV
         ) ++ (minor match {
-          case 12 => Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.8.1")
+          case 12 => Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0")
           case _  => Seq.empty
         })
       case _ =>
