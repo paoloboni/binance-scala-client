@@ -68,7 +68,7 @@ object FutureOrderCreateParams {
       stopPrice: BigDecimal,
       closePosition: Boolean,
       priceProtect: Boolean = false,
-      reduceOnly: Boolean = false,
+      reduceOnly: Option[Boolean] = None,
       newClientOrderId: Option[String] = None,
       workingType: FutureWorkingType = FutureWorkingType.CONTRACT_PRICE
   ) extends FutureOrderCreateParams
@@ -92,7 +92,7 @@ object FutureOrderCreateParams {
       side: OrderSide,
       positionSide: FuturePositionSide,
       stopPrice: BigDecimal,
-      reduceOnly: Boolean = false,
+      reduceOnly: Option[Boolean] = None,
       newClientOrderId: Option[String] = None,
       closePosition: Boolean,
       priceProtect: Boolean = false,
