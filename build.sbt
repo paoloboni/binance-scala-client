@@ -18,7 +18,7 @@ lazy val e2eSettings =
     )
 
 lazy val circeV             = "0.14.1"
-lazy val fs2V               = "3.6.1"
+lazy val fs2V               = "3.9.2"
 lazy val catsCoreV          = "2.9.0"
 lazy val catsEffectV        = "3.4.11"
 lazy val log4CatsV          = "2.6.0"
