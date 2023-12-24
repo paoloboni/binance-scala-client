@@ -25,4 +25,4 @@ import io.circe.Decoder
 import io.github.paoloboni.binance.common.EnumDecoder
 
 enum FutureTimeInForce derives EnumDecoder:
-  case GTC, IOC, FOK, GTX
+  case GTC, IOC, FOK, GTX, GTD
