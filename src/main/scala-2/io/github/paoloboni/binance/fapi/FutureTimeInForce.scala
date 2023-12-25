@@ -31,4 +31,5 @@ object FutureTimeInForce extends Enum[FutureTimeInForce] with CirceEnum[FutureTi
   case object IOC extends FutureTimeInForce // Immediate or Cancel
   case object FOK extends FutureTimeInForce // Fill or Kill
   case object GTX extends FutureTimeInForce // Good Till Crossing (Post Only)
+  case object GTD extends FutureTimeInForce // Good Till Date
 }
